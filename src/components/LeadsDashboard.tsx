@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus } from 'lucide-react';
+import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -185,6 +185,28 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
+  const handleExportLeads = (leadsToExport: Lead[], filterDescription: string = '') => {
+    if (leadsToExport.length === 0) {
+      toast({
+        title: "No leads to export",
+        description: "There are no leads matching your current filters",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const filename = filterDescription 
+      ? `leads-${filterDescription.toLowerCase().replace(/\s+/g, '-')}`
+      : 'leads-export';
+    
+    exportLeadsToCSV(leadsToExport, categories, filename);
+    
+    toast({
+      title: "Export successful",
+      description: `Exported ${leadsToExport.length} leads to CSV file`,
+    });
+  };
+
   const renderLeadsTable = (filteredData: Lead[]) => (
     <Table>
       <TableHeader>
@@ -272,7 +294,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     </div>
   );
 
-  const renderFilterControls = () => (
+  const renderFilterControls = (leadsData?: Lead[]) => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="relative">
         <Input
@@ -311,9 +333,30 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <SelectItem value="Qualified">Qualified</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button 
+          onClick={() => handleExportLeads(leadsData || filteredLeads, getFilterDescription())}
+          variant="outline"
+          size="sm"
+          className="flex items-center gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Export CSV
+        </Button>
       </div>
     </div>
   );
+
+  const getFilterDescription = () => {
+    const parts = [];
+    if (searchQuery) parts.push(`search-${searchQuery}`);
+    if (categoryFilter !== 'all') {
+      const category = categories.find(c => c.id === categoryFilter);
+      if (category) parts.push(`category-${category.name}`);
+    }
+    if (statusFilter !== 'all') parts.push(`status-${statusFilter}`);
+    return parts.join('-') || 'all';
+  };
 
   return (
     <div className="space-y-6">
@@ -438,7 +481,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          {renderFilterControls()}
+          {renderFilterControls(filteredLeads)}
           <Card>
             <CardHeader>
               <CardTitle>All Leads ({filteredLeads.length})</CardTitle>
@@ -451,7 +494,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="contacted" className="space-y-4">
-          {renderFilterControls()}
+          {renderFilterControls(leads.filter(lead => lead.status === 'Contacted'))}
           <Card>
             <CardHeader>
               <CardTitle>Contacted Leads ({leads.filter(lead => lead.status === 'Contacted').length})</CardTitle>
@@ -464,7 +507,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="new" className="space-y-4">
-          {renderFilterControls()}
+          {renderFilterControls(leads.filter(lead => lead.status === 'New'))}
           <Card>
             <CardHeader>
               <CardTitle>New Leads ({leads.filter(lead => lead.status === 'New').length})</CardTitle>
@@ -477,7 +520,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </TabsContent>
 
         <TabsContent value="qualified" className="space-y-4">
-          {renderFilterControls()}
+          {renderFilterControls(leads.filter(lead => lead.status === 'Qualified'))}
           <Card>
             <CardHeader>
               <CardTitle>Qualified Leads ({leads.filter(lead => lead.status === 'Qualified').length})</CardTitle>
