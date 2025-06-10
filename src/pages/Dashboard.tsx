@@ -12,10 +12,14 @@ const Dashboard = () => {
   const { data: templates = [] } = useTemplatesData();
   const { data: categories = [] } = useCategoriesData();
   const { data: importBatches = [] } = useImportBatchesData();
-  const { updateLead } = useLeadOperations();
+  const { updateLead, deleteLead } = useLeadOperations();
 
   const handleUpdateLead = (leadId: string, updates: any) => {
     updateLead({ leadId, updates });
+  };
+
+  const handleDeleteLead = (leadId: string) => {
+    deleteLead(leadId);
   };
 
   return (
@@ -34,6 +38,7 @@ const Dashboard = () => {
           senderEmail: ''
         }}
         onUpdateLead={handleUpdateLead}
+        onDeleteLead={handleDeleteLead}
       />
     </div>
   );

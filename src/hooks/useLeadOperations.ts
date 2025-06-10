@@ -42,6 +42,35 @@ export const useLeadOperations = () => {
     },
   });
 
+  const deleteLeadMutation = useMutation({
+    mutationFn: async (leadId: string) => {
+      if (!user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+      toast({
+        title: "Lead deleted",
+        description: "The lead has been successfully deleted",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting lead:', error);
+      toast({
+        title: "Error deleting lead",
+        description: "Failed to delete the lead",
+        variant: "destructive",
+      });
+    },
+  });
+
   const importLeadsMutation = useMutation({
     mutationFn: async ({ leads, importBatch }: { leads: Lead[]; importBatch: ImportBatch }) => {
       if (!user) throw new Error('User not authenticated');
@@ -94,17 +123,12 @@ export const useLeadOperations = () => {
         phone: lead.phone,
         linkedin: lead.linkedin,
         personal_email: lead.personalEmail,
-        headline: lead.headline,
         department: lead.department,
-        keywords: lead.keywords,
         twitter_url: lead.twitterUrl,
         facebook_url: lead.facebookUrl,
         photo_url: lead.photoUrl,
         organization_website: lead.organizationWebsite,
-        organization_logo: lead.organizationLogo,
-        organization_domain: lead.organizationDomain,
         organization_founded: lead.organizationFounded,
-        organization_address: lead.organizationAddress,
         tags: lead.tags,
         status: lead.status,
         emails_sent: lead.emailsSent || 0,
@@ -154,8 +178,10 @@ export const useLeadOperations = () => {
 
   return {
     updateLead: updateLeadMutation.mutate,
+    deleteLead: deleteLeadMutation.mutate,
     importLeads: importLeadsMutation.mutate,
     isUpdatingLead: updateLeadMutation.isPending,
+    isDeletingLead: deleteLeadMutation.isPending,
     isImportingLeads: importLeadsMutation.isPending,
   };
 };
