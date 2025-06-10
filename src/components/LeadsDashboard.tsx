@@ -11,7 +11,7 @@ import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare, Package, Trash2 } from 'lucide-react';
+import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportLeadsToCSV } from '@/utils/csvExport';
@@ -34,7 +34,6 @@ interface LeadsDashboardProps {
   importBatches: ImportBatch[];
   branding: BrandingData;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
-  onDeleteLead?: (leadId: string) => void;
   selectedBatchId?: string;
 }
 
@@ -47,7 +46,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   importBatches,
   branding,
   onUpdateLead,
-  onDeleteLead,
   selectedBatchId 
 }) => {
   // Load initial filter states from localStorage
@@ -340,16 +338,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   branding={branding}
                   onEmailSent={handleEmailSent}
                 />
-                {onDeleteLead && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => onDeleteLead(lead.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                )}
               </div>
             </TableCell>
           </TableRow>
