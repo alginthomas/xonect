@@ -73,7 +73,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={isCollapsed ? 'w-16' : 'w-64'} collapsible>
+    <Sidebar className={isCollapsed ? 'w-16' : 'w-64'} collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className={isCollapsed ? 'sr-only' : ''}>
