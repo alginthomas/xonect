@@ -1,4 +1,8 @@
 
+export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified';
+export type Seniority = 'Junior' | 'Mid-level' | 'Senior' | 'Executive' | 'C-level';
+export type CompanySize = 'Small (1-50)' | 'Medium (51-200)' | 'Large (201-1000)' | 'Enterprise (1000+)';
+
 export interface Lead {
   id: string;
   firstName: string;
@@ -9,28 +13,29 @@ export interface Lead {
   company: string;
   title: string;
   headline?: string;
-  seniority: 'Junior' | 'Mid-level' | 'Senior' | 'Executive' | 'C-level';
+  seniority: Seniority;
   department?: string;
   keywords?: string;
-  companySize: 'Small (1-50)' | 'Medium (51-200)' | 'Large (201-1000)' | 'Enterprise (1000+)';
-  industry?: string;
-  location?: string;
-  phone?: string;
-  linkedin?: string;
+  companySize: CompanySize;
+  industry: string;
+  location: string;
+  phone: string;
+  linkedin: string;
   twitterUrl?: string;
   facebookUrl?: string;
   photoUrl?: string;
   organizationWebsite?: string;
-  organizationFounded?: number;
   organizationLogo?: string;
   organizationDomain?: string;
+  organizationFounded?: number;
   organizationAddress?: string;
   tags: string[];
-  status: 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified';
+  status: LeadStatus;
   emailsSent: number;
   lastContactDate?: Date;
   createdAt: Date;
   completenessScore: number;
+  categoryId?: string;
 }
 
 export interface EmailTemplate {
@@ -41,17 +46,4 @@ export interface EmailTemplate {
   variables: string[];
   createdAt: Date;
   lastUsed?: Date;
-}
-
-export interface Campaign {
-  id: string;
-  name: string;
-  templateId: string;
-  leadIds: string[];
-  status: 'Draft' | 'Active' | 'Paused' | 'Completed';
-  sentCount: number;
-  openRate: number;
-  clickRate: number;
-  replyRate: number;
-  createdAt: Date;
 }

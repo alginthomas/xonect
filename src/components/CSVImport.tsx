@@ -5,16 +5,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { CategorySelector } from './CategorySelector';
 import type { Lead } from '@/types/lead';
+import type { Category, ImportBatch } from '@/types/category';
 
 interface CSVImportProps {
-  onImportComplete: (leads: Lead[]) => void;
+  onImportComplete: (leads: Lead[], importBatch: ImportBatch) => void;
+  categories: Category[];
 }
 
-export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
+export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categories }) => {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [batchName, setBatchName] = useState<string>('');
   const { toast } = useToast();
 
   const parseCSVLine = (line: string): string[] => {
@@ -87,6 +92,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
+      
+      // Auto-generate batch name from file name
+      const fileName = selectedFile.name.replace('.csv', '');
+      const timestamp = new Date().toLocaleDateString();
+      setBatchName(`${fileName} - ${timestamp}`);
       
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -190,7 +200,14 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   };
 
   const handleImport = async () => {
-    if (!file) return;
+    if (!file || !batchName.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please select a file and enter a batch name",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setImporting(true);
     
@@ -214,10 +231,14 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
         console.log('Processing CSV with headers:', headers);
         
         const leads: Lead[] = [];
+        let failedImports = 0;
         
         lines.slice(1).forEach((line, index) => {
           const values = parseCSVLine(line);
-          if (values.length === 0 || values.every(v => !v.trim())) return;
+          if (values.length === 0 || values.every(v => !v.trim())) {
+            failedImports++;
+            return;
+          }
           
           const rawLead: any = {};
           headers.forEach((header, i) => {
@@ -263,6 +284,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
           if (!firstName && !lastName && !email) {
             console.log(`Skipping row ${index + 1}: Missing essential data`);
+            failedImports++;
             return;
           }
 
@@ -297,6 +319,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             emailsSent: 0,
             createdAt: new Date(),
             completenessScore: 0,
+            categoryId: selectedCategoryId || undefined,
           };
 
           lead.completenessScore = calculateCompleteness(lead);
@@ -315,6 +338,21 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           console.log(`Processed lead ${index + 1}:`, lead);
         });
 
+        const importBatch: ImportBatch = {
+          id: `batch_${Date.now()}`,
+          name: batchName,
+          categoryId: selectedCategoryId || undefined,
+          sourceFile: file.name,
+          totalLeads: lines.length - 1,
+          successfulImports: leads.length,
+          failedImports,
+          createdAt: new Date(),
+          metadata: {
+            headers,
+            processingTime: new Date().toISOString()
+          }
+        };
+
         console.log(`Successfully processed ${leads.length} leads`);
         
         if (leads.length === 0) {
@@ -324,13 +362,15 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             variant: "destructive",
           });
         } else {
-          onImportComplete(leads);
+          onImportComplete(leads, importBatch);
           toast({
             title: "Import successful",
             description: `Imported ${leads.length} leads successfully`,
           });
           setFile(null);
           setPreview([]);
+          setBatchName('');
+          setSelectedCategoryId('');
         }
       };
       
@@ -355,10 +395,32 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           Import Lead Database
         </CardTitle>
         <CardDescription>
-          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. Supports all standard sales prospecting fields.
+          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. Assign to a category for better organization.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="batch-name">Import Batch Name</Label>
+            <Input
+              id="batch-name"
+              value={batchName}
+              onChange={(e) => setBatchName(e.target.value)}
+              placeholder="e.g., Q4 Prospects - Tech Conference"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor="category">Category (Optional)</Label>
+            <CategorySelector
+              categories={categories}
+              selectedCategoryId={selectedCategoryId}
+              onCategoryChange={setSelectedCategoryId}
+              placeholder="Select category for these leads"
+            />
+          </div>
+        </div>
+
         <div>
           <Label htmlFor="csv-file">Choose CSV File</Label>
           <Input
@@ -409,7 +471,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
         <Button 
           onClick={handleImport}
-          disabled={!file || importing}
+          disabled={!file || importing || !batchName.trim()}
           className="w-full"
         >
           {importing ? 'Importing...' : 'Import Lead Database'}

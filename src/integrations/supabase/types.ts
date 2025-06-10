@@ -59,6 +59,36 @@ export type Database = {
           },
         ]
       }
+      categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          criteria: Json | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          criteria?: Json | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          criteria?: Json | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_templates: {
         Row: {
           content: string
@@ -92,8 +122,83 @@ export type Database = {
         }
         Relationships: []
       }
+      import_batches: {
+        Row: {
+          category_id: string | null
+          created_at: string
+          failed_imports: number | null
+          id: string
+          metadata: Json | null
+          name: string
+          source_file: string | null
+          successful_imports: number | null
+          total_leads: number | null
+        }
+        Insert: {
+          category_id?: string | null
+          created_at?: string
+          failed_imports?: number | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          source_file?: string | null
+          successful_imports?: number | null
+          total_leads?: number | null
+        }
+        Update: {
+          category_id?: string | null
+          created_at?: string
+          failed_imports?: number | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          source_file?: string | null
+          successful_imports?: number | null
+          total_leads?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_batches_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_lists: {
+        Row: {
+          created_at: string
+          criteria: Json
+          description: string | null
+          id: string
+          is_smart: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_smart?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: Json
+          description?: string | null
+          id?: string
+          is_smart?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
+          category_id: string | null
           company: string
           company_size: Database["public"]["Enums"]["company_size_category"]
           completeness_score: number
@@ -102,6 +207,7 @@ export type Database = {
           emails_sent: number
           first_name: string
           id: string
+          import_batch_id: string | null
           industry: string | null
           last_contact_date: string | null
           last_name: string
@@ -115,6 +221,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           company: string
           company_size?: Database["public"]["Enums"]["company_size_category"]
           completeness_score?: number
@@ -123,6 +230,7 @@ export type Database = {
           emails_sent?: number
           first_name: string
           id?: string
+          import_batch_id?: string | null
           industry?: string | null
           last_contact_date?: string | null
           last_name: string
@@ -136,6 +244,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           company?: string
           company_size?: Database["public"]["Enums"]["company_size_category"]
           completeness_score?: number
@@ -144,6 +253,7 @@ export type Database = {
           emails_sent?: number
           first_name?: string
           id?: string
+          import_batch_id?: string | null
           industry?: string | null
           last_contact_date?: string | null
           last_name?: string
@@ -156,7 +266,22 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "leads_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_import_batch_id_fkey"
+            columns: ["import_batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

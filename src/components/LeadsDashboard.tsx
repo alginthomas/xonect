@@ -6,19 +6,23 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin, MapPin, Building, Globe, Calendar, User, Briefcase, ExternalLink, Twitter, Facebook } from 'lucide-react';
+import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin, MapPin, Building, Globe, Calendar, User, Briefcase, ExternalLink, Twitter, Facebook, Tag } from 'lucide-react';
 import { EmailDialog } from './EmailDialog';
+import { CategorySelector } from './CategorySelector';
 import type { Lead, EmailTemplate } from '@/types/lead';
+import type { Category } from '@/types/category';
 
 interface LeadsDashboardProps {
   leads: Lead[];
   templates?: EmailTemplate[];
+  categories: Category[];
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
 }
 
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ 
   leads, 
   templates = [], 
+  categories,
   onUpdateLead 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -26,6 +30,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [seniorityFilter, setSeniorityFilter] = useState('all');
   const [companySizeFilter, setCompanySizeFilter] = useState('all');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -43,10 +48,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       const matchesSeniority = seniorityFilter === 'all' || lead.seniority === seniorityFilter;
       const matchesCompanySize = companySizeFilter === 'all' || lead.companySize === companySizeFilter;
       const matchesDepartment = departmentFilter === 'all' || lead.department === departmentFilter;
+      const matchesCategory = categoryFilter === 'all' || lead.categoryId === categoryFilter;
 
-      return matchesSearch && matchesStatus && matchesSeniority && matchesCompanySize && matchesDepartment;
+      return matchesSearch && matchesStatus && matchesSeniority && matchesCompanySize && matchesDepartment && matchesCategory;
     });
-  }, [leads, searchTerm, statusFilter, seniorityFilter, companySizeFilter, departmentFilter]);
+  }, [leads, searchTerm, statusFilter, seniorityFilter, companySizeFilter, departmentFilter, categoryFilter]);
 
   const stats = useMemo(() => {
     const totalLeads = leads.length;
@@ -103,6 +109,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       'Junior': 'bg-gray-100 text-gray-800',
     };
     return colors[seniority] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getCategoryName = (categoryId?: string) => {
+    if (!categoryId) return 'Uncategorized';
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.name || 'Unknown Category';
+  };
+
+  const getCategoryColor = (categoryId?: string) => {
+    if (!categoryId) return '#6B7280';
+    const category = categories.find(cat => cat.id === categoryId);
+    return category?.color || '#6B7280';
   };
 
   return (
@@ -190,11 +208,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             Sales Lead Database
           </CardTitle>
           <CardDescription>
-            Comprehensive lead management with detailed prospect information
+            Comprehensive lead management with detailed prospect information and categorization
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -204,6 +222,26 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 className="pl-8"
               />
             </div>
+
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger>
@@ -275,7 +313,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     <th className="text-left p-3 font-medium min-w-[300px]">Contact & Social</th>
                     <th className="text-left p-3 font-medium min-w-[250px]">Organization</th>
                     <th className="text-left p-3 font-medium min-w-[200px]">Position & Department</th>
-                    <th className="text-left p-3 font-medium">Priority & Status</th>
+                    <th className="text-left p-3 font-medium">Category & Status</th>
                     <th className="text-left p-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -428,6 +466,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       
                       <td className="p-3">
                         <div className="space-y-2">
+                          {lead.categoryId && (
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: getCategoryColor(lead.categoryId) }}
+                              />
+                              <span className="text-xs text-muted-foreground">
+                                {getCategoryName(lead.categoryId)}
+                              </span>
+                            </div>
+                          )}
+                          
                           <Badge className={getStatusColor(lead.status)}>
                             {lead.status}
                           </Badge>

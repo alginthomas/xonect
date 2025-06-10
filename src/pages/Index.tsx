@@ -1,21 +1,83 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CSVImport } from '@/components/CSVImport';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
-import { Upload, Users, Mail, BarChart } from 'lucide-react';
+import { CategoryManager } from '@/components/CategoryManager';
+import { Upload, Users, Mail, BarChart, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Lead, EmailTemplate } from '@/types/lead';
+import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Load leads from Supabase
+  // Load categories from Supabase
+  const loadCategories = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const transformedCategories: Category[] = (data || []).map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description || undefined,
+        color: category.color,
+        criteria: category.criteria || {},
+        createdAt: new Date(category.created_at),
+        updatedAt: new Date(category.updated_at),
+      }));
+
+      setCategories(transformedCategories);
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      toast({
+        title: "Error loading categories",
+        description: "Failed to load categories from database",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Load import batches from Supabase
+  const loadImportBatches = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('import_batches')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const transformedBatches: ImportBatch[] = (data || []).map(batch => ({
+        id: batch.id,
+        name: batch.name,
+        categoryId: batch.category_id || undefined,
+        sourceFile: batch.source_file || undefined,
+        totalLeads: batch.total_leads,
+        successfulImports: batch.successful_imports,
+        failedImports: batch.failed_imports,
+        createdAt: new Date(batch.created_at),
+        metadata: batch.metadata || {},
+      }));
+
+      setImportBatches(transformedBatches);
+    } catch (error) {
+      console.error('Error loading import batches:', error);
+    }
+  };
+
+  // Load leads from Supabase (updated to include category info)
   const loadLeads = async () => {
     try {
       const { data, error } = await supabase
@@ -25,7 +87,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Transform Supabase data to match our Lead interface
       const transformedLeads: Lead[] = (data || []).map(lead => ({
         id: lead.id,
         firstName: lead.first_name,
@@ -45,6 +106,7 @@ const Index = () => {
         lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
         createdAt: new Date(lead.created_at),
         completenessScore: lead.completeness_score,
+        categoryId: lead.category_id || undefined,
       }));
 
       setLeads(transformedLeads);
@@ -68,7 +130,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Transform Supabase data to match our EmailTemplate interface
       const transformedTemplates: EmailTemplate[] = (data || []).map(template => ({
         id: template.id,
         name: template.name,
@@ -94,16 +155,33 @@ const Index = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([loadLeads(), loadEmailTemplates()]);
+      await Promise.all([loadLeads(), loadEmailTemplates(), loadCategories(), loadImportBatches()]);
       setLoading(false);
     };
     
     loadData();
   }, []);
 
-  const handleImportComplete = async (importedLeads: Lead[]) => {
+  const handleImportComplete = async (importedLeads: Lead[], importBatch: ImportBatch) => {
     try {
-      // Transform leads to match Supabase schema
+      // First, save the import batch
+      const { data: batchData, error: batchError } = await supabase
+        .from('import_batches')
+        .insert({
+          name: importBatch.name,
+          category_id: importBatch.categoryId || null,
+          source_file: importBatch.sourceFile || null,
+          total_leads: importBatch.totalLeads,
+          successful_imports: importBatch.successfulImports,
+          failed_imports: importBatch.failedImports,
+          metadata: importBatch.metadata,
+        })
+        .select()
+        .single();
+
+      if (batchError) throw batchError;
+
+      // Transform leads to match Supabase schema and include batch ID
       const leadsToInsert = importedLeads.map(lead => ({
         first_name: lead.firstName,
         last_name: lead.lastName,
@@ -120,16 +198,18 @@ const Index = () => {
         status: lead.status,
         emails_sent: lead.emailsSent,
         completeness_score: lead.completenessScore,
+        category_id: lead.categoryId || null,
+        import_batch_id: batchData.id,
       }));
 
-      const { error } = await supabase
+      const { error: leadsError } = await supabase
         .from('leads')
         .insert(leadsToInsert);
 
-      if (error) throw error;
+      if (leadsError) throw leadsError;
 
-      // Reload leads from database
-      await loadLeads();
+      // Reload data from database
+      await Promise.all([loadLeads(), loadImportBatches()]);
       
       toast({
         title: "Import successful",
@@ -147,7 +227,6 @@ const Index = () => {
 
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
     try {
-      // Transform updates to match Supabase schema
       const supabaseUpdates: any = {};
       if (updates.firstName !== undefined) supabaseUpdates.first_name = updates.firstName;
       if (updates.lastName !== undefined) supabaseUpdates.last_name = updates.lastName;
@@ -165,6 +244,7 @@ const Index = () => {
       if (updates.emailsSent !== undefined) supabaseUpdates.emails_sent = updates.emailsSent;
       if (updates.completenessScore !== undefined) supabaseUpdates.completeness_score = updates.completenessScore;
       if (updates.lastContactDate !== undefined) supabaseUpdates.last_contact_date = updates.lastContactDate?.toISOString();
+      if (updates.categoryId !== undefined) supabaseUpdates.category_id = updates.categoryId;
 
       const { error } = await supabase
         .from('leads')
@@ -173,7 +253,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Update local state
       setLeads(prev => prev.map(lead => 
         lead.id === leadId ? { ...lead, ...updates } : lead
       ));
@@ -205,7 +284,6 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Reload templates from database
       await loadEmailTemplates();
       
       toast({
@@ -217,6 +295,92 @@ const Index = () => {
       toast({
         title: "Save failed",
         description: "Failed to save template to database",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Category management functions
+  const handleCreateCategory = async (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .insert({
+          name: categoryData.name,
+          description: categoryData.description || null,
+          color: categoryData.color,
+          criteria: categoryData.criteria,
+        });
+
+      if (error) throw error;
+
+      await loadCategories();
+      
+      toast({
+        title: "Category created",
+        description: `Category "${categoryData.name}" has been created successfully`,
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast({
+        title: "Creation failed",
+        description: "Failed to create category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
+    try {
+      const supabaseUpdates: any = {};
+      if (updates.name !== undefined) supabaseUpdates.name = updates.name;
+      if (updates.description !== undefined) supabaseUpdates.description = updates.description;
+      if (updates.color !== undefined) supabaseUpdates.color = updates.color;
+      if (updates.criteria !== undefined) supabaseUpdates.criteria = updates.criteria;
+
+      const { error } = await supabase
+        .from('categories')
+        .update(supabaseUpdates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await loadCategories();
+      
+      toast({
+        title: "Category updated",
+        description: "Category has been updated successfully",
+      });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Update failed",
+        description: "Failed to update category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      await loadCategories();
+      
+      toast({
+        title: "Category deleted",
+        description: "Category has been deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Deletion failed",
+        description: "Failed to delete category",
         variant: "destructive",
       });
     }
@@ -246,7 +410,7 @@ const Index = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart className="h-4 w-4" />
               Dashboard
@@ -259,6 +423,10 @@ const Index = () => {
               <Users className="h-4 w-4" />
               Leads
             </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              Categories
+            </TabsTrigger>
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Templates
@@ -269,19 +437,33 @@ const Index = () => {
             <LeadsDashboard 
               leads={leads}
               templates={emailTemplates}
+              categories={categories}
               onUpdateLead={handleUpdateLead}
             />
           </TabsContent>
 
           <TabsContent value="import" className="mt-6">
-            <CSVImport onImportComplete={handleImportComplete} />
+            <CSVImport 
+              onImportComplete={handleImportComplete}
+              categories={categories}
+            />
           </TabsContent>
 
           <TabsContent value="leads" className="mt-6">
             <LeadsDashboard 
               leads={leads}
               templates={emailTemplates}
+              categories={categories}
               onUpdateLead={handleUpdateLead}
+            />
+          </TabsContent>
+
+          <TabsContent value="categories" className="mt-6">
+            <CategoryManager
+              categories={categories}
+              onCreateCategory={handleCreateCategory}
+              onUpdateCategory={handleUpdateCategory}
+              onDeleteCategory={handleDeleteCategory}
             />
           </TabsContent>
 
