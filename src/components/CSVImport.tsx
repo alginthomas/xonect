@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, CheckCircle, AlertCircle, FileText, X, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { CategoryCombobox } from './CategoryCombobox';
 import type { Lead } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
 interface CSVImportProps {
-  onImportComplete: (leads: Lead[], importBatch: ImportBatch) => void;
+  onImportComplete: () => void;
   categories: Category[];
   onCreateCategory: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
@@ -24,6 +25,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
   const [batchName, setBatchName] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
@@ -258,10 +260,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
   };
 
   const handleImport = async () => {
-    if (!file || !batchName.trim()) {
+    if (!file || !batchName.trim() || !user) {
       toast({
         title: "Missing information",
-        description: "Please select a file and enter a batch name",
+        description: "Please select a file, enter a batch name, and ensure you're logged in",
         variant: "destructive",
       });
       return;
@@ -281,23 +283,32 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
         if (existingCategory) {
           selectedCategoryId = existingCategory.id;
         } else {
-          // Create new category automatically
+          // Create new category
           console.log('Creating new category:', categoryName);
-          await onCreateCategory({
-            name: categoryName.trim(),
-            description: `Auto-created during import of ${file.name}`,
-            color: generateRandomColor(),
-            criteria: {}
-          });
-          
-          // Find the newly created category
-          // Note: We'll rely on the parent component to refresh categories
-          // and the category will be assigned by name matching in the import batch
+          const { data: newCategory, error: categoryError } = await supabase
+            .from('categories')
+            .insert([{
+              name: categoryName.trim(),
+              description: `Auto-created during import of ${file.name}`,
+              color: generateRandomColor(),
+              criteria: {},
+              user_id: user.id
+            }])
+            .select()
+            .single();
+
+          if (categoryError) {
+            console.error('Error creating category:', categoryError);
+            throw categoryError;
+          }
+
+          selectedCategoryId = newCategory.id;
+          console.log('Created category with ID:', selectedCategoryId);
         }
       }
 
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const text = e.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
         
@@ -314,7 +325,34 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
         const headers = parseCSVLine(lines[0]);
         console.log('Processing CSV with headers:', headers);
         
-        const leads: Lead[] = [];
+        // First, create the import batch
+        const { data: importBatch, error: batchError } = await supabase
+          .from('import_batches')
+          .insert([{
+            name: batchName,
+            category_id: selectedCategoryId,
+            source_file: file.name,
+            total_leads: lines.length - 1,
+            successful_imports: 0,
+            failed_imports: 0,
+            user_id: user.id,
+            metadata: {
+              headers,
+              processingTime: new Date().toISOString(),
+              categoryName: categoryName.trim() || undefined
+            }
+          }])
+          .select()
+          .single();
+
+        if (batchError) {
+          console.error('Error creating import batch:', batchError);
+          throw batchError;
+        }
+
+        console.log('Created import batch:', importBatch);
+        
+        const leadsToInsert = [];
         let failedImports = 0;
         
         lines.slice(1).forEach((line, index) => {
@@ -372,99 +410,128 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
             return;
           }
 
-          const lead: Lead = {
-            id: `lead_${Date.now()}_${index}`,
-            firstName: firstName || '',
-            lastName: lastName || '',
-            name: name,
+          // Create lead object for database insertion
+          const leadData = {
+            first_name: firstName || '',
+            last_name: lastName || '',
             email: email || '',
-            personalEmail: personalEmail,
+            personal_email: personalEmail || null,
             company: company || '',
             title: title || '',
-            headline: headline,
             seniority: categorizeSeniority(title, seniority),
-            department: department,
-            keywords: keywords,
-            companySize: categorizeCompanySize(employeeCount),
-            industry: industry,
-            location: location,
-            phone: phone,
-            linkedin: linkedin,
-            twitterUrl: twitterUrl,
-            facebookUrl: facebookUrl,
-            photoUrl: photoUrl,
-            organizationWebsite: organizationWebsite,
-            organizationLogo: organizationLogo,
-            organizationDomain: organizationDomain,
-            organizationFounded: organizationFounded ? parseInt(organizationFounded) : undefined,
-            organizationAddress: organizationAddress,
+            department: department || null,
+            company_size: categorizeCompanySize(employeeCount),
+            industry: industry || null,
+            location: location || null,
+            phone: phone || null,
+            linkedin: linkedin || null,
+            twitter_url: twitterUrl || null,
+            facebook_url: facebookUrl || null,
+            photo_url: photoUrl || null,
+            organization_website: organizationWebsite || null,
+            organization_founded: organizationFounded ? parseInt(organizationFounded) : null,
             tags: [],
-            status: 'New',
-            emailsSent: 0,
-            createdAt: new Date(),
-            completenessScore: 0,
-            categoryId: selectedCategoryId || undefined,
+            status: 'New' as const,
+            emails_sent: 0,
+            completeness_score: 0,
+            category_id: selectedCategoryId || null,
+            import_batch_id: importBatch.id,
+            user_id: user.id
           };
 
-          lead.completenessScore = calculateCompleteness(lead);
+          // Calculate completeness score
+          const tempLead: Partial<Lead> = {
+            firstName: leadData.first_name,
+            lastName: leadData.last_name,
+            email: leadData.email,
+            company: leadData.company,
+            title: leadData.title,
+            phone: leadData.phone,
+            linkedin: leadData.linkedin,
+            industry: leadData.industry,
+            location: leadData.location,
+            organizationWebsite: leadData.organization_website,
+            department: leadData.department
+          };
+          
+          leadData.completeness_score = calculateCompleteness(tempLead);
           
           // Auto-tag leads based on data quality and characteristics
-          if (lead.completenessScore >= 90) lead.tags.push('Complete Profile');
-          if (lead.completenessScore < 60) lead.tags.push('Incomplete');
-          if (lead.seniority === 'C-level' || lead.seniority === 'Executive') lead.tags.push('High Priority');
-          if (lead.phone) lead.tags.push('Has Phone');
-          if (lead.linkedin) lead.tags.push('Has LinkedIn');
-          if (lead.organizationWebsite) lead.tags.push('Has Website');
-          if (lead.department) lead.tags.push('Department Known');
-          if (lead.organizationFounded && new Date().getFullYear() - lead.organizationFounded <= 5) lead.tags.push('New Company');
+          const tags = [];
+          if (leadData.completeness_score >= 90) tags.push('Complete Profile');
+          if (leadData.completeness_score < 60) tags.push('Incomplete');
+          if (leadData.seniority === 'C-level' || leadData.seniority === 'Executive') tags.push('High Priority');
+          if (leadData.phone) tags.push('Has Phone');
+          if (leadData.linkedin) tags.push('Has LinkedIn');
+          if (leadData.organization_website) tags.push('Has Website');
+          if (leadData.department) tags.push('Department Known');
+          if (leadData.organization_founded && new Date().getFullYear() - leadData.organization_founded <= 5) tags.push('New Company');
+          
+          leadData.tags = tags;
 
-          leads.push(lead);
-          console.log(`Processed lead ${index + 1}:`, lead);
+          leadsToInsert.push(leadData);
+          console.log(`Processed lead ${index + 1}:`, leadData);
         });
 
-        const importBatch: ImportBatch = {
-          id: `batch_${Date.now()}`,
-          name: batchName,
-          categoryId: selectedCategoryId || undefined,
-          sourceFile: file.name,
-          totalLeads: lines.length - 1,
-          successfulImports: leads.length,
-          failedImports,
-          createdAt: new Date(),
-          metadata: {
-            headers,
-            processingTime: new Date().toISOString(),
-            categoryName: categoryName.trim() || undefined
-          }
-        };
-
-        console.log(`Successfully processed ${leads.length} leads`);
-        
-        if (leads.length === 0) {
+        if (leadsToInsert.length === 0) {
           toast({
             title: "No valid leads found",
             description: "Please check your CSV format and ensure it contains valid lead data",
             variant: "destructive",
           });
-        } else {
-          onImportComplete(leads, importBatch);
-          
-          const successMessage = categoryName.trim() && !categories.find(cat => 
-            cat.name.toLowerCase() === categoryName.toLowerCase()
-          ) 
-            ? `Imported ${leads.length} leads and created category "${categoryName}"`
-            : `Imported ${leads.length} leads successfully`;
-          
-          toast({
-            title: "Import successful",
-            description: successMessage,
-          });
-          
-          setFile(null);
-          setPreview([]);
-          setBatchName('');
-          setCategoryName('');
+          setImporting(false);
+          return;
         }
+
+        // Insert leads in batches to avoid hitting database limits
+        const batchSize = 100;
+        let successfulImports = 0;
+        
+        for (let i = 0; i < leadsToInsert.length; i += batchSize) {
+          const batch = leadsToInsert.slice(i, i + batchSize);
+          
+          const { error: leadsError } = await supabase
+            .from('leads')
+            .insert(batch);
+
+          if (leadsError) {
+            console.error('Error inserting leads batch:', leadsError);
+            failedImports += batch.length;
+          } else {
+            successfulImports += batch.length;
+          }
+        }
+
+        // Update the import batch with final counts
+        await supabase
+          .from('import_batches')
+          .update({
+            successful_imports: successfulImports,
+            failed_imports: failedImports
+          })
+          .eq('id', importBatch.id);
+
+        console.log(`Successfully imported ${successfulImports} leads`);
+        
+        const successMessage = categoryName.trim() && !categories.find(cat => 
+          cat.name.toLowerCase() === categoryName.toLowerCase()
+        ) 
+          ? `Imported ${successfulImports} leads and created category "${categoryName}"`
+          : `Imported ${successfulImports} leads successfully`;
+        
+        toast({
+          title: "Import successful",
+          description: successMessage,
+        });
+        
+        // Reset form
+        setFile(null);
+        setPreview([]);
+        setBatchName('');
+        setCategoryName('');
+        
+        // Notify parent component to refresh data
+        onImportComplete();
       };
       
       reader.readAsText(file);
@@ -472,7 +539,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
       console.error('Import error:', error);
       toast({
         title: "Import failed",
-        description: "There was an error importing your CSV file",
+        description: error instanceof Error ? error.message : "There was an error importing your CSV file",
         variant: "destructive",
       });
     } finally {
