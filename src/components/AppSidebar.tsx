@@ -79,19 +79,19 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border bg-sidebar" collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
         <div className="flex items-center justify-between px-3 py-3">
-          {!isCollapsed && (
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
-                <span className="text-xs font-semibold text-primary-foreground">L</span>
-              </div>
-              <span className="text-sm font-semibold text-sidebar-foreground">LeadManager</span>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-semibold text-primary-foreground">L</span>
             </div>
-          )}
+            {!isCollapsed && (
+              <span className="text-sm font-semibold text-sidebar-foreground">Lead</span>
+            )}
+          </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
           >
             <PanelLeft className="h-4 w-4" />
           </Button>
