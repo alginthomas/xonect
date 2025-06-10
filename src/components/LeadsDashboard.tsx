@@ -114,6 +114,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
+          <TableHead>Phone</TableHead>
           <TableHead>Company</TableHead>
           <TableHead>Title</TableHead>
           <TableHead>Status</TableHead>
@@ -126,6 +127,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <TableRow key={lead.id}>
             <TableCell>{lead.firstName} {lead.lastName}</TableCell>
             <TableCell>{lead.email}</TableCell>
+            <TableCell>{lead.phone || 'N/A'}</TableCell>
             <TableCell>{lead.company}</TableCell>
             <TableCell>{lead.title}</TableCell>
             <TableCell>
