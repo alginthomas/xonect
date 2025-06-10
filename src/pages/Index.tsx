@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CSVImport } from '@/components/CSVImport';
@@ -33,7 +34,7 @@ const Index = () => {
         name: category.name,
         description: category.description || undefined,
         color: category.color,
-        criteria: category.criteria || {},
+        criteria: (category.criteria as Record<string, any>) || {},
         createdAt: new Date(category.created_at),
         updatedAt: new Date(category.updated_at),
       }));
@@ -68,7 +69,7 @@ const Index = () => {
         successfulImports: batch.successful_imports,
         failedImports: batch.failed_imports,
         createdAt: new Date(batch.created_at),
-        metadata: batch.metadata || {},
+        metadata: (batch.metadata as Record<string, any>) || {},
       }));
 
       setImportBatches(transformedBatches);

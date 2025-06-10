@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin, MapPin, Building, Globe, Calendar, User, Briefcase, ExternalLink, Twitter, Facebook, Tag } from 'lucide-react';
 import { EmailDialog } from './EmailDialog';
 import { CategorySelector } from './CategorySelector';
+import { LeadDetailPopover } from './LeadDetailPopover';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -208,7 +208,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             Sales Lead Database
           </CardTitle>
           <CardDescription>
-            Comprehensive lead management with detailed prospect information and categorization
+            Comprehensive lead management with detailed prospect information and categorization. Click on any lead for detailed insights.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -321,35 +321,37 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   {filteredLeads.map(lead => (
                     <tr key={lead.id} className="border-b hover:bg-muted/50">
                       <td className="p-3">
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-                            <AvatarFallback>
-                              {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="space-y-1">
-                            <div className="font-medium text-sm">
-                              {lead.firstName} {lead.lastName}
+                        <LeadDetailPopover lead={lead} categories={categories}>
+                          <div className="flex items-start gap-3 cursor-pointer hover:bg-muted/30 p-2 rounded-md transition-colors">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+                              <AvatarFallback>
+                                {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="space-y-1">
+                              <div className="font-medium text-sm">
+                                {lead.firstName} {lead.lastName}
+                              </div>
+                              {lead.headline && (
+                                <div className="text-xs text-muted-foreground">
+                                  {lead.headline}
+                                </div>
+                              )}
+                              {lead.location && (
+                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{lead.location}</span>
+                                </div>
+                              )}
+                              {lead.keywords && (
+                                <div className="text-xs text-blue-600 truncate max-w-[180px]">
+                                  Keywords: {lead.keywords}
+                                </div>
+                              )}
                             </div>
-                            {lead.headline && (
-                              <div className="text-xs text-muted-foreground">
-                                {lead.headline}
-                              </div>
-                            )}
-                            {lead.location && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                <span>{lead.location}</span>
-                              </div>
-                            )}
-                            {lead.keywords && (
-                              <div className="text-xs text-blue-600 truncate max-w-[180px]">
-                                Keywords: {lead.keywords}
-                              </div>
-                            )}
                           </div>
-                        </div>
+                        </LeadDetailPopover>
                       </td>
                       
                       <td className="p-3">
