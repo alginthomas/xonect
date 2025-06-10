@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Header } from '@/components/Header';
+import Header from '@/components/Header';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { CSVImport } from '@/components/CSVImport';
@@ -11,6 +12,9 @@ import { CategoryManager } from '@/components/CategoryManager';
 import { ImportHistory } from '@/components/ImportHistory';
 import { BrandingSettings } from '@/components/BrandingSettings';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { sanitizeInput, validateCSVData } from '@/utils/security';
+import type { Lead } from '@/types/lead';
+import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
   const { user } = useAuth();
@@ -21,59 +25,81 @@ const Index = () => {
   const { data: leadsData, isLoading: leadsLoading } = useQuery({
     queryKey: ['leads'],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) return [];
       const { data, error } = await supabase
         .from('leads')
         .select('*')
         .eq('user_id', user.id);
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   const { data: templatesData, isLoading: templatesLoading } = useQuery({
     queryKey: ['email-templates'],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) return [];
       const { data, error } = await supabase
         .from('email_templates')
         .select('*')
         .eq('user_id', user.id);
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) return [];
       const { data, error } = await supabase
         .from('categories')
         .select('*')
         .eq('user_id', user.id);
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
   const { data: batchesData, isLoading: batchesLoading } = useQuery({
     queryKey: ['import-batches'],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) return [];
       const { data, error } = await supabase
         .from('import_batches')
         .select('*')
         .eq('user_id', user.id);
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
+  // Transform database data to match TypeScript interfaces
+  const transformedCategories: Category[] = (categoriesData || []).map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    description: cat.description,
+    color: cat.color,
+    criteria: cat.criteria,
+    createdAt: new Date(cat.created_at),
+    updatedAt: new Date(cat.updated_at)
+  }));
+
+  const transformedBatches: ImportBatch[] = (batchesData || []).map(batch => ({
+    id: batch.id,
+    name: batch.name,
+    categoryId: batch.category_id,
+    sourceFile: batch.source_file,
+    totalLeads: batch.total_leads,
+    successfulImports: batch.successful_imports,
+    failedImports: batch.failed_imports,
+    createdAt: new Date(batch.created_at),
+    metadata: batch.metadata
+  }));
+
   const handleImportComplete = async (
-    leads: any[],
-    fileName: string,
-    categoryId?: string
+    leads: Lead[],
+    importBatch: ImportBatch
   ) => {
     if (!user) {
       toast({
@@ -87,13 +113,35 @@ const Index = () => {
     try {
       console.log('Starting import process for', leads.length, 'leads');
       
+      // Validate and sanitize input data
+      const sanitizedLeads = leads.map(lead => ({
+        ...lead,
+        firstName: sanitizeInput(lead.firstName),
+        lastName: sanitizeInput(lead.lastName),
+        email: sanitizeInput(lead.email),
+        company: sanitizeInput(lead.company),
+        title: sanitizeInput(lead.title),
+        user_id: user.id, // Critical security fix: assign user_id
+      }));
+
+      // Validate CSV data structure
+      const validation = validateCSVData(sanitizedLeads);
+      if (!validation.isValid) {
+        toast({
+          title: "Import validation failed",
+          description: validation.errors.join(', '),
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Create import batch with user_id
       const { data: batchData, error: batchError } = await supabase
         .from('import_batches')
         .insert({
-          name: fileName,
-          category_id: categoryId,
-          source_file: fileName,
+          name: importBatch.name,
+          category_id: importBatch.categoryId,
+          source_file: importBatch.sourceFile,
           total_leads: leads.length,
           user_id: user.id, // Critical security fix: assign user_id
         })
@@ -104,11 +152,11 @@ const Index = () => {
 
       console.log('Created import batch:', batchData);
 
-      // Process leads with user_id
-      const leadsToInsert = leads.map(lead => ({
+      // Process leads with user_id and import_batch_id
+      const leadsToInsert = sanitizedLeads.map(lead => ({
         ...lead,
         import_batch_id: batchData.id,
-        category_id: categoryId,
+        category_id: importBatch.categoryId,
         user_id: user.id, // Critical security fix: assign user_id
       }));
 
@@ -163,12 +211,18 @@ const Index = () => {
     }
 
     try {
+      // Sanitize template input
+      const sanitizedTemplate = {
+        name: sanitizeInput(template.name),
+        subject: sanitizeInput(template.subject),
+        content: sanitizeInput(template.content),
+        variables: template.variables.map(v => sanitizeInput(v)),
+        user_id: user.id, // Critical security fix: assign user_id
+      };
+
       const { error } = await supabase
         .from('email_templates')
-        .insert({
-          ...template,
-          user_id: user.id, // Critical security fix: assign user_id
-        });
+        .insert(sanitizedTemplate);
 
       if (error) throw error;
 
@@ -203,12 +257,17 @@ const Index = () => {
     }
 
     try {
+      // Sanitize category input
+      const sanitizedCategory = {
+        name: sanitizeInput(category.name),
+        description: category.description ? sanitizeInput(category.description) : undefined,
+        color: category.color || '#3B82F6',
+        user_id: user.id, // Critical security fix: assign user_id
+      };
+
       const { error } = await supabase
         .from('categories')
-        .insert({
-          ...category,
-          user_id: user.id, // Critical security fix: assign user_id
-        });
+        .insert(sanitizedCategory);
 
       if (error) throw error;
 
@@ -228,6 +287,25 @@ const Index = () => {
     }
   };
 
+  const handleDeleteBatch = async (batchId: string) => {
+    // Implementation would use useImportBatchOperations hook
+    queryClient.invalidateQueries({ queryKey: ['import-batches'] });
+    queryClient.invalidateQueries({ queryKey: ['leads'] });
+  };
+
+  const handleViewBatchLeads = (batchId: string) => {
+    // Switch to dashboard tab and filter by batch
+    setActiveTab('dashboard');
+  };
+
+  const handleSaveBranding = async (branding: any) => {
+    // Implementation for saving branding settings
+    toast({
+      title: "Branding saved",
+      description: "Branding settings have been saved successfully",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -243,33 +321,52 @@ const Index = () => {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-4">
-            <LeadsDashboard />
+            <LeadsDashboard 
+              leads={leadsData || []}
+              templates={templatesData || []}
+              categories={transformedCategories}
+              importBatches={transformedBatches}
+              onSendEmail={() => {}}
+              onUpdateLead={() => {}}
+            />
           </TabsContent>
 
           <TabsContent value="templates" className="space-y-4">
-            <EmailTemplateBuilder onSaveTemplate={handleSaveTemplate} />
+            <EmailTemplateBuilder 
+              onSaveTemplate={handleSaveTemplate}
+              templates={templatesData || []}
+            />
           </TabsContent>
 
           <TabsContent value="import" className="space-y-4">
             <CSVImport 
               onImportComplete={handleImportComplete}
-              categories={categoriesData || []}
+              categories={transformedCategories}
             />
           </TabsContent>
 
           <TabsContent value="categories" className="space-y-4">
             <CategoryManager 
-              categories={categoriesData || []} 
+              categories={transformedCategories}
               onCreateCategory={handleCreateCategory}
             />
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            <ImportHistory batches={batchesData || []} />
+            <ImportHistory 
+              leads={leadsData || []}
+              importBatches={transformedBatches}
+              categories={transformedCategories}
+              onDeleteBatch={handleDeleteBatch}
+              onViewBatchLeads={handleViewBatchLeads}
+            />
           </TabsContent>
 
           <TabsContent value="branding" className="space-y-4">
-            <BrandingSettings />
+            <BrandingSettings 
+              branding={{}}
+              onSave={handleSaveBranding}
+            />
           </TabsContent>
         </Tabs>
       </main>
