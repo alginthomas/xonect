@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { ImportBatch } from '@/types/category';
+import type { LeadStatus } from '@/types/lead';
 
 export const useImportBatchOperations = () => {
   const [loading, setLoading] = useState(false);
@@ -41,7 +42,7 @@ export const useImportBatchOperations = () => {
     }
   };
 
-  const updateBatchLeadsStatus = async (batchId: string, status: string): Promise<boolean> => {
+  const updateBatchLeadsStatus = async (batchId: string, status: LeadStatus): Promise<boolean> => {
     setLoading(true);
     try {
       const { error } = await supabase
