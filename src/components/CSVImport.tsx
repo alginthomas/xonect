@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -69,24 +68,19 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     return cleaned.replace(/^\++/, '+');
   };
 
-  const cleanLinkedInUrl = (linkedin: string): string => {
-    if (!linkedin) return '';
-    const url = linkedin.trim().toLowerCase();
+  const cleanUrl = (url: string): string => {
+    if (!url) return '';
+    const cleanedUrl = url.trim().toLowerCase();
     
-    if (url.startsWith('http')) {
-      return linkedin.trim();
+    if (cleanedUrl.startsWith('http')) {
+      return url.trim();
     }
     
-    if (url.includes('linkedin.com/in/') || url.includes('linkedin.com/pub/')) {
-      return linkedin.startsWith('http') ? linkedin.trim() : `https://${linkedin.trim()}`;
+    if (cleanedUrl && !cleanedUrl.includes('http')) {
+      return `https://${url.trim()}`;
     }
     
-    if (url && !url.includes('linkedin.com')) {
-      const username = url.replace(/^[@\/]+/, '');
-      return `https://www.linkedin.com/in/${username}`;
-    }
-    
-    return linkedin.trim();
+    return url.trim();
   };
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,7 +123,6 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
     if (!employeeCount) return 'Small (1-50)';
     
-    // Handle numeric values from estimated_num_employees
     const numericMatch = employeeCount.match(/\d+/);
     if (numericMatch) {
       const size = parseInt(numericMatch[0]);
@@ -139,7 +132,6 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
       return 'Enterprise (1000+)';
     }
     
-    // Handle text-based size descriptions
     const sizeLower = employeeCount.toLowerCase();
     if (sizeLower.includes('small') || sizeLower.includes('startup')) return 'Small (1-50)';
     if (sizeLower.includes('medium') || sizeLower.includes('mid')) return 'Medium (51-200)';
@@ -150,7 +142,6 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   };
 
   const categorizeSeniority = (title: string, seniorityField?: string): Lead['seniority'] => {
-    // First check if there's a dedicated seniority field
     if (seniorityField) {
       const seniorityLower = seniorityField.toLowerCase();
       if (seniorityLower.includes('c-level') || seniorityLower.includes('executive')) return 'C-level';
@@ -159,7 +150,6 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
       if (seniorityLower.includes('mid')) return 'Mid-level';
     }
 
-    // Fall back to title analysis
     if (!title) return 'Mid-level';
     const titleLower = title.toLowerCase();
     if (titleLower.includes('ceo') || titleLower.includes('cto') || titleLower.includes('cfo') || titleLower.includes('chief')) {
@@ -180,18 +170,18 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   const calculateCompleteness = (lead: Partial<Lead>): number => {
     let score = 0;
     const requiredFields = ['firstName', 'lastName', 'email', 'company', 'title'];
-    const optionalFields = ['phone', 'linkedin', 'industry', 'location'];
+    const valuableFields = ['phone', 'linkedin', 'industry', 'location', 'organizationWebsite', 'department'];
     
     requiredFields.forEach(field => {
-      if (lead[field as keyof Lead]) score += 20;
+      if (lead[field as keyof Lead]) score += 15;
     });
     
     let optionalScore = 0;
-    optionalFields.forEach(field => {
-      if (lead[field as keyof Lead]) optionalScore += 5;
+    valuableFields.forEach(field => {
+      if (lead[field as keyof Lead]) optionalScore += 4;
     });
     
-    return Math.min(100, score + Math.min(20, optionalScore));
+    return Math.min(100, score + Math.min(25, optionalScore));
   };
 
   const buildLocation = (city: string, state: string, country: string): string => {
@@ -234,37 +224,42 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             rawLead[header] = values[i] || '';
           });
 
-          // Map fields based on your specific column structure
+          // Personal Details
           const firstName = findColumnValue(rawLead, ['first_name']);
           const lastName = findColumnValue(rawLead, ['last_name']);
+          const name = findColumnValue(rawLead, ['name']);
+          const headline = findColumnValue(rawLead, ['headline']);
+          const title = findColumnValue(rawLead, ['title']);
+          const seniority = findColumnValue(rawLead, ['seniority']);
+          const department = findColumnValue(rawLead, ['department']);
+          const keywords = findColumnValue(rawLead, ['keywords']);
+          const photoUrl = findColumnValue(rawLead, ['photo_url']);
+
+          // Contact Information
           const email = findColumnValue(rawLead, ['email']);
-          
-          // Use organization_name for company, not estimated_num_employees or other fields
+          const personalEmail = findColumnValue(rawLead, ['personal_email']);
+          const linkedin = cleanUrl(findColumnValue(rawLead, ['linkedin_url']));
+          const twitterUrl = cleanUrl(findColumnValue(rawLead, ['twitter_url']));
+          const facebookUrl = cleanUrl(findColumnValue(rawLead, ['facebook_url']));
+
+          // Organization Information
           const company = findColumnValue(rawLead, ['organization_name']);
-          
-          // Use title or headline for job title
-          const title = findColumnValue(rawLead, ['title', 'headline']);
-          
-          // Use seniority field if available
-          const seniorityField = findColumnValue(rawLead, ['seniority']);
-          
-          // Get phone from organization_phone or any phone field
-          const phone = cleanPhoneNumber(findColumnValue(rawLead, ['organization_phone', 'phone']));
+          const phone = cleanPhoneNumber(findColumnValue(rawLead, ['organization_phone']));
+          const organizationWebsite = cleanUrl(findColumnValue(rawLead, ['organization_website_url']));
+          const organizationLogo = findColumnValue(rawLead, ['organization_logo_url']);
+          const organizationDomain = findColumnValue(rawLead, ['organization_primary_domain']);
+          const organizationFounded = findColumnValue(rawLead, ['organization_founded_year']);
+          const organizationAddress = findColumnValue(rawLead, ['organization_raw_address']);
 
-          // Use linkedin_url for LinkedIn profile
-          const linkedin = cleanLinkedInUrl(findColumnValue(rawLead, ['linkedin_url']));
-
-          // Use estimated_num_employees for company size categorization
-          const employeeCount = findColumnValue(rawLead, ['estimated_num_employees']);
-
-          // Use industry field
-          const industry = findColumnValue(rawLead, ['industry']);
-
-          // Build location from city, state, country (personal location first, then organization)
+          // Location
           const city = findColumnValue(rawLead, ['city', 'organization_city']);
           const state = findColumnValue(rawLead, ['state', 'organization_state']);
           const country = findColumnValue(rawLead, ['country', 'organization_country']);
           const location = buildLocation(city, state, country);
+
+          // Business Metadata
+          const employeeCount = findColumnValue(rawLead, ['estimated_num_employees']);
+          const industry = findColumnValue(rawLead, ['industry']);
 
           if (!firstName && !lastName && !email) {
             console.log(`Skipping row ${index + 1}: Missing essential data`);
@@ -275,15 +270,28 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             id: `lead_${Date.now()}_${index}`,
             firstName: firstName || '',
             lastName: lastName || '',
+            name: name,
             email: email || '',
+            personalEmail: personalEmail,
             company: company || '',
             title: title || '',
-            seniority: categorizeSeniority(title, seniorityField),
+            headline: headline,
+            seniority: categorizeSeniority(title, seniority),
+            department: department,
+            keywords: keywords,
             companySize: categorizeCompanySize(employeeCount),
             industry: industry,
             location: location,
             phone: phone,
             linkedin: linkedin,
+            twitterUrl: twitterUrl,
+            facebookUrl: facebookUrl,
+            photoUrl: photoUrl,
+            organizationWebsite: organizationWebsite,
+            organizationLogo: organizationLogo,
+            organizationDomain: organizationDomain,
+            organizationFounded: organizationFounded ? parseInt(organizationFounded) : undefined,
+            organizationAddress: organizationAddress,
             tags: [],
             status: 'New',
             emailsSent: 0,
@@ -293,11 +301,15 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
           lead.completenessScore = calculateCompleteness(lead);
           
-          if (lead.completenessScore === 100) lead.tags.push('Complete');
+          // Auto-tag leads based on data quality and characteristics
+          if (lead.completenessScore >= 90) lead.tags.push('Complete Profile');
           if (lead.completenessScore < 60) lead.tags.push('Incomplete');
           if (lead.seniority === 'C-level' || lead.seniority === 'Executive') lead.tags.push('High Priority');
           if (lead.phone) lead.tags.push('Has Phone');
           if (lead.linkedin) lead.tags.push('Has LinkedIn');
+          if (lead.organizationWebsite) lead.tags.push('Has Website');
+          if (lead.department) lead.tags.push('Department Known');
+          if (lead.organizationFounded && new Date().getFullYear() - lead.organizationFounded <= 5) lead.tags.push('New Company');
 
           leads.push(lead);
           console.log(`Processed lead ${index + 1}:`, lead);
@@ -340,10 +352,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          Import Lead List
+          Import Lead Database
         </CardTitle>
         <CardDescription>
-          Upload a CSV file with lead data. Supports your specific format with first_name, last_name, email, organization_name, title, estimated_num_employees, linkedin_url, organization_phone, industry, city/state/country, etc.
+          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. Supports all standard sales prospecting fields.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -368,17 +380,25 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
-                    {Object.keys(preview[0] || {}).map(key => (
+                    {Object.keys(preview[0] || {}).slice(0, 8).map(key => (
                       <th key={key} className="text-left p-2 font-medium">{key}</th>
                     ))}
+                    {Object.keys(preview[0] || {}).length > 8 && (
+                      <th className="text-left p-2 font-medium text-muted-foreground">
+                        +{Object.keys(preview[0] || {}).length - 8} more columns
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {preview.map((row, i) => (
                     <tr key={i} className="border-b">
-                      {Object.values(row).map((value: any, j) => (
-                        <td key={j} className="p-2">{value}</td>
+                      {Object.values(row).slice(0, 8).map((value: any, j) => (
+                        <td key={j} className="p-2 max-w-[100px] truncate">{value}</td>
                       ))}
+                      {Object.values(row).length > 8 && (
+                        <td className="p-2 text-muted-foreground">...</td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -392,7 +412,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           disabled={!file || importing}
           className="w-full"
         >
-          {importing ? 'Importing...' : 'Import Leads'}
+          {importing ? 'Importing...' : 'Import Lead Database'}
         </Button>
       </CardContent>
     </Card>
