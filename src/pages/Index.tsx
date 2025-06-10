@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,41 +96,41 @@ const Index = () => {
     metadata: (batch.metadata && typeof batch.metadata === 'object' && batch.metadata !== null) ? batch.metadata as Record<string, any> : {}
   }));
 
-  // Transform leads data to match Lead interface
+  // Transform leads data to match Lead interface with proper optional property handling
   const transformedLeads: Lead[] = (leadsData || []).map(lead => ({
     id: lead.id,
     firstName: lead.first_name,
     lastName: lead.last_name,
     name: lead.first_name + ' ' + lead.last_name,
     email: lead.email,
-    personalEmail: lead.personal_email || '',
+    personalEmail: (lead as any).personal_email || '',
     company: lead.company,
     title: lead.title,
-    headline: lead.headline || '',
+    headline: (lead as any).headline || '',
     seniority: lead.seniority,
-    department: lead.department || '',
-    keywords: lead.keywords || '',
+    department: (lead as any).department || '',
+    keywords: (lead as any).keywords || '',
     companySize: lead.company_size,
-    industry: lead.industry || '',
-    location: lead.location || '',
-    phone: lead.phone || '',
-    linkedin: lead.linkedin || '',
-    twitterUrl: lead.twitter_url || '',
-    facebookUrl: lead.facebook_url || '',
-    photoUrl: lead.photo_url || '',
-    organizationWebsite: lead.organization_website || '',
-    organizationLogo: lead.organization_logo || '',
-    organizationDomain: lead.organization_domain || '',
-    organizationFounded: lead.organization_founded || 0,
-    organizationAddress: lead.organization_address || '',
-    tags: lead.tags || [],
+    industry: (lead as any).industry || '',
+    location: (lead as any).location || '',
+    phone: (lead as any).phone || '',
+    linkedin: (lead as any).linkedin || '',
+    twitterUrl: (lead as any).twitter_url || '',
+    facebookUrl: (lead as any).facebook_url || '',
+    photoUrl: (lead as any).photo_url || '',
+    organizationWebsite: (lead as any).organization_website || '',
+    organizationLogo: (lead as any).organization_logo || '',
+    organizationDomain: (lead as any).organization_domain || '',
+    organizationFounded: (lead as any).organization_founded || 0,
+    organizationAddress: (lead as any).organization_address || '',
+    tags: (lead as any).tags || [],
     status: lead.status,
     emailsSent: lead.emails_sent,
     lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
     createdAt: new Date(lead.created_at),
     completenessScore: lead.completeness_score,
     categoryId: lead.category_id || '',
-    remarks: lead.remarks || ''
+    remarks: (lead as any).remarks || ''
   }));
 
   // Transform templates data to match EmailTemplate interface
