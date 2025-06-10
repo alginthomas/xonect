@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -40,8 +39,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   onUpdateLead 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const leadsPerPage = 10;
 
@@ -142,7 +141,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <LeadDetailPopover 
                   lead={lead} 
                   categories={categories}
-                />
+                >
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </LeadDetailPopover>
                 <EmailDialog 
                   lead={lead} 
                   templates={templates}
@@ -193,7 +196,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       </div>
 
       <div className="flex items-center space-x-4">
-        <Select onValueChange={setCategoryFilter}>
+        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
           <SelectTrigger className="w-full md:w-52">
             <SelectValue placeholder="Filter by Category" />
           </SelectTrigger>
@@ -207,7 +210,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           </SelectContent>
         </Select>
 
-        <Select onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full md:w-40">
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
