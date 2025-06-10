@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CSVImport } from '@/components/CSVImport';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
+import { ImportHistory } from '@/components/ImportHistory';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { CategoryManager } from '@/components/CategoryManager';
 import { BrandingSettings } from '@/components/BrandingSettings';
 import Header from '@/components/Header';
-import { Upload, Users, Mail, BarChart, Tag, Building2, Menu } from 'lucide-react';
+import { Upload, Users, Mail, BarChart, Tag, Building2, Menu, Package, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,6 +27,7 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [selectedBatchId, setSelectedBatchId] = useState<string | undefined>();
   const [branding, setBranding] = useState({
     companyName: 'XONECT powered by Thomas & Niyogi',
     companyLogo: '',
@@ -34,6 +37,7 @@ const Index = () => {
     senderEmail: '',
   });
   const { toast } = useToast();
+  const { deleteBatch } = useImportBatchOperations();
 
   // Load categories from Supabase
   const loadCategories = async () => {
@@ -210,7 +214,6 @@ const Index = () => {
     if (!user) return;
     
     try {
-      // First, save the import batch with user_id
       const { data: batchData, error: batchError } = await supabase
         .from('import_batches')
         .insert({
@@ -228,7 +231,6 @@ const Index = () => {
 
       if (batchError) throw batchError;
 
-      // Transform leads to match Supabase schema and include batch ID and user_id
       const leadsToInsert = importedLeads.map(lead => ({
         first_name: lead.firstName,
         last_name: lead.lastName,
@@ -263,7 +265,6 @@ const Index = () => {
 
       if (leadsError) throw leadsError;
 
-      // Reload data from database
       await Promise.all([loadLeads(), loadImportBatches()]);
       
       toast({
@@ -385,7 +386,6 @@ const Index = () => {
         });
 
       if (error) {
-        // Handle specific duplicate key error for this user
         if (error.code === '23505' && error.message.includes('categories_user_name_unique')) {
           toast({
             title: "Category Already Exists",
@@ -476,9 +476,24 @@ const Index = () => {
     }
   };
 
+  const handleDeleteBatch = async (batchId: string) => {
+    const success = await deleteBatch(batchId);
+    if (success) {
+      await Promise.all([loadLeads(), loadImportBatches()]);
+      setSelectedBatchId(undefined);
+      if (activeTab === 'leads') {
+        setActiveTab('dashboard');
+      }
+    }
+  };
+
+  const handleViewBatchLeads = (batchId: string) => {
+    setSelectedBatchId(batchId);
+    setActiveTab('leads');
+  };
+
   const handleSaveBranding = (brandingData: typeof branding) => {
     setBranding(brandingData);
-    // You can also save this to localStorage or a database
     localStorage.setItem('emailBranding', JSON.stringify(brandingData));
   };
 
@@ -494,6 +509,7 @@ const Index = () => {
   const tabItems = [
     { value: 'dashboard', label: 'Dashboard', icon: BarChart },
     { value: 'import', label: 'Import', icon: Upload },
+    { value: 'history', label: 'Import History', icon: History },
     { value: 'leads', label: 'Leads', icon: Users },
     { value: 'categories', label: 'Categories', icon: Tag },
     { value: 'templates', label: 'Templates', icon: Mail },
@@ -578,7 +594,7 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Desktop Tabs */}
-          <TabsList className="hidden md:grid w-full grid-cols-3 lg:grid-cols-6 mb-6">
+          <TabsList className="hidden md:grid w-full grid-cols-3 lg:grid-cols-7 mb-6">
             {tabItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -624,6 +640,7 @@ const Index = () => {
                 leads={leads}
                 templates={emailTemplates}
                 categories={categories}
+                importBatches={importBatches}
                 branding={branding}
                 onUpdateLead={handleUpdateLead}
               />
@@ -637,13 +654,25 @@ const Index = () => {
               />
             </TabsContent>
 
+            <TabsContent value="history" className="mt-0">
+              <ImportHistory
+                leads={leads}
+                importBatches={importBatches}
+                categories={categories}
+                onDeleteBatch={handleDeleteBatch}
+                onViewBatchLeads={handleViewBatchLeads}
+              />
+            </TabsContent>
+
             <TabsContent value="leads" className="mt-0">
               <LeadsDashboard 
                 leads={leads}
                 templates={emailTemplates}
                 categories={categories}
+                importBatches={importBatches}
                 branding={branding}
                 onUpdateLead={handleUpdateLead}
+                selectedBatchId={selectedBatchId}
               />
             </TabsContent>
 

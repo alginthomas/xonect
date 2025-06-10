@@ -11,12 +11,12 @@ import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare } from 'lucide-react';
+import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate } from '@/types/lead';
-import type { Category } from '@/types/category';
+import type { Category, ImportBatch } from '@/types/category';
 
 interface BrandingData {
   companyName: string;
@@ -31,8 +31,10 @@ interface LeadsDashboardProps {
   leads: Lead[];
   templates: EmailTemplate[];
   categories: Category[];
+  importBatches: ImportBatch[];
   branding: BrandingData;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
+  selectedBatchId?: string;
 }
 
 const FILTER_STORAGE_KEY = 'leadsDashboard_filters';
@@ -41,8 +43,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   leads, 
   templates, 
   categories, 
+  importBatches,
   branding,
-  onUpdateLead 
+  onUpdateLead,
+  selectedBatchId 
 }) => {
   // Load initial filter states from localStorage
   const loadFiltersFromStorage = () => {
@@ -57,7 +61,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     return {
       searchQuery: '',
       categoryFilter: 'all',
-      statusFilter: 'all'
+      statusFilter: 'all',
+      batchFilter: selectedBatchId || 'all'
     };
   };
 
@@ -65,20 +70,29 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery);
   const [categoryFilter, setCategoryFilter] = useState(initialFilters.categoryFilter);
   const [statusFilter, setStatusFilter] = useState(initialFilters.statusFilter);
+  const [batchFilter, setBatchFilter] = useState(selectedBatchId || initialFilters.batchFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [removingDuplicates, setRemovingDuplicates] = useState(false);
   const leadsPerPage = 10;
   const { toast } = useToast();
+
+  // Update batch filter when selectedBatchId changes
+  useEffect(() => {
+    if (selectedBatchId) {
+      setBatchFilter(selectedBatchId);
+    }
+  }, [selectedBatchId]);
 
   // Save filters to localStorage whenever they change
   useEffect(() => {
     const filters = {
       searchQuery,
       categoryFilter,
-      statusFilter
+      statusFilter,
+      batchFilter
     };
     localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
-  }, [searchQuery, categoryFilter, statusFilter]);
+  }, [searchQuery, categoryFilter, statusFilter, batchFilter]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -90,10 +104,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
       const categoryMatch = categoryFilter === 'all' || lead.categoryId === categoryFilter;
       const statusMatch = statusFilter === 'all' || lead.status === statusFilter;
+      
+      // Find the batch that contains this lead
+      const leadBatch = importBatches.find(batch => 
+        batch.categoryId === lead.categoryId || 
+        leads.some(l => l.categoryId === batch.categoryId && l.id === lead.id)
+      );
+      const batchMatch = batchFilter === 'all' || leadBatch?.id === batchFilter;
 
-      return searchMatch && categoryMatch && statusMatch;
+      return searchMatch && categoryMatch && statusMatch && batchMatch;
     });
-  }, [leads, searchQuery, categoryFilter, statusFilter]);
+  }, [leads, searchQuery, categoryFilter, statusFilter, batchFilter, importBatches]);
 
   const totalLeads = filteredLeads.length;
   const totalContacted = filteredLeads.filter(lead => lead.status === 'Contacted').length;
@@ -168,7 +189,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const duplicateLeads: Lead[] = [];
     emailMap.forEach(leadsWithSameEmail => {
       if (leadsWithSameEmail.length > 1) {
-        // Sort by creation date (most recent first) and take all but the first one
         const sortedLeads = leadsWithSameEmail.sort((a, b) => 
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -191,7 +211,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setRemovingDuplicates(true);
     
     try {
-      // Use the secure Supabase function to delete duplicates
       const duplicateIds = duplicates.map(lead => lead.id);
       
       const { data, error } = await supabase.rpc('delete_duplicate_leads', {
@@ -205,7 +224,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         description: `Successfully removed ${data} duplicate leads`,
       });
       
-      // Refresh the page to reload data after deletion
       window.location.reload();
       
     } catch (error) {
@@ -240,6 +258,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       title: "Export successful",
       description: `Exported ${leadsToExport.length} leads to CSV file`,
     });
+  };
+
+  const getBatchName = (batchId: string) => {
+    const batch = importBatches.find(b => b.id === batchId);
+    return batch?.name || 'Unknown Batch';
   };
 
   const renderLeadsTable = (filteredData: Lead[]) => (
@@ -346,7 +369,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   );
 
   const renderFilterControls = (leadsData?: Lead[]) => (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <div className="relative">
         <Input
           type="search"
@@ -358,41 +381,58 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
       </div>
 
-      <div className="flex items-center space-x-4">
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-full md:w-52">
-            <SelectValue placeholder="Filter by Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(category => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by Category" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Categories</SelectItem>
+          {categories.map(category => (
+            <SelectItem key={category.id} value={category.id}>
+              {category.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full md:w-40">
-            <SelectValue placeholder="Filter by Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="New">New</SelectItem>
-            <SelectItem value="Contacted">Contacted</SelectItem>
-            <SelectItem value="Opened">Opened</SelectItem>
-            <SelectItem value="Clicked">Clicked</SelectItem>
-            <SelectItem value="Replied">Replied</SelectItem>
-            <SelectItem value="Qualified">Qualified</SelectItem>
-            <SelectItem value="Unqualified">Unqualified</SelectItem>
-            <SelectItem value="Call Back">Call Back</SelectItem>
-            <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-            <SelectItem value="Not Interested">Not Interested</SelectItem>
-            <SelectItem value="Interested">Interested</SelectItem>
-          </SelectContent>
-        </Select>
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          <SelectItem value="New">New</SelectItem>
+          <SelectItem value="Contacted">Contacted</SelectItem>
+          <SelectItem value="Opened">Opened</SelectItem>
+          <SelectItem value="Clicked">Clicked</SelectItem>
+          <SelectItem value="Replied">Replied</SelectItem>
+          <SelectItem value="Qualified">Qualified</SelectItem>
+          <SelectItem value="Unqualified">Unqualified</SelectItem>
+          <SelectItem value="Call Back">Call Back</SelectItem>
+          <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+          <SelectItem value="Not Interested">Not Interested</SelectItem>
+          <SelectItem value="Interested">Interested</SelectItem>
+        </SelectContent>
+      </Select>
 
+      <Select value={batchFilter} onValueChange={setBatchFilter}>
+        <SelectTrigger>
+          <SelectValue placeholder="Filter by Import Batch" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Import Batches</SelectItem>
+          {importBatches.map(batch => (
+            <SelectItem key={batch.id} value={batch.id}>
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                {batch.name}
+              </div>
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <div className="lg:col-span-2 flex gap-2">
         <Button 
           onClick={() => handleExportLeads(leadsData || filteredLeads, getFilterDescription())}
           variant="outline"
@@ -402,6 +442,13 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
+        
+        {batchFilter !== 'all' && (
+          <Badge variant="secondary" className="flex items-center gap-1 px-3 py-1">
+            <Package className="h-3 w-3" />
+            Batch: {getBatchName(batchFilter)}
+          </Badge>
+        )}
       </div>
     </div>
   );
@@ -414,6 +461,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       if (category) parts.push(`category-${category.name}`);
     }
     if (statusFilter !== 'all') parts.push(`status-${statusFilter}`);
+    if (batchFilter !== 'all') {
+      const batch = importBatches.find(b => b.id === batchFilter);
+      if (batch) parts.push(`batch-${batch.name}`);
+    }
     return parts.join('-') || 'all';
   };
 
