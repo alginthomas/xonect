@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,7 +24,15 @@ interface BrandingData {
   senderEmail: string;
 }
 
+// Helper function to safely convert date strings to Date objects
+const safeDate = (dateString: string | null | undefined): Date => {
+  if (!dateString) return new Date();
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? new Date() : date;
+};
+
 const Index = () => {
+  const location = useLocation();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,6 +47,26 @@ const Index = () => {
   });
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Determine which tab should be active based on the current route
+  const getActiveTab = () => {
+    switch (location.pathname) {
+      case '/':
+        return 'dashboard';
+      case '/leads':
+        return 'leads';
+      case '/import':
+        return 'import';
+      case '/categories':
+        return 'categories';
+      case '/templates':
+        return 'templates';
+      case '/settings':
+        return 'settings';
+      default:
+        return 'dashboard';
+    }
+  };
 
   useEffect(() => {
     fetchLeads();
@@ -58,7 +87,7 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase and convert dates
+        // Transform snake_case to camelCase and convert dates safely
         const transformedLeads: Lead[] = data.map(lead => ({
           id: lead.id,
           firstName: lead.first_name,
@@ -69,12 +98,12 @@ const Index = () => {
           phone: lead.phone || '',
           linkedin: lead.linkedin || '',
           status: lead.status,
-          createdAt: new Date(lead.created_at),
+          createdAt: safeDate(lead.created_at),
           categoryId: lead.category_id,
           companySize: lead.company_size,
           seniority: lead.seniority,
           emailsSent: lead.emails_sent || 0,
-          lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
+          lastContactDate: lead.last_contact_date ? safeDate(lead.last_contact_date) : undefined,
           completenessScore: lead.completeness_score || 0,
           industry: lead.industry || '',
           location: lead.location || '',
@@ -111,15 +140,15 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase and convert dates
+        // Transform snake_case to camelCase and convert dates safely
         const transformedTemplates: EmailTemplate[] = data.map(template => ({
           id: template.id,
           name: template.name,
           subject: template.subject,
           content: template.content,
           variables: template.variables || [],
-          createdAt: new Date(template.created_at),
-          lastUsed: template.last_used ? new Date(template.last_used) : undefined
+          createdAt: safeDate(template.created_at),
+          lastUsed: template.last_used ? safeDate(template.last_used) : undefined
         }));
         setTemplates(transformedTemplates);
       }
@@ -144,7 +173,7 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase and convert dates
+        // Transform snake_case to camelCase and convert dates safely
         const transformedCategories: Category[] = data.map(category => ({
           id: category.id,
           name: category.name,
@@ -153,8 +182,8 @@ const Index = () => {
           criteria: (typeof category.criteria === 'object' && category.criteria !== null) 
             ? category.criteria as Record<string, any> 
             : {},
-          createdAt: new Date(category.created_at),
-          updatedAt: new Date(category.updated_at)
+          createdAt: safeDate(category.created_at),
+          updatedAt: safeDate(category.updated_at)
         }));
         setCategories(transformedCategories);
       }
@@ -179,7 +208,7 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase and convert dates
+        // Transform snake_case to camelCase and convert dates safely
         const transformedBatches: ImportBatch[] = data.map(batch => ({
           id: batch.id,
           name: batch.name,
@@ -187,7 +216,7 @@ const Index = () => {
           totalLeads: batch.total_leads || 0,
           successfulImports: batch.successful_imports || 0,
           failedImports: batch.failed_imports || 0,
-          createdAt: new Date(batch.created_at),
+          createdAt: safeDate(batch.created_at),
           sourceFile: batch.source_file || '',
           metadata: (typeof batch.metadata === 'object' && batch.metadata !== null) 
             ? batch.metadata as Record<string, any> 
@@ -304,8 +333,8 @@ const Index = () => {
           criteria: (typeof data.criteria === 'object' && data.criteria !== null) 
             ? data.criteria as Record<string, any> 
             : {},
-          createdAt: new Date(data.created_at),
-          updatedAt: new Date(data.updated_at)
+          createdAt: safeDate(data.created_at),
+          updatedAt: safeDate(data.updated_at)
         };
         setCategories(prev => [transformedCategory, ...prev]);
       }
@@ -393,8 +422,8 @@ const Index = () => {
           subject: data.subject,
           content: data.content,
           variables: data.variables || [],
-          createdAt: new Date(data.created_at),
-          lastUsed: data.last_used ? new Date(data.last_used) : undefined
+          createdAt: safeDate(data.created_at),
+          lastUsed: data.last_used ? safeDate(data.last_used) : undefined
         };
         setTemplates(prev => [transformedTemplate, ...prev]);
       }
@@ -435,7 +464,7 @@ const Index = () => {
             onViewBatchLeads={handleViewBatchLeads}
           />
         ) : (
-          <Tabs defaultValue="dashboard" className="w-full">
+          <Tabs value={getActiveTab()} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <TabsList className="grid w-full sm:w-auto grid-cols-6 lg:grid-cols-6 bg-muted rounded-xl p-1">
                 <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
