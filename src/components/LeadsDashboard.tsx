@@ -39,8 +39,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   onUpdateLead 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const leadsPerPage = 10;
 
@@ -52,8 +52,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         lead.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.company?.toLowerCase().includes(searchQuery.toLowerCase());
 
-      const categoryMatch = !categoryFilter || lead.categoryId === categoryFilter;
-      const statusMatch = !statusFilter || lead.status === statusFilter;
+      const categoryMatch = categoryFilter === 'all' || lead.categoryId === categoryFilter;
+      const statusMatch = statusFilter === 'all' || lead.status === statusFilter;
 
       return searchMatch && categoryMatch && statusMatch;
     });
@@ -201,7 +201,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <SelectValue placeholder="Filter by Category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Categories</SelectItem>
+            <SelectItem value="all">All Categories</SelectItem>
             {categories.map(category => (
               <SelectItem key={category.id} value={category.id}>
                 {category.name}
@@ -215,7 +215,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <SelectValue placeholder="Filter by Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="New">New</SelectItem>
             <SelectItem value="Contacted">Contacted</SelectItem>
             <SelectItem value="Qualified">Qualified</SelectItem>
