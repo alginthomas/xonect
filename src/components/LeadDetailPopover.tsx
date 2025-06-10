@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -250,12 +250,25 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
           <Separator />
 
-          {/* Company Information */}
+          {/* Company Information with View Website Button */}
           <div className="space-y-3">
-            <h4 className="font-medium flex items-center gap-2">
-              <Building className="h-4 w-4" />
-              Company Profile
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium flex items-center gap-2">
+                <Building className="h-4 w-4" />
+                Company Profile
+              </h4>
+              {lead.organizationWebsite && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => window.open(lead.organizationWebsite, '_blank', 'noopener,noreferrer')}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <Globe className="h-3 w-3" />
+                  View Website
+                </Button>
+              )}
+            </div>
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
