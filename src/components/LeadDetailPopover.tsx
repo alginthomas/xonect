@@ -132,6 +132,18 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
   const suggestedProducts = getSuggestedProducts();
 
+  console.log('Lead organizationWebsite:', lead.organizationWebsite); // Debug log
+
+  const handleViewWebsite = () => {
+    console.log('Opening website:', lead.organizationWebsite); // Debug log
+    if (lead.organizationWebsite) {
+      const url = lead.organizationWebsite.startsWith('http') 
+        ? lead.organizationWebsite 
+        : `https://${lead.organizationWebsite}`;
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -250,7 +262,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
           <Separator />
 
-          {/* Company Information with View Website Button */}
+          {/* Company Information with Enhanced View Website Button */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-medium flex items-center gap-2">
@@ -261,11 +273,11 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => window.open(lead.organizationWebsite, '_blank', 'noopener,noreferrer')}
-                  className="flex items-center gap-2 text-xs"
+                  onClick={handleViewWebsite}
+                  className="flex items-center gap-2 text-xs px-3 py-1.5 h-auto"
                 >
                   <Globe className="h-3 w-3" />
-                  View Website
+                  Visit Website
                 </Button>
               )}
             </div>
@@ -275,7 +287,9 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 <span className="font-medium">{lead.company}</span>
                 {lead.organizationWebsite && (
                   <a 
-                    href={lead.organizationWebsite} 
+                    href={lead.organizationWebsite.startsWith('http') 
+                      ? lead.organizationWebsite 
+                      : `https://${lead.organizationWebsite}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800"
@@ -308,6 +322,12 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               {lead.department && (
                 <div className="text-xs text-muted-foreground">
                   Department: {lead.department}
+                </div>
+              )}
+
+              {lead.organizationWebsite && (
+                <div className="text-xs text-muted-foreground">
+                  Website: {lead.organizationWebsite}
                 </div>
               )}
             </div>
