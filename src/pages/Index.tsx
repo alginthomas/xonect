@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CSVImport } from '@/components/CSVImport';
@@ -342,20 +341,6 @@ const Index = () => {
     if (!user) return;
     
     try {
-      // Check if category name already exists locally first
-      const nameExists = categories.some(
-        category => category.name.toLowerCase() === categoryData.name.toLowerCase()
-      );
-
-      if (nameExists) {
-        toast({
-          title: "Category Already Exists",
-          description: `A category with the name "${categoryData.name}" already exists`,
-          variant: "destructive",
-        });
-        return;
-      }
-
       const { error } = await supabase
         .from('categories')
         .insert({
@@ -367,11 +352,11 @@ const Index = () => {
         });
 
       if (error) {
-        // Handle specific duplicate key error
-        if (error.code === '23505' && error.message.includes('categories_name_key')) {
+        // Handle specific duplicate key error for this user
+        if (error.code === '23505' && error.message.includes('categories_user_name_unique')) {
           toast({
             title: "Category Already Exists",
-            description: `A category with the name "${categoryData.name}" already exists`,
+            description: `A category with the name "${categoryData.name}" already exists in your account`,
             variant: "destructive",
           });
         } else {

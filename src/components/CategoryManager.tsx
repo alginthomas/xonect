@@ -43,20 +43,6 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
       return;
     }
 
-    // Check if category name already exists
-    const nameExists = categories.some(
-      category => category.name.toLowerCase() === newCategory.name.toLowerCase()
-    );
-
-    if (nameExists) {
-      toast({
-        title: "Category Already Exists",
-        description: `A category with the name "${newCategory.name}" already exists. Please choose a different name.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
     onCreateCategory({
       ...newCategory,
       criteria: {}
@@ -103,11 +89,6 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                     onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., Tech Companies"
                   />
-                  {newCategory.name && categories.some(cat => cat.name.toLowerCase() === newCategory.name.toLowerCase()) && (
-                    <p className="text-sm text-destructive mt-1">
-                      A category with this name already exists
-                    </p>
-                  )}
                 </div>
                 <div>
                   <Label htmlFor="categoryDescription">Description (Optional)</Label>
@@ -136,7 +117,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                 <Button 
                   onClick={handleCreateCategory} 
                   className="w-full"
-                  disabled={!newCategory.name.trim() || categories.some(cat => cat.name.toLowerCase() === newCategory.name.toLowerCase())}
+                  disabled={!newCategory.name.trim()}
                 >
                   Create Category
                 </Button>
