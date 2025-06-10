@@ -266,105 +266,127 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   };
 
   const renderLeadsTable = (filteredData: Lead[]) => (
-    <div className="overflow-hidden">
-      <AppleTable>
-        <AppleTableHeader>
-          <AppleTableRow>
-            <AppleTableHead>Name</AppleTableHead>
-            <AppleTableHead className="hidden sm:table-cell">Email</AppleTableHead>
-            <AppleTableHead className="hidden md:table-cell">Phone</AppleTableHead>
-            <AppleTableHead className="hidden lg:table-cell">Company</AppleTableHead>
-            <AppleTableHead className="hidden lg:table-cell">Title</AppleTableHead>
-            <AppleTableHead>Status</AppleTableHead>
-            <AppleTableHead className="hidden xl:table-cell">Quality</AppleTableHead>
-            <AppleTableHead className="text-right">Actions</AppleTableHead>
+    <AppleTable>
+      <AppleTableHeader>
+        <AppleTableRow>
+          <AppleTableHead>Name</AppleTableHead>
+          <AppleTableHead>Email</AppleTableHead>
+          <AppleTableHead>Phone</AppleTableHead>
+          <AppleTableHead>Company</AppleTableHead>
+          <AppleTableHead>Title</AppleTableHead>
+          <AppleTableHead>Status</AppleTableHead>
+          <AppleTableHead>Quality</AppleTableHead>
+          <AppleTableHead>Industry</AppleTableHead>
+          <AppleTableHead>Location</AppleTableHead>
+          <AppleTableHead>Department</AppleTableHead>
+          <AppleTableHead>LinkedIn</AppleTableHead>
+          <AppleTableHead>Organization Website</AppleTableHead>
+          <AppleTableHead>Actions</AppleTableHead>
+        </AppleTableRow>
+      </AppleTableHeader>
+      <AppleTableBody>
+        {filteredData.slice(indexOfFirstLead, indexOfLastLead).map((lead) => (
+          <AppleTableRow key={lead.id}>
+            <AppleTableCell className="font-medium">
+              <div className="flex flex-col">
+                <span className="font-semibold">{lead.firstName} {lead.lastName}</span>
+              </div>
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.email}
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.phone || 'N/A'}
+            </AppleTableCell>
+            <AppleTableCell className="font-medium">
+              {lead.company}
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.title}
+            </AppleTableCell>
+            <AppleTableCell>
+              <Select value={lead.status} onValueChange={(value) => handleStatusChange(lead.id, value as Lead['status'])}>
+                <SelectTrigger className="w-32 h-8 text-xs font-medium">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Opened">Opened</SelectItem>
+                  <SelectItem value="Clicked">Clicked</SelectItem>
+                  <SelectItem value="Replied">Replied</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="Unqualified">Unqualified</SelectItem>
+                  <SelectItem value="Call Back">Call Back</SelectItem>
+                  <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                  <SelectItem value="Not Interested">Not Interested</SelectItem>
+                  <SelectItem value="Interested">Interested</SelectItem>
+                </SelectContent>
+              </Select>
+            </AppleTableCell>
+            <AppleTableCell>
+              <div className="flex items-center gap-2">
+                <Progress value={lead.completenessScore} className="w-16" />
+                <span className="text-xs text-muted-foreground font-medium">{lead.completenessScore}%</span>
+              </div>
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.industry || 'N/A'}
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.location || 'N/A'}
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.department || 'N/A'}
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.linkedin ? (
+                <a href={lead.linkedin} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  LinkedIn
+                </a>
+              ) : 'N/A'}
+            </AppleTableCell>
+            <AppleTableCell className="text-muted-foreground">
+              {lead.organizationWebsite ? (
+                <a href={lead.organizationWebsite} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                  Website
+                </a>
+              ) : 'N/A'}
+            </AppleTableCell>
+            <AppleTableCell>
+              <div className="flex gap-1 justify-end">
+                <LeadDetailPopover 
+                  lead={lead} 
+                  categories={categories}
+                >
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </LeadDetailPopover>
+                <LeadRemarksDialog
+                  lead={lead}
+                  onUpdateRemarks={handleUpdateRemarks}
+                >
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className={`h-8 w-8 p-0 ${lead.remarks ? "text-primary" : ""}`}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </LeadRemarksDialog>
+                <EmailDialog 
+                  lead={lead} 
+                  templates={templates}
+                  branding={branding}
+                  onEmailSent={handleEmailSent}
+                />
+              </div>
+            </AppleTableCell>
           </AppleTableRow>
-        </AppleTableHeader>
-        <AppleTableBody>
-          {filteredData.slice(indexOfFirstLead, indexOfLastLead).map((lead) => (
-            <AppleTableRow key={lead.id}>
-              <AppleTableCell className="font-medium">
-                <div className="flex flex-col">
-                  <span className="font-semibold">{lead.firstName} {lead.lastName}</span>
-                  <span className="text-xs text-muted-foreground sm:hidden">{lead.email}</span>
-                </div>
-              </AppleTableCell>
-              <AppleTableCell className="hidden sm:table-cell text-muted-foreground">
-                {lead.email}
-              </AppleTableCell>
-              <AppleTableCell className="hidden md:table-cell text-muted-foreground">
-                {lead.phone || 'N/A'}
-              </AppleTableCell>
-              <AppleTableCell className="hidden lg:table-cell">
-                <div className="flex flex-col">
-                  <span className="font-medium">{lead.company}</span>
-                  <span className="text-xs text-muted-foreground md:hidden">{lead.title}</span>
-                </div>
-              </AppleTableCell>
-              <AppleTableCell className="hidden lg:table-cell text-muted-foreground">
-                {lead.title}
-              </AppleTableCell>
-              <AppleTableCell>
-                <Select value={lead.status} onValueChange={(value) => handleStatusChange(lead.id, value as Lead['status'])}>
-                  <SelectTrigger className="w-32 h-8 text-xs font-medium">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="New">New</SelectItem>
-                    <SelectItem value="Contacted">Contacted</SelectItem>
-                    <SelectItem value="Opened">Opened</SelectItem>
-                    <SelectItem value="Clicked">Clicked</SelectItem>
-                    <SelectItem value="Replied">Replied</SelectItem>
-                    <SelectItem value="Qualified">Qualified</SelectItem>
-                    <SelectItem value="Unqualified">Unqualified</SelectItem>
-                    <SelectItem value="Call Back">Call Back</SelectItem>
-                    <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-                    <SelectItem value="Not Interested">Not Interested</SelectItem>
-                    <SelectItem value="Interested">Interested</SelectItem>
-                  </SelectContent>
-                </Select>
-              </AppleTableCell>
-              <AppleTableCell className="hidden xl:table-cell">
-                <div className="flex items-center gap-2">
-                  <Progress value={lead.completenessScore} className="w-16" />
-                  <span className="text-xs text-muted-foreground font-medium">{lead.completenessScore}%</span>
-                </div>
-              </AppleTableCell>
-              <AppleTableCell>
-                <div className="flex gap-1 justify-end">
-                  <LeadDetailPopover 
-                    lead={lead} 
-                    categories={categories}
-                  >
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </LeadDetailPopover>
-                  <LeadRemarksDialog
-                    lead={lead}
-                    onUpdateRemarks={handleUpdateRemarks}
-                  >
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className={`h-8 w-8 p-0 ${lead.remarks ? "text-primary" : ""}`}
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                  </LeadRemarksDialog>
-                  <EmailDialog 
-                    lead={lead} 
-                    templates={templates}
-                    branding={branding}
-                    onEmailSent={handleEmailSent}
-                  />
-                </div>
-              </AppleTableCell>
-            </AppleTableRow>
-          ))}
-        </AppleTableBody>
-      </AppleTable>
-    </div>
+        ))}
+      </AppleTableBody>
+    </AppleTable>
   );
 
   const renderPagination = (totalItems: number) => (

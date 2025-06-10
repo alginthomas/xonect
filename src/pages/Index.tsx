@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
@@ -33,6 +32,7 @@ const safeDate = (dateString: string | null | undefined): Date => {
 
 const Index = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -46,10 +46,15 @@ const Index = () => {
     senderEmail: '',
   });
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
 
   // Determine which tab should be active based on the current route
   const getActiveTab = () => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    if (tab) return tab;
+    
     switch (location.pathname) {
       case '/':
         return 'dashboard';
@@ -67,6 +72,16 @@ const Index = () => {
         return 'dashboard';
     }
   };
+
+  // Handle tab changes and update URL
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    navigate(`/?tab=${value}`, { replace: true });
+  };
+
+  useEffect(() => {
+    setActiveTab(getActiveTab());
+  }, [location]);
 
   useEffect(() => {
     fetchLeads();
@@ -464,7 +479,7 @@ const Index = () => {
             onViewBatchLeads={handleViewBatchLeads}
           />
         ) : (
-          <Tabs value={getActiveTab()} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <TabsList className="grid w-full sm:w-auto grid-cols-6 lg:grid-cols-6 bg-muted rounded-xl p-1">
                 <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>

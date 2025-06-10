@@ -1,18 +1,20 @@
 
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 const AppleTable = React.forwardRef<
   HTMLTableElement,
   React.HTMLAttributes<HTMLTableElement>
 >(({ className, ...props }, ref) => (
-  <div className="apple-table">
+  <ScrollArea className="w-full whitespace-nowrap rounded-md border">
     <table
       ref={ref}
       className={cn("w-full caption-bottom text-sm", className)}
       {...props}
     />
-  </div>
+    <ScrollBar orientation="horizontal" />
+  </ScrollArea>
 ))
 AppleTable.displayName = "AppleTable"
 
@@ -73,7 +75,7 @@ const AppleTableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "h-14 px-6 text-left align-middle font-semibold text-muted-foreground text-xs uppercase tracking-wider",
+      "h-14 px-6 text-left align-middle font-semibold text-muted-foreground text-xs uppercase tracking-wider whitespace-nowrap",
       className
     )}
     {...props}
@@ -87,7 +89,7 @@ const AppleTableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("px-6 py-4 align-middle text-sm font-medium", className)}
+    className={cn("px-6 py-4 align-middle text-sm font-medium whitespace-nowrap", className)}
     {...props}
   />
 ))
