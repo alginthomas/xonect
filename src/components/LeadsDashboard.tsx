@@ -60,9 +60,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   }, [leads, searchQuery, categoryFilter, statusFilter]);
 
   const totalLeads = filteredLeads.length;
-  const totalContacted = filteredLeads.filter(lead => lead.status === 'contacted').length;
-  const totalNew = filteredLeads.filter(lead => lead.status === 'new').length;
-  const totalQualified = filteredLeads.filter(lead => lead.status === 'qualified').length;
+  const totalContacted = filteredLeads.filter(lead => lead.status === 'Contacted').length;
+  const totalNew = filteredLeads.filter(lead => lead.status === 'New').length;
+  const totalQualified = filteredLeads.filter(lead => lead.status === 'Qualified').length;
 
   const indexOfLastLead = currentPage * leadsPerPage;
   const indexOfFirstLead = indexOfLastLead - leadsPerPage;
@@ -91,7 +91,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       onUpdateLead(leadId, {
         emailsSent: (lead.emailsSent || 0) + 1,
         lastContactDate: new Date(),
-        status: 'contacted'
+        status: 'Contacted'
       });
     }
   };
@@ -244,9 +244,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -277,7 +277,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <TableCell>{lead.company}</TableCell>
                       <TableCell>{lead.title}</TableCell>
                       <TableCell>
-                        <Badge variant={lead.status === 'contacted' ? 'secondary' : 'default'}>
+                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
                           {lead.status}
                         </Badge>
                       </TableCell>
@@ -289,7 +289,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           <LeadDetailPopover 
                             lead={lead} 
                             categories={categories}
-                            onUpdateLead={onUpdateLead}
                           />
                           <EmailDialog 
                             lead={lead} 
@@ -360,9 +359,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -393,7 +392,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <TableCell>{lead.company}</TableCell>
                       <TableCell>{lead.title}</TableCell>
                       <TableCell>
-                        <Badge variant={lead.status === 'contacted' ? 'secondary' : 'default'}>
+                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
                           {lead.status}
                         </Badge>
                       </TableCell>
@@ -405,7 +404,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           <LeadDetailPopover 
                             lead={lead} 
                             categories={categories}
-                            onUpdateLead={onUpdateLead}
                           />
                           <EmailDialog 
                             lead={lead} 
@@ -476,9 +474,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -509,7 +507,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <TableCell>{lead.company}</TableCell>
                       <TableCell>{lead.title}</TableCell>
                       <TableCell>
-                        <Badge variant={lead.status === 'contacted' ? 'secondary' : 'default'}>
+                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
                           {lead.status}
                         </Badge>
                       </TableCell>
@@ -521,7 +519,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           <LeadDetailPopover 
                             lead={lead} 
                             categories={categories}
-                            onUpdateLead={onUpdateLead}
                           />
                           <EmailDialog 
                             lead={lead} 
@@ -592,9 +589,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="new">New</SelectItem>
-                  <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="qualified">Qualified</SelectItem>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -625,7 +622,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <TableCell>{lead.company}</TableCell>
                       <TableCell>{lead.title}</TableCell>
                       <TableCell>
-                        <Badge variant={lead.status === 'contacted' ? 'secondary' : 'default'}>
+                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
                           {lead.status}
                         </Badge>
                       </TableCell>
@@ -637,7 +634,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           <LeadDetailPopover 
                             lead={lead} 
                             categories={categories}
-                            onUpdateLead={onUpdateLead}
                           />
                           <EmailDialog 
                             lead={lead} 
