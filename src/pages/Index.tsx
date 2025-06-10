@@ -525,41 +525,23 @@ const Index = () => {
               </Card>
             </TabsContent>
 
-            <TabsContent value="import" className="space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <Card className="apple-card">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Import Leads</CardTitle>
-                    <CardDescription>
-                      Upload a CSV file to import new leads into your system.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <CSVImport 
-                      categories={categories} 
-                      onImportComplete={handleImportComplete}
-                      onCreateCategory={handleCreateCategory}
-                    />
-                  </CardContent>
-                </Card>
-
-                <Card className="apple-card">
-                  <CardHeader>
-                    <CardTitle className="text-xl">Import History</CardTitle>
-                    <CardDescription>
-                      View and manage your previous imports.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ImportHistory 
-                      leads={leads}
-                      importBatches={importBatches}
-                      categories={categories}
-                      onDeleteBatch={handleDeleteBatch}
-                      onViewBatchLeads={handleViewBatchLeads}
-                    />
-                  </CardContent>
-                </Card>
+            <TabsContent value="import" className="space-y-8">
+              <div className="max-w-6xl mx-auto">
+                <CSVImport 
+                  categories={categories} 
+                  onImportComplete={handleImportComplete}
+                  onCreateCategory={handleCreateCategory}
+                />
+                
+                <div className="mt-12">
+                  <ImportHistory 
+                    leads={leads}
+                    importBatches={importBatches}
+                    categories={categories}
+                    onDeleteBatch={handleDeleteBatch}
+                    onViewBatchLeads={handleViewBatchLeads}
+                  />
+                </div>
               </div>
             </TabsContent>
 

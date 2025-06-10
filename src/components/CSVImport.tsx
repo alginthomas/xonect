@@ -1,9 +1,10 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, CheckCircle, AlertCircle, FileText, X } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, X, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CategoryCombobox } from './CategoryCombobox';
 import type { Lead } from '@/types/lead';
@@ -480,151 +481,197 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5" />
-          Import Lead Database
-        </CardTitle>
-        <CardDescription>
-          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. Categories are created automatically if they don't exist.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="batch-name">Import Batch Name</Label>
-            <Input
-              id="batch-name"
-              value={batchName}
-              onChange={(e) => setBatchName(e.target.value)}
-              placeholder="e.g., Q4 Prospects - Tech Conference"
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="category">Category</Label>
-            <div className="mt-1">
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="text-center space-y-4 py-8">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+          <Database className="h-8 w-8 text-primary" />
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight">Import Lead Database</h2>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. 
+          Categories are created automatically if they don't exist.
+        </p>
+      </div>
+
+      {/* Import Form */}
+      <Card className="apple-card">
+        <CardHeader className="text-center pb-8">
+          <CardTitle className="flex items-center justify-center gap-3 text-xl">
+            <Upload className="h-6 w-6 text-primary" />
+            Upload Your Lead Data
+          </CardTitle>
+          <CardDescription className="text-base">
+            Configure your import settings and upload your CSV file
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-8">
+          {/* Configuration Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="batch-name" className="text-sm font-semibold">Import Batch Name</Label>
+              <Input
+                id="batch-name"
+                value={batchName}
+                onChange={(e) => setBatchName(e.target.value)}
+                placeholder="e.g., Q4 Prospects - Tech Conference"
+                className="h-12"
+              />
+              <p className="text-xs text-muted-foreground">Give your import batch a descriptive name</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="category" className="text-sm font-semibold">Category</Label>
               <CategoryCombobox
                 categories={categories}
                 value={categoryName}
                 onChange={setCategoryName}
                 placeholder="Select existing or type new category..."
               />
+              <p className="text-xs text-muted-foreground">
+                New categories will be created automatically during import
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              New categories will be created automatically during import
-            </p>
           </div>
-        </div>
 
-        <div>
-          <Label>CSV File</Label>
-          {!file ? (
-            <div
-              className={`mt-1 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                isDragOver
-                  ? 'border-primary bg-primary/5'
-                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
-              }`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="flex flex-col items-center gap-4">
-                <div className="p-4 rounded-full bg-muted">
-                  <Upload className="h-8 w-8 text-muted-foreground" />
+          {/* File Upload Section */}
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold">CSV File Upload</Label>
+            
+            {!file ? (
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+                  isDragOver
+                    ? 'border-primary bg-primary/5 scale-[1.02]'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/20'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                <div className="flex flex-col items-center gap-6">
+                  <div className="p-6 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                    <Upload className="h-12 w-12 text-primary" />
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <h3 className="text-xl font-semibold">Drop your CSV file here</h3>
+                    <p className="text-muted-foreground">or click to browse files from your computer</p>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Supports CSV files up to 10MB</p>
+                    </div>
+                  </div>
+                  
+                  <Button size="lg" variant="outline" asChild className="mt-4">
+                    <label htmlFor="csv-file-input" className="cursor-pointer">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Choose File
+                      <input
+                        id="csv-file-input"
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                      />
+                    </label>
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-lg font-medium">Drop your CSV file here</p>
-                  <p className="text-sm text-muted-foreground">or click to browse files</p>
-                </div>
-                <Button variant="outline" size="sm" asChild>
-                  <label htmlFor="csv-file-input" className="cursor-pointer">
-                    Choose File
-                    <input
-                      id="csv-file-input"
-                      type="file"
-                      accept=".csv"
-                      onChange={handleFileChange}
-                      className="sr-only"
-                    />
-                  </label>
-                </Button>
               </div>
-            </div>
-          ) : (
-            <div className="mt-1 border rounded-lg p-4 bg-muted/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-md bg-primary/10">
-                    <FileText className="h-5 w-5 text-primary" />
+            ) : (
+              <div className="border rounded-xl p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-lg bg-green-100 border border-green-200">
+                      <FileText className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-green-900">{file.name}</p>
+                      <p className="text-sm text-green-700">
+                        {(file.size / 1024).toFixed(1)} KB • Ready to import
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium">{file.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {(file.size / 1024).toFixed(1)} KB
-                    </p>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    className="text-green-600 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeFile}
-                  className="text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Preview Section */}
+          {preview.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <h4 className="font-semibold text-green-900">File Preview</h4>
+                <span className="text-sm text-muted-foreground">(first 3 rows)</span>
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden bg-muted/20">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b bg-muted/50">
+                        {Object.keys(preview[0] || {}).slice(0, 6).map(key => (
+                          <th key={key} className="text-left p-3 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">
+                            {key}
+                          </th>
+                        ))}
+                        {Object.keys(preview[0] || {}).length > 6 && (
+                          <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                            +{Object.keys(preview[0] || {}).length - 6} more
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.map((row, i) => (
+                        <tr key={i} className="border-b hover:bg-muted/20">
+                          {Object.values(row).slice(0, 6).map((value: any, j) => (
+                            <td key={j} className="p-3 max-w-[120px] truncate font-medium">{value}</td>
+                          ))}
+                          {Object.values(row).length > 6 && (
+                            <td className="p-3 text-muted-foreground">...</td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
-        </div>
 
-        {preview.length > 0 && (
-          <div className="border rounded-lg p-4">
-            <h4 className="font-medium mb-2 flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              Preview (first 3 rows)
-            </h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    {Object.keys(preview[0] || {}).slice(0, 8).map(key => (
-                      <th key={key} className="text-left p-2 font-medium">{key}</th>
-                    ))}
-                    {Object.keys(preview[0] || {}).length > 8 && (
-                      <th className="text-left p-2 font-medium text-muted-foreground">
-                        +{Object.keys(preview[0] || {}).length - 8} more columns
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map((row, i) => (
-                    <tr key={i} className="border-b">
-                      {Object.values(row).slice(0, 8).map((value: any, j) => (
-                        <td key={j} className="p-2 max-w-[100px] truncate">{value}</td>
-                      ))}
-                      {Object.values(row).length > 8 && (
-                        <td className="p-2 text-muted-foreground">...</td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          {/* Import Button */}
+          <div className="pt-4">
+            <Button 
+              onClick={handleImport}
+              disabled={!file || importing || !batchName.trim()}
+              size="lg"
+              className="w-full h-14 text-base font-semibold"
+            >
+              {importing ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Processing Import...
+                </>
+              ) : (
+                <>
+                  <Database className="h-5 w-5 mr-3" />
+                  Import Lead Database
+                </>
+              )}
+            </Button>
           </div>
-        )}
-
-        <Button 
-          onClick={handleImport}
-          disabled={!file || importing || !batchName.trim()}
-          className="w-full"
-        >
-          {importing ? 'Importing...' : 'Import Lead Database'}
-        </Button>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
