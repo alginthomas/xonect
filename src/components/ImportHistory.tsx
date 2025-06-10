@@ -24,9 +24,9 @@ interface ImportHistoryProps {
 }
 
 export const ImportHistory: React.FC<ImportHistoryProps> = ({
-  leads,
-  importBatches,
-  categories,
+  leads = [],
+  importBatches = [],
+  categories = [],
   onDeleteBatch,
   onViewBatchLeads
 }) => {
@@ -35,8 +35,12 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   const { toast } = useToast();
 
   const filteredBatches = useMemo(() => {
+    if (!importBatches || !Array.isArray(importBatches)) {
+      return [];
+    }
+
     let filtered = importBatches.filter(batch =>
-      batch.name.toLowerCase().includes(searchQuery.toLowerCase())
+      batch && batch.name && batch.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     switch (sortBy) {
@@ -45,22 +49,29 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       case 'name':
         return filtered.sort((a, b) => a.name.localeCompare(b.name));
       case 'leads':
-        return filtered.sort((a, b) => b.totalLeads - a.totalLeads);
+        return filtered.sort((a, b) => (b.totalLeads || 0) - (a.totalLeads || 0));
       default:
         return filtered;
     }
   }, [importBatches, searchQuery, sortBy]);
 
   const getBatchLeads = (batchId: string) => {
-    return leads.filter(lead => lead.categoryId === batchId || 
-      importBatches.find(batch => batch.id === batchId)?.categoryId === lead.categoryId);
+    if (!leads || !Array.isArray(leads)) {
+      return [];
+    }
+    return leads.filter(lead => 
+      lead.categoryId === batchId || 
+      importBatches.find(batch => batch.id === batchId)?.categoryId === lead.categoryId
+    );
   };
 
   const getBatchStats = (batch: ImportBatch) => {
     const batchLeads = getBatchLeads(batch.id);
     const contactedCount = batchLeads.filter(lead => lead.status === 'Contacted').length;
     const qualifiedCount = batchLeads.filter(lead => lead.status === 'Qualified').length;
-    const successRate = batch.totalLeads > 0 ? (batch.successfulImports / batch.totalLeads) * 100 : 0;
+    const totalLeads = batch.totalLeads || 0;
+    const successfulImports = batch.successfulImports || 0;
+    const successRate = totalLeads > 0 ? (successfulImports / totalLeads) * 100 : 0;
     
     return {
       contactedCount,
@@ -98,10 +109,23 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   };
 
   const getCategoryName = (categoryId?: string) => {
-    if (!categoryId) return 'Uncategorized';
+    if (!categoryId || !categories || !Array.isArray(categories)) return 'Uncategorized';
     const category = categories.find(cat => cat.id === categoryId);
     return category?.name || 'Unknown Category';
   };
+
+  const totalBatches = filteredBatches.length;
+  const totalImportedLeads = filteredBatches.reduce((sum, batch) => sum + (batch.totalLeads || 0), 0);
+  const averageSuccessRate = totalBatches > 0 
+    ? Math.round(
+        filteredBatches.reduce((sum, batch) => {
+          const totalLeads = batch.totalLeads || 0;
+          const successfulImports = batch.successfulImports || 0;
+          return sum + (totalLeads > 0 ? (successfulImports / totalLeads) * 100 : 0);
+        }, 0) / totalBatches
+      )
+    : 0;
+  const activeCategories = new Set(filteredBatches.map(batch => batch.categoryId).filter(Boolean)).size;
 
   return (
     <div className="space-y-6">
@@ -112,7 +136,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
             <CardTitle className="text-sm font-medium">Total Batches</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{importBatches.length}</div>
+            <div className="text-2xl font-bold">{totalBatches}</div>
           </CardContent>
         </Card>
 
@@ -121,9 +145,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
             <CardTitle className="text-sm font-medium">Total Imported Leads</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {importBatches.reduce((sum, batch) => sum + batch.totalLeads, 0)}
-            </div>
+            <div className="text-2xl font-bold">{totalImportedLeads}</div>
           </CardContent>
         </Card>
 
@@ -132,15 +154,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
             <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {importBatches.length > 0 
-                ? Math.round(
-                    importBatches.reduce((sum, batch) => 
-                      sum + (batch.totalLeads > 0 ? (batch.successfulImports / batch.totalLeads) * 100 : 0), 0
-                    ) / importBatches.length
-                  )
-                : 0}%
-            </div>
+            <div className="text-2xl font-bold">{averageSuccessRate}%</div>
           </CardContent>
         </Card>
 
@@ -149,9 +163,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
             <CardTitle className="text-sm font-medium">Active Categories</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {new Set(importBatches.map(batch => batch.categoryId).filter(Boolean)).size}
-            </div>
+            <div className="text-2xl font-bold">{activeCategories}</div>
           </CardContent>
         </Card>
       </div>
@@ -221,7 +233,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                             </div>
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-muted-foreground" />
-                              <span>{batch.totalLeads} leads</span>
+                              <span>{batch.totalLeads || 0} leads</span>
                             </div>
                             <div className="flex items-center gap-2">
                               <TrendingUp className="h-4 w-4 text-muted-foreground" />

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,7 +45,6 @@ const Index = () => {
     fetchTemplates();
     fetchCategories();
     fetchImportBatches();
-    fetchBranding();
   }, []);
 
   const fetchLeads = async () => {
@@ -59,7 +59,40 @@ const Index = () => {
       }
 
       if (data) {
-        setLeads(data);
+        // Transform snake_case to camelCase
+        const transformedLeads: Lead[] = data.map(lead => ({
+          id: lead.id,
+          firstName: lead.first_name,
+          lastName: lead.last_name,
+          email: lead.email,
+          company: lead.company,
+          title: lead.title,
+          phone: lead.phone || '',
+          linkedin: lead.linkedin || '',
+          status: lead.status,
+          createdAt: lead.created_at,
+          updatedAt: lead.updated_at,
+          categoryId: lead.category_id,
+          importBatchId: lead.import_batch_id,
+          userId: lead.user_id,
+          companySize: lead.company_size,
+          seniority: lead.seniority,
+          emailsSent: lead.emails_sent,
+          lastContactDate: lead.last_contact_date,
+          completenessScore: lead.completeness_score,
+          industry: lead.industry || '',
+          location: lead.location || '',
+          department: lead.department || '',
+          personalEmail: lead.personal_email || '',
+          photoUrl: lead.photo_url || '',
+          twitterUrl: lead.twitter_url || '',
+          facebookUrl: lead.facebook_url || '',
+          organizationWebsite: lead.organization_website || '',
+          organizationFounded: lead.organization_founded,
+          remarks: lead.remarks || '',
+          tags: lead.tags || []
+        }));
+        setLeads(transformedLeads);
       }
     } catch (error: any) {
       toast({
@@ -82,7 +115,19 @@ const Index = () => {
       }
 
       if (data) {
-        setTemplates(data);
+        // Transform snake_case to camelCase
+        const transformedTemplates: EmailTemplate[] = data.map(template => ({
+          id: template.id,
+          name: template.name,
+          subject: template.subject,
+          content: template.content,
+          variables: template.variables || [],
+          createdAt: template.created_at,
+          updatedAt: template.updated_at,
+          lastUsed: template.last_used,
+          userId: template.user_id
+        }));
+        setTemplates(transformedTemplates);
       }
     } catch (error: any) {
       toast({
@@ -105,7 +150,18 @@ const Index = () => {
       }
 
       if (data) {
-        setCategories(data);
+        // Transform snake_case to camelCase
+        const transformedCategories: Category[] = data.map(category => ({
+          id: category.id,
+          name: category.name,
+          description: category.description || '',
+          color: category.color || '#3B82F6',
+          criteria: category.criteria || {},
+          createdAt: category.created_at,
+          updatedAt: category.updated_at,
+          userId: category.user_id
+        }));
+        setCategories(transformedCategories);
       }
     } catch (error: any) {
       toast({
@@ -128,7 +184,20 @@ const Index = () => {
       }
 
       if (data) {
-        setImportBatches(data);
+        // Transform snake_case to camelCase
+        const transformedBatches: ImportBatch[] = data.map(batch => ({
+          id: batch.id,
+          name: batch.name,
+          categoryId: batch.category_id,
+          totalLeads: batch.total_leads || 0,
+          successfulImports: batch.successful_imports || 0,
+          failedImports: batch.failed_imports || 0,
+          createdAt: batch.created_at,
+          sourceFile: batch.source_file || '',
+          metadata: batch.metadata || {},
+          userId: batch.user_id
+        }));
+        setImportBatches(transformedBatches);
       }
     } catch (error: any) {
       toast({
@@ -139,34 +208,18 @@ const Index = () => {
     }
   };
 
-  const fetchBranding = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('branding')
-        .select('*')
-        .limit(1)
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data && data.length > 0) {
-        setBranding(data[0] as BrandingData);
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching branding settings',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
     try {
+      // Transform camelCase to snake_case for Supabase
+      const supabaseUpdates: any = {};
+      Object.keys(updates).forEach(key => {
+        const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+        supabaseUpdates[snakeKey] = updates[key as keyof Lead];
+      });
+
       const { error } = await supabase
         .from('leads')
-        .update(updates)
+        .update(supabaseUpdates)
         .eq('id', leadId);
 
       if (error) {
@@ -196,6 +249,170 @@ const Index = () => {
     setSelectedBatchId(batchId);
   };
 
+  const handleDeleteBatch = async (batchId: string) => {
+    try {
+      const { error } = await supabase
+        .from('import_batches')
+        .delete()
+        .eq('id', batchId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setImportBatches(prev => prev.filter(batch => batch.id !== batchId));
+      fetchLeads(); // Refresh leads as they might be affected
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting batch',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleViewBatchLeads = (batchId: string) => {
+    setSelectedBatchId(batchId);
+  };
+
+  const handleCreateCategory = async (categoryData: Partial<Category>) => {
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([{
+          name: categoryData.name,
+          description: categoryData.description || '',
+          color: categoryData.color || '#3B82F6',
+          criteria: categoryData.criteria || {}
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data) {
+        const transformedCategory: Category = {
+          id: data.id,
+          name: data.name,
+          description: data.description || '',
+          color: data.color || '#3B82F6',
+          criteria: data.criteria || {},
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          userId: data.user_id
+        };
+        setCategories(prev => [transformedCategory, ...prev]);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error creating category',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleUpdateCategory = async (categoryId: string, updates: Partial<Category>) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: updates.name,
+          description: updates.description,
+          color: updates.color,
+          criteria: updates.criteria
+        })
+        .eq('id', categoryId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setCategories(prev =>
+        prev.map(cat =>
+          cat.id === categoryId ? { ...cat, ...updates } : cat
+        )
+      );
+    } catch (error: any) {
+      toast({
+        title: 'Error updating category',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', categoryId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting category',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSaveTemplate = async (templateData: Partial<EmailTemplate>) => {
+    try {
+      const { data, error } = await supabase
+        .from('email_templates')
+        .insert([{
+          name: templateData.name,
+          subject: templateData.subject,
+          content: templateData.content,
+          variables: templateData.variables || []
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data) {
+        const transformedTemplate: EmailTemplate = {
+          id: data.id,
+          name: data.name,
+          subject: data.subject,
+          content: data.content,
+          variables: data.variables || [],
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          lastUsed: data.last_used,
+          userId: data.user_id
+        };
+        setTemplates(prev => [transformedTemplate, ...prev]);
+      }
+    } catch (error: any) {
+      toast({
+        title: 'Error saving template',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSaveBranding = async (brandingData: BrandingData) => {
+    setBranding(brandingData);
+    toast({
+      title: 'Branding saved',
+      description: 'Your branding settings have been updated.',
+    });
+  };
+
   return (
     <AppleLayout>
       <div className="space-y-8">
@@ -209,8 +426,11 @@ const Index = () => {
 
         {selectedBatchId ? (
           <ImportHistory 
-            onSelectBatch={handleBatchSelect}
-            selectedBatchId={selectedBatchId}
+            leads={leads}
+            importBatches={importBatches}
+            categories={categories}
+            onDeleteBatch={handleDeleteBatch}
+            onViewBatchLeads={handleViewBatchLeads}
           />
         ) : (
           <Tabs defaultValue="dashboard" className="w-full">
@@ -272,6 +492,7 @@ const Index = () => {
                     <CSVImport 
                       categories={categories} 
                       onImportComplete={handleImportComplete}
+                      onCreateCategory={handleCreateCategory}
                     />
                   </CardContent>
                 </Card>
@@ -284,7 +505,13 @@ const Index = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ImportHistory onSelectBatch={handleBatchSelect} />
+                    <ImportHistory 
+                      leads={leads}
+                      importBatches={importBatches}
+                      categories={categories}
+                      onDeleteBatch={handleDeleteBatch}
+                      onViewBatchLeads={handleViewBatchLeads}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -299,7 +526,12 @@ const Index = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CategoryManager />
+                  <CategoryManager 
+                    categories={categories}
+                    onCreateCategory={handleCreateCategory}
+                    onUpdateCategory={handleUpdateCategory}
+                    onDeleteCategory={handleDeleteCategory}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -313,7 +545,10 @@ const Index = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <EmailTemplateBuilder />
+                  <EmailTemplateBuilder 
+                    onSaveTemplate={handleSaveTemplate}
+                    templates={templates}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -327,7 +562,10 @@ const Index = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <BrandingSettings />
+                  <BrandingSettings 
+                    branding={branding}
+                    onSave={handleSaveBranding}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
