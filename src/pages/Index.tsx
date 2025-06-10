@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { CSVImport } from '@/components/CSVImport';
 import { CategoryManager } from '@/components/CategoryManager';
@@ -11,6 +12,8 @@ import { ImportHistory } from '@/components/ImportHistory';
 import AppleLayout from '@/layouts/AppleLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
+import { Trash2 } from 'lucide-react';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -48,6 +51,7 @@ const Index = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
+  const { deleteBatch, cleanupUserData, loading } = useImportBatchOperations();
 
   // Determine which tab should be active based on the current route
   const getActiveTab = () => {
@@ -297,29 +301,30 @@ const Index = () => {
   };
 
   const handleDeleteBatch = async (batchId: string) => {
-    try {
-      const { error } = await supabase
-        .from('import_batches')
-        .delete()
-        .eq('id', batchId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
+    const success = await deleteBatch(batchId);
+    if (success) {
       setImportBatches(prev => prev.filter(batch => batch.id !== batchId));
       fetchLeads(); // Refresh leads as they might be affected
-    } catch (error: any) {
-      toast({
-        title: 'Error deleting batch',
-        description: error.message,
-        variant: 'destructive',
-      });
     }
   };
 
   const handleViewBatchLeads = (batchId: string) => {
     setSelectedBatchId(batchId);
+  };
+
+  const handleCleanupData = async () => {
+    const success = await cleanupUserData();
+    if (success) {
+      // Refresh all data
+      setLeads([]);
+      setImportBatches([]);
+      setCategories([]);
+      setTemplates([]);
+      fetchLeads();
+      fetchTemplates();
+      fetchCategories();
+      fetchImportBatches();
+    }
   };
 
   const handleCreateCategory = async (categoryData: Partial<Category>) => {
@@ -464,10 +469,23 @@ const Index = () => {
       <div className="space-y-8">
         {/* Page Header */}
         <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
-          <p className="text-muted-foreground">
-            Manage your leads, track engagement, and grow your business.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
+              <p className="text-muted-foreground">
+                Manage your leads, track engagement, and grow your business.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={handleCleanupData}
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="h-4 w-4" />
+              {loading ? 'Cleaning...' : 'Cleanup All Data'}
+            </Button>
+          </div>
         </div>
 
         {selectedBatchId ? (

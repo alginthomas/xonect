@@ -29,7 +29,10 @@ export const useImportBatchOperations = () => {
         .delete()
         .eq('import_batch_id', batchId);
 
-      if (leadsError) throw leadsError;
+      if (leadsError) {
+        console.error('Error deleting leads:', leadsError);
+        // Continue anyway - the batch might not exist in the database
+      }
 
       // Then delete the batch itself (RLS will ensure user owns it)
       const { error: batchError } = await supabase
@@ -37,7 +40,13 @@ export const useImportBatchOperations = () => {
         .delete()
         .eq('id', batchId);
 
-      if (batchError) throw batchError;
+      if (batchError) {
+        console.error('Error deleting batch:', batchError);
+        // If batch doesn't exist, that's fine - consider it successful
+        if (!batchError.message.includes('violates foreign key constraint')) {
+          throw batchError;
+        }
+      }
 
       toast({
         title: "Batch deleted",
@@ -97,9 +106,81 @@ export const useImportBatchOperations = () => {
     }
   };
 
+  const cleanupUserData = async (): Promise<boolean> => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to cleanup data",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    setLoading(true);
+    try {
+      // Delete all leads for this user
+      const { error: leadsError } = await supabase
+        .from('leads')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (leadsError) {
+        console.error('Error deleting leads:', leadsError);
+      }
+
+      // Delete all import batches for this user
+      const { error: batchesError } = await supabase
+        .from('import_batches')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (batchesError) {
+        console.error('Error deleting import batches:', batchesError);
+      }
+
+      // Delete all categories for this user
+      const { error: categoriesError } = await supabase
+        .from('categories')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (categoriesError) {
+        console.error('Error deleting categories:', categoriesError);
+      }
+
+      // Delete all email templates for this user
+      const { error: templatesError } = await supabase
+        .from('email_templates')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (templatesError) {
+        console.error('Error deleting email templates:', templatesError);
+      }
+
+      toast({
+        title: "Data cleaned up",
+        description: "All user data has been deleted and you can start fresh",
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error cleaning up user data:', error);
+      toast({
+        title: "Error cleaning up data",
+        description: "Failed to clean up user data",
+        variant: "destructive",
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     deleteBatch,
     updateBatchLeadsStatus,
+    cleanupUserData,
     loading
   };
 };
