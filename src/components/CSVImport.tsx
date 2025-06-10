@@ -1,10 +1,9 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { CategoryCombobox } from './CategoryCombobox';
 import type { Lead } from '@/types/lead';
@@ -22,6 +21,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
   const [preview, setPreview] = useState<any[]>([]);
   const [categoryName, setCategoryName] = useState<string>('');
   const [batchName, setBatchName] = useState<string>('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
   const parseCSVLine = (line: string): string[] => {
@@ -90,8 +90,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
     return url.trim();
   };
 
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
+  const processFile = useCallback((selectedFile: File) => {
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
       
@@ -139,6 +138,46 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
       });
     }
   }, [toast, categoryName]);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      processFile(selectedFile);
+    }
+  }, [processFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const csvFile = files.find(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
+    
+    if (csvFile) {
+      processFile(csvFile);
+    } else {
+      toast({
+        title: "Invalid file",
+        description: "Please drop a CSV file",
+        variant: "destructive",
+      });
+    }
+  }, [processFile, toast]);
+
+  const removeFile = useCallback(() => {
+    setFile(null);
+    setPreview([]);
+  }, []);
 
   const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
     if (!employeeCount) return 'Small (1-50)';
@@ -480,14 +519,65 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
         </div>
 
         <div>
-          <Label htmlFor="csv-file">Choose CSV File</Label>
-          <Input
-            id="csv-file"
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            className="mt-1"
-          />
+          <Label>CSV File</Label>
+          {!file ? (
+            <div
+              className={`mt-1 border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                isDragOver
+                  ? 'border-primary bg-primary/5'
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+              }`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 rounded-full bg-muted">
+                  <Upload className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <p className="text-lg font-medium">Drop your CSV file here</p>
+                  <p className="text-sm text-muted-foreground">or click to browse files</p>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <label htmlFor="csv-file-input" className="cursor-pointer">
+                    Choose File
+                    <input
+                      id="csv-file-input"
+                      type="file"
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="sr-only"
+                    />
+                  </label>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 border rounded-lg p-4 bg-muted/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-md bg-primary/10">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">{file.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(file.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeFile}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {preview.length > 0 && (
