@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +44,12 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Brand */}
           <div className="flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-blue-600" />
+            <img 
+              src="/lovable-uploads/ae7d4921-b780-4e68-82bd-29b7c7c31dce.png" 
+              alt="XONECT Logo" 
+              className="h-6 w-6 filter brightness-0 saturate-100"
+              style={{ filter: 'brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(2482%) hue-rotate(207deg) brightness(97%) contrast(96%)' }}
+            />
             <div>
               <h1 className="text-xl font-bold text-gray-900">XONECT</h1>
               <p className="text-xs text-gray-600">powered by Thomas & Niyogi</p>

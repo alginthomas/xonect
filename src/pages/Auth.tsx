@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useSearchParams } from 'react-router-dom';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -129,7 +129,12 @@ const Auth = () => {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Building2 className="h-8 w-8 text-blue-600" />
+            <img 
+              src="/lovable-uploads/ae7d4921-b780-4e68-82bd-29b7c7c31dce.png" 
+              alt="XONECT Logo" 
+              className="h-8 w-8 filter brightness-0 saturate-100"
+              style={{ filter: 'brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(2482%) hue-rotate(207deg) brightness(97%) contrast(96%)' }}
+            />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">XONECT</h1>
               <p className="text-sm text-gray-600">powered by Thomas & Niyogi</p>
