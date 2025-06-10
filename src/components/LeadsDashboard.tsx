@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
-import { DeleteAllLeadsDialog } from '@/components/DeleteAllLeadsDialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -221,11 +220,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
-  const handleDeleteAllComplete = () => {
-    // Refresh the page to reload data after deletion
-    window.location.reload();
-  };
-
   const handleExportLeads = (leadsToExport: Lead[], filterDescription: string = '') => {
     if (leadsToExport.length === 0) {
       toast({
@@ -408,8 +402,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <Download className="h-4 w-4" />
           Export CSV
         </Button>
-
-        <DeleteAllLeadsDialog onDeleteComplete={handleDeleteAllComplete} />
       </div>
     </div>
   );
