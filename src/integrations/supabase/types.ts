@@ -218,8 +218,10 @@ export type Database = {
           company_size: Database["public"]["Enums"]["company_size_category"]
           completeness_score: number
           created_at: string
+          department: string | null
           email: string
           emails_sent: number
+          facebook_url: string | null
           first_name: string
           id: string
           import_batch_id: string | null
@@ -228,11 +230,16 @@ export type Database = {
           last_name: string
           linkedin: string | null
           location: string | null
+          organization_founded: number | null
+          organization_website: string | null
+          personal_email: string | null
           phone: string | null
+          photo_url: string | null
           seniority: Database["public"]["Enums"]["seniority_level"]
           status: Database["public"]["Enums"]["lead_status"]
           tags: string[] | null
           title: string
+          twitter_url: string | null
           updated_at: string
           user_id: string | null
         }
@@ -242,8 +249,10 @@ export type Database = {
           company_size?: Database["public"]["Enums"]["company_size_category"]
           completeness_score?: number
           created_at?: string
+          department?: string | null
           email: string
           emails_sent?: number
+          facebook_url?: string | null
           first_name: string
           id?: string
           import_batch_id?: string | null
@@ -252,11 +261,16 @@ export type Database = {
           last_name: string
           linkedin?: string | null
           location?: string | null
+          organization_founded?: number | null
+          organization_website?: string | null
+          personal_email?: string | null
           phone?: string | null
+          photo_url?: string | null
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
           title: string
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -266,8 +280,10 @@ export type Database = {
           company_size?: Database["public"]["Enums"]["company_size_category"]
           completeness_score?: number
           created_at?: string
+          department?: string | null
           email?: string
           emails_sent?: number
+          facebook_url?: string | null
           first_name?: string
           id?: string
           import_batch_id?: string | null
@@ -276,11 +292,16 @@ export type Database = {
           last_name?: string
           linkedin?: string | null
           location?: string | null
+          organization_founded?: number | null
+          organization_website?: string | null
+          personal_email?: string | null
           phone?: string | null
+          photo_url?: string | null
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
           title?: string
+          twitter_url?: string | null
           updated_at?: string
           user_id?: string | null
         }

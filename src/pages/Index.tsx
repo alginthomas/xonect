@@ -121,13 +121,13 @@ const Index = () => {
         location: lead.location || '',
         phone: lead.phone || '',
         linkedin: lead.linkedin || '',
-        organizationWebsite: 'https://www.google.com', // Temporary hardcoded value for testing
-        organizationFounded: 2020, // Fixed: changed to number type
-        department: '', // Set to empty string since this field doesn't exist in DB
-        personalEmail: '', // Set to empty string since this field doesn't exist in DB
-        photoUrl: '', // Set to empty string since this field doesn't exist in DB
-        twitterUrl: '', // Set to empty string since this field doesn't exist in DB
-        facebookUrl: '', // Set to empty string since this field doesn't exist in DB
+        organizationWebsite: lead.organization_website || '',
+        organizationFounded: lead.organization_founded || undefined,
+        department: lead.department || '',
+        personalEmail: lead.personal_email || '',
+        photoUrl: lead.photo_url || '',
+        twitterUrl: lead.twitter_url || '',
+        facebookUrl: lead.facebook_url || '',
         tags: lead.tags || [],
         status: lead.status,
         emailsSent: lead.emails_sent,
@@ -235,7 +235,13 @@ const Index = () => {
         location: lead.location || null,
         phone: lead.phone || null,
         linkedin: lead.linkedin || null,
-        // Note: Omitting fields that don't exist in the database schema
+        organization_website: lead.organizationWebsite || null,
+        organization_founded: lead.organizationFounded || null,
+        department: lead.department || null,
+        personal_email: lead.personalEmail || null,
+        photo_url: lead.photoUrl || null,
+        twitter_url: lead.twitterUrl || null,
+        facebook_url: lead.facebookUrl || null,
         tags: lead.tags,
         status: lead.status,
         emails_sent: lead.emailsSent,
@@ -284,7 +290,13 @@ const Index = () => {
       if (updates.location !== undefined) supabaseUpdates.location = updates.location;
       if (updates.phone !== undefined) supabaseUpdates.phone = updates.phone;
       if (updates.linkedin !== undefined) supabaseUpdates.linkedin = updates.linkedin;
-      // Note: Omitting updates for fields that don't exist in the database schema
+      if (updates.organizationWebsite !== undefined) supabaseUpdates.organization_website = updates.organizationWebsite;
+      if (updates.organizationFounded !== undefined) supabaseUpdates.organization_founded = updates.organizationFounded;
+      if (updates.department !== undefined) supabaseUpdates.department = updates.department;
+      if (updates.personalEmail !== undefined) supabaseUpdates.personal_email = updates.personalEmail;
+      if (updates.photoUrl !== undefined) supabaseUpdates.photo_url = updates.photoUrl;
+      if (updates.twitterUrl !== undefined) supabaseUpdates.twitter_url = updates.twitterUrl;
+      if (updates.facebookUrl !== undefined) supabaseUpdates.facebook_url = updates.facebookUrl;
       if (updates.tags !== undefined) supabaseUpdates.tags = updates.tags;
       if (updates.status !== undefined) supabaseUpdates.status = updates.status;
       if (updates.emailsSent !== undefined) supabaseUpdates.emails_sent = updates.emailsSent;
