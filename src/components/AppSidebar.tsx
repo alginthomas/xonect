@@ -78,47 +78,47 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar" collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
-        <div className="flex items-center justify-between px-3 py-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-semibold text-primary-foreground">L</span>
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-sm font-bold text-primary-foreground">L</span>
             </div>
             {!isCollapsed && (
-              <span className="text-sm font-semibold text-sidebar-foreground">Lead</span>
+              <span className="text-lg font-semibold text-sidebar-foreground">Lead</span>
             )}
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={toggleSidebar}
-            className="h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
+            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent flex-shrink-0"
           >
             <PanelLeft className="h-4 w-4" />
           </Button>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-2">
+      <SidebarContent className="py-4">
         <SidebarGroup>
           {!isCollapsed && (
             <SidebarGroupLabel className="px-4 py-2 text-xs font-medium text-sidebar-foreground/60 uppercase tracking-wider">
               Navigation
             </SidebarGroupLabel>
           )}
-          <SidebarGroupContent className="px-2">
-            <SidebarMenu className="space-y-1">
+          <SidebarGroupContent className="px-3">
+            <SidebarMenu className="space-y-2">
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={isCollapsed ? item.title : undefined}
-                    className="h-11 px-3 rounded-lg"
+                    className="h-12 px-3 rounded-lg"
                   >
                     <NavLink 
                       to={item.url}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200 rounded-lg ${
+                        `flex items-center gap-3 px-3 py-3 text-sm font-medium transition-all duration-200 rounded-lg w-full ${
                           isActive 
                             ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm' 
                             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'

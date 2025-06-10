@@ -13,7 +13,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
-        <SidebarInset className="flex flex-col">
+        <SidebarInset className="flex flex-col flex-1">
           <header className="border-b bg-white shadow-sm">
             <div className="px-6 py-4">
               <div className="flex items-center justify-between">
@@ -29,7 +29,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               </div>
             </div>
           </header>
-          <main className="flex-1 bg-background">
+          <main className="flex-1 bg-background p-6 overflow-auto">
             {children}
           </main>
         </SidebarInset>
