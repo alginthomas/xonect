@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -129,14 +128,10 @@ const Auth = () => {
         {/* Brand Header */}
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <img 
-              src="/lovable-uploads/ae7d4921-b780-4e68-82bd-29b7c7c31dce.png" 
-              alt="XONECT Logo" 
-              className="h-8 w-8 filter brightness-0 saturate-100"
-              style={{ filter: 'brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(2482%) hue-rotate(207deg) brightness(97%) contrast(96%)' }}
-            />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">XONECT</h1>
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mb-2">
+                <span className="text-2xl font-bold text-white">X</span>
+              </div>
               <p className="text-sm text-gray-600">powered by Thomas & Niyogi</p>
             </div>
           </div>

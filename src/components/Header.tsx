@@ -44,14 +44,10 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Brand */}
           <div className="flex items-center gap-2">
-            <img 
-              src="/lovable-uploads/ae7d4921-b780-4e68-82bd-29b7c7c31dce.png" 
-              alt="XONECT Logo" 
-              className="h-6 w-6 filter brightness-0 saturate-100"
-              style={{ filter: 'brightness(0) saturate(100%) invert(36%) sepia(85%) saturate(2482%) hue-rotate(207deg) brightness(97%) contrast(96%)' }}
-            />
+            <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
+              <span className="text-sm font-bold text-white">X</span>
+            </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">XONECT</h1>
               <p className="text-xs text-gray-600">powered by Thomas & Niyogi</p>
             </div>
           </div>
