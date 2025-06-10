@@ -80,6 +80,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   useEffect(() => {
     if (selectedBatchId) {
       setBatchFilter(selectedBatchId);
+      // Reset other filters when viewing a specific batch
+      setSearchQuery('');
+      setCategoryFilter('all');
+      setStatusFilter('all');
+      setCurrentPage(1);
     }
   }, [selectedBatchId]);
 
@@ -95,6 +100,13 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   }, [searchQuery, categoryFilter, statusFilter, batchFilter]);
 
   const filteredLeads = useMemo(() => {
+    console.log('Filtering leads:', { 
+      totalLeads: leads.length, 
+      selectedBatchId, 
+      batchFilter,
+      importBatches: importBatches.map(b => ({ id: b.id, name: b.name, categoryId: b.categoryId }))
+    });
+
     return leads.filter(lead => {
       const searchMatch =
         lead.firstName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,14 +117,29 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       const categoryMatch = categoryFilter === 'all' || lead.categoryId === categoryFilter;
       const statusMatch = statusFilter === 'all' || lead.status === statusFilter;
       
-      // Find the batch that contains this lead
-      const leadBatch = importBatches.find(batch => 
-        batch.categoryId === lead.categoryId || 
-        leads.some(l => l.categoryId === batch.categoryId && l.id === lead.id)
-      );
-      const batchMatch = batchFilter === 'all' || leadBatch?.id === batchFilter;
+      // Improved batch filtering logic
+      let batchMatch = true;
+      if (batchFilter !== 'all') {
+        const selectedBatch = importBatches.find(batch => batch.id === batchFilter);
+        if (selectedBatch) {
+          // Filter leads that belong to the selected batch's category
+          batchMatch = lead.categoryId === selectedBatch.categoryId;
+        } else {
+          batchMatch = false;
+        }
+      }
 
-      return searchMatch && categoryMatch && statusMatch && batchMatch;
+      const result = searchMatch && categoryMatch && statusMatch && batchMatch;
+      
+      if (batchFilter !== 'all') {
+        console.log(`Lead ${lead.firstName} ${lead.lastName}:`, {
+          leadCategoryId: lead.categoryId,
+          batchCategoryId: importBatches.find(b => b.id === batchFilter)?.categoryId,
+          matches: result
+        });
+      }
+
+      return result;
     });
   }, [leads, searchQuery, categoryFilter, statusFilter, batchFilter, importBatches]);
 
@@ -511,8 +538,25 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     return parts.join('-') || 'all';
   };
 
+  console.log('Rendering LeadsDashboard with filteredLeads:', filteredLeads.length);
+
   return (
     <div className="space-y-8">
+      {/* Show batch-specific header when viewing a specific batch */}
+      {selectedBatchId && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <Package className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-blue-900">
+              Viewing leads from: {getBatchName(selectedBatchId)}
+            </h2>
+          </div>
+          <p className="text-sm text-blue-700 mt-1">
+            Showing {filteredLeads.length} leads from this import batch
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="apple-card">
           <CardHeader className="pb-3">
@@ -570,53 +614,56 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Lead Engagement</CardTitle>
-            <CardDescription>Proportion of leads contacted vs. not contacted</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  dataKey="value"
-                  isAnimationActive={false}
-                  data={engagementData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  fill="#8884d8"
-                  label
-                >
-                  {engagementData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+      {/* Only show charts if not viewing a specific batch or if there are leads to show */}
+      {(!selectedBatchId || filteredLeads.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Lead Engagement</CardTitle>
+              <CardDescription>Proportion of leads contacted vs. not contacted</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    dataKey="value"
+                    isAnimationActive={false}
+                    data={engagementData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={80}
+                    fill="#8884d8"
+                    label
+                  >
+                    {engagementData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Lead Quality</CardTitle>
-            <CardDescription>Distribution of lead quality based on completeness score</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={leadQualityData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="value" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Lead Quality</CardTitle>
+              <CardDescription>Distribution of lead quality based on completeness score</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={leadQualityData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#8884d8" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList>
@@ -645,8 +692,28 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               <CardTitle>All Leads ({filteredLeads.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              {renderLeadsTable(filteredLeads)}
-              {renderPagination(filteredLeads.length)}
+              {filteredLeads.length > 0 ? (
+                <>
+                  {renderLeadsTable(filteredLeads)}
+                  {renderPagination(filteredLeads.length)}
+                </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  {selectedBatchId ? (
+                    <div>
+                      <Package className="mx-auto h-12 w-12 mb-4 text-muted-foreground/50" />
+                      <p>No leads found in this import batch.</p>
+                      <p className="text-sm mt-2">The batch might be empty or leads may have been categorized differently.</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Users className="mx-auto h-12 w-12 mb-4 text-muted-foreground/50" />
+                      <p>No leads match your current filters.</p>
+                      <p className="text-sm mt-2">Try adjusting your search criteria or clear some filters.</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
