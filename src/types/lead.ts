@@ -1,5 +1,4 @@
-
-export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified';
+export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested';
 export type Seniority = 'Junior' | 'Mid-level' | 'Senior' | 'Executive' | 'C-level';
 export type CompanySize = 'Small (1-50)' | 'Medium (51-200)' | 'Large (201-1000)' | 'Enterprise (1000+)';
 
@@ -36,6 +35,7 @@ export interface Lead {
   createdAt: Date;
   completenessScore: number;
   categoryId?: string;
+  remarks?: string;
 }
 
 export interface EmailTemplate {

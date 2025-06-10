@@ -235,6 +235,7 @@ export type Database = {
           personal_email: string | null
           phone: string | null
           photo_url: string | null
+          remarks: string | null
           seniority: Database["public"]["Enums"]["seniority_level"]
           status: Database["public"]["Enums"]["lead_status"]
           tags: string[] | null
@@ -266,6 +267,7 @@ export type Database = {
           personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
+          remarks?: string | null
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
@@ -297,6 +299,7 @@ export type Database = {
           personal_email?: string | null
           phone?: string | null
           photo_url?: string | null
+          remarks?: string | null
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
@@ -374,6 +377,9 @@ export type Database = {
         | "Replied"
         | "Qualified"
         | "Unqualified"
+        | "Call Back"
+        | "Unresponsive"
+        | "Not Interested"
       seniority_level:
         | "Junior"
         | "Mid-level"
@@ -510,6 +516,9 @@ export const Constants = {
         "Replied",
         "Qualified",
         "Unqualified",
+        "Call Back",
+        "Unresponsive",
+        "Not Interested",
       ],
       seniority_level: [
         "Junior",

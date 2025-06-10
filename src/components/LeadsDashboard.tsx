@@ -9,8 +9,9 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
+import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download } from 'lucide-react';
+import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportLeadsToCSV } from '@/utils/csvExport';
@@ -103,6 +104,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   const handleStatusChange = (leadId: string, newStatus: Lead['status']) => {
     onUpdateLead(leadId, { status: newStatus });
+  };
+
+  const handleUpdateRemarks = (leadId: string, remarks: string) => {
+    onUpdateLead(leadId, { remarks });
   };
 
   const leadQualityData = useMemo(() => {
@@ -242,6 +247,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <SelectItem value="Replied">Replied</SelectItem>
                   <SelectItem value="Qualified">Qualified</SelectItem>
                   <SelectItem value="Unqualified">Unqualified</SelectItem>
+                  <SelectItem value="Call Back">Call Back</SelectItem>
+                  <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                  <SelectItem value="Not Interested">Not Interested</SelectItem>
                 </SelectContent>
               </Select>
             </TableCell>
@@ -258,6 +266,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     <Eye className="h-4 w-4" />
                   </Button>
                 </LeadDetailPopover>
+                <LeadRemarksDialog
+                  lead={lead}
+                  onUpdateRemarks={handleUpdateRemarks}
+                >
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className={lead.remarks ? "text-blue-600" : ""}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </LeadRemarksDialog>
                 <EmailDialog 
                   lead={lead} 
                   templates={templates}

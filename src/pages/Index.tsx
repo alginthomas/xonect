@@ -140,6 +140,7 @@ const Index = () => {
         createdAt: new Date(lead.created_at),
         completenessScore: lead.completeness_score,
         categoryId: lead.category_id || undefined,
+        remarks: lead.remarks || undefined,
       }));
 
       console.log('Loaded leads with organizationWebsite:', transformedLeads.map(l => ({
@@ -308,6 +309,7 @@ const Index = () => {
       if (updates.completenessScore !== undefined) supabaseUpdates.completeness_score = updates.completenessScore;
       if (updates.lastContactDate !== undefined) supabaseUpdates.last_contact_date = updates.lastContactDate?.toISOString();
       if (updates.categoryId !== undefined) supabaseUpdates.category_id = updates.categoryId;
+      if (updates.remarks !== undefined) supabaseUpdates.remarks = updates.remarks;
 
       const { error } = await supabase
         .from('leads')

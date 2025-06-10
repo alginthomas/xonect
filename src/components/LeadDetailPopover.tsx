@@ -23,7 +23,8 @@ import {
   Tag,
   ExternalLink,
   Twitter,
-  Facebook
+  Facebook,
+  MessageSquare
 } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
@@ -48,6 +49,9 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
       'Replied': 'bg-emerald-100 text-emerald-800',
       'Qualified': 'bg-green-100 text-green-800',
       'Unqualified': 'bg-red-100 text-red-800',
+      'Call Back': 'bg-orange-100 text-orange-800',
+      'Unresponsive': 'bg-gray-100 text-gray-800',
+      'Not Interested': 'bg-red-100 text-red-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -441,6 +445,24 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Remarks Section */}
+            {lead.remarks && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+                    <MessageSquare className="h-4 w-4" />
+                    Remarks
+                  </h4>
+                  <div className="bg-muted/50 rounded-lg p-3">
+                    <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">
+                      {lead.remarks}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </ScrollArea>
       </PopoverContent>
