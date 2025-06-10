@@ -59,40 +59,40 @@ export function AppSidebar() {
   const isCollapsed = state === 'collapsed';
 
   return (
-    <Sidebar className="border-r border-border bg-sidebar">
-      <SidebarHeader className="p-4">
+    <Sidebar className="border-r border-border bg-card">
+      <SidebarHeader className="p-4 border-b border-border">
         <div className="flex items-center justify-between">
           {!isCollapsed && (
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <span className="text-sm font-bold text-primary-foreground">L</span>
               </div>
-              <span className="font-semibold text-sidebar-foreground">LeadManager</span>
+              <span className="font-semibold text-foreground">LeadManager</span>
             </div>
           )}
-          <SidebarTrigger className="ml-auto" />
+          <SidebarTrigger className="ml-auto text-foreground hover:bg-accent" />
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-4">
-        <SidebarMenu className="space-y-1">
+      <SidebarContent className="px-4 py-4">
+        <SidebarMenu className="space-y-2">
           {navigation.map((item) => {
             const isActive = location.pathname === item.url;
             return (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild className="h-11">
+                <SidebarMenuButton asChild className="h-11 w-full">
                   <NavLink
                     to={item.url}
                     className={({ isActive }) =>
-                      `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
+                      `flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 w-full ${
                         isActive
-                          ? 'bg-primary text-primary-foreground font-medium'
-                          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+                          ? 'bg-primary text-primary-foreground font-medium shadow-sm'
+                          : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                       }`
                     }
                   >
-                    <item.icon className={`h-5 w-5 ${isCollapsed ? 'mx-auto' : ''}`} />
-                    {!isCollapsed && <span className="font-medium">{item.title}</span>}
+                    <item.icon className={`h-5 w-5 flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`} />
+                    {!isCollapsed && <span className="font-medium truncate">{item.title}</span>}
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
