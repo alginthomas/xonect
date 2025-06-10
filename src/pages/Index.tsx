@@ -1,9 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CSVImport } from '@/components/CSVImport';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { CategoryManager } from '@/components/CategoryManager';
+import { BrandingSettings } from '@/components/BrandingSettings';
 import Header from '@/components/Header';
 import { Upload, Users, Mail, BarChart, Tag, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';

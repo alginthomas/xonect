@@ -11,21 +11,23 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Lead, EmailTemplate } from '@/types/lead';
 
+interface BrandingData {
+  companyName: string;
+  companyLogo: string;
+  companyWebsite: string;
+  companyAddress: string;
+  senderName: string;
+  senderEmail: string;
+}
+
 interface EmailDialogProps {
   lead: Lead;
   templates: EmailTemplate[];
+  branding: BrandingData;
   onEmailSent: (leadId: string) => void;
-  branding: {
-    companyName: string;
-    companyLogo: string;
-    companyWebsite: string;
-    companyAddress: string;
-    senderName: string;
-    senderEmail: string;
-  };
 }
 
-export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEmailSent, branding }) => {
+export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, branding, onEmailSent }) => {
   const [open, setOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [subject, setSubject] = useState('');
