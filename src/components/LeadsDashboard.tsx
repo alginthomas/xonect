@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,8 @@ interface LeadsDashboardProps {
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
 }
 
+const FILTER_STORAGE_KEY = 'leadsDashboard_filters';
+
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ 
   leads, 
   templates, 
@@ -42,13 +44,41 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   branding,
   onUpdateLead 
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Load initial filter states from localStorage
+  const loadFiltersFromStorage = () => {
+    try {
+      const stored = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (error) {
+      console.error('Error loading filters from localStorage:', error);
+    }
+    return {
+      searchQuery: '',
+      categoryFilter: 'all',
+      statusFilter: 'all'
+    };
+  };
+
+  const initialFilters = loadFiltersFromStorage();
+  const [searchQuery, setSearchQuery] = useState(initialFilters.searchQuery);
+  const [categoryFilter, setCategoryFilter] = useState(initialFilters.categoryFilter);
+  const [statusFilter, setStatusFilter] = useState(initialFilters.statusFilter);
   const [currentPage, setCurrentPage] = useState(1);
   const [removingDuplicates, setRemovingDuplicates] = useState(false);
   const leadsPerPage = 10;
   const { toast } = useToast();
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    const filters = {
+      searchQuery,
+      categoryFilter,
+      statusFilter
+    };
+    localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filters));
+  }, [searchQuery, categoryFilter, statusFilter]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -250,6 +280,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <SelectItem value="Call Back">Call Back</SelectItem>
                   <SelectItem value="Unresponsive">Unresponsive</SelectItem>
                   <SelectItem value="Not Interested">Not Interested</SelectItem>
+                  <SelectItem value="Interested">Interested</SelectItem>
                 </SelectContent>
               </Select>
             </TableCell>
@@ -350,7 +381,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="New">New</SelectItem>
             <SelectItem value="Contacted">Contacted</SelectItem>
+            <SelectItem value="Opened">Opened</SelectItem>
+            <SelectItem value="Clicked">Clicked</SelectItem>
+            <SelectItem value="Replied">Replied</SelectItem>
             <SelectItem value="Qualified">Qualified</SelectItem>
+            <SelectItem value="Unqualified">Unqualified</SelectItem>
+            <SelectItem value="Call Back">Call Back</SelectItem>
+            <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+            <SelectItem value="Not Interested">Not Interested</SelectItem>
+            <SelectItem value="Interested">Interested</SelectItem>
           </SelectContent>
         </Select>
 
