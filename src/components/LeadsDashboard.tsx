@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AppleTable, AppleTableBody, AppleTableCell, AppleTableHead, AppleTableHeader, AppleTableRow } from '@/components/ui/apple-table';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailDialog } from '@/components/EmailDialog';
@@ -266,84 +266,105 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   };
 
   const renderLeadsTable = (filteredData: Lead[]) => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Phone</TableHead>
-          <TableHead>Company</TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Completeness</TableHead>
-          <TableHead className="text-right">Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {filteredData.slice(indexOfFirstLead, indexOfLastLead).map((lead) => (
-          <TableRow key={lead.id}>
-            <TableCell>{lead.firstName} {lead.lastName}</TableCell>
-            <TableCell>{lead.email}</TableCell>
-            <TableCell>{lead.phone || 'N/A'}</TableCell>
-            <TableCell>{lead.company}</TableCell>
-            <TableCell>{lead.title}</TableCell>
-            <TableCell>
-              <Select value={lead.status} onValueChange={(value) => handleStatusChange(lead.id, value as Lead['status'])}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Opened">Opened</SelectItem>
-                  <SelectItem value="Clicked">Clicked</SelectItem>
-                  <SelectItem value="Replied">Replied</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                  <SelectItem value="Unqualified">Unqualified</SelectItem>
-                  <SelectItem value="Call Back">Call Back</SelectItem>
-                  <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-                  <SelectItem value="Not Interested">Not Interested</SelectItem>
-                  <SelectItem value="Interested">Interested</SelectItem>
-                </SelectContent>
-              </Select>
-            </TableCell>
-            <TableCell>
-              <Progress value={lead.completenessScore} />
-            </TableCell>
-            <TableCell>
-              <div className="flex gap-2 justify-end">
-                <LeadDetailPopover 
-                  lead={lead} 
-                  categories={categories}
-                >
-                  <Button variant="outline" size="sm">
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </LeadDetailPopover>
-                <LeadRemarksDialog
-                  lead={lead}
-                  onUpdateRemarks={handleUpdateRemarks}
-                >
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className={lead.remarks ? "text-blue-600" : ""}
+    <div className="overflow-hidden">
+      <AppleTable>
+        <AppleTableHeader>
+          <AppleTableRow>
+            <AppleTableHead>Name</AppleTableHead>
+            <AppleTableHead className="hidden sm:table-cell">Email</AppleTableHead>
+            <AppleTableHead className="hidden md:table-cell">Phone</AppleTableHead>
+            <AppleTableHead className="hidden lg:table-cell">Company</AppleTableHead>
+            <AppleTableHead className="hidden lg:table-cell">Title</AppleTableHead>
+            <AppleTableHead>Status</AppleTableHead>
+            <AppleTableHead className="hidden xl:table-cell">Quality</AppleTableHead>
+            <AppleTableHead className="text-right">Actions</AppleTableHead>
+          </AppleTableRow>
+        </AppleTableHeader>
+        <AppleTableBody>
+          {filteredData.slice(indexOfFirstLead, indexOfLastLead).map((lead) => (
+            <AppleTableRow key={lead.id}>
+              <AppleTableCell className="font-medium">
+                <div className="flex flex-col">
+                  <span className="font-semibold">{lead.firstName} {lead.lastName}</span>
+                  <span className="text-xs text-muted-foreground sm:hidden">{lead.email}</span>
+                </div>
+              </AppleTableCell>
+              <AppleTableCell className="hidden sm:table-cell text-muted-foreground">
+                {lead.email}
+              </AppleTableCell>
+              <AppleTableCell className="hidden md:table-cell text-muted-foreground">
+                {lead.phone || 'N/A'}
+              </AppleTableCell>
+              <AppleTableCell className="hidden lg:table-cell">
+                <div className="flex flex-col">
+                  <span className="font-medium">{lead.company}</span>
+                  <span className="text-xs text-muted-foreground md:hidden">{lead.title}</span>
+                </div>
+              </AppleTableCell>
+              <AppleTableCell className="hidden lg:table-cell text-muted-foreground">
+                {lead.title}
+              </AppleTableCell>
+              <AppleTableCell>
+                <Select value={lead.status} onValueChange={(value) => handleStatusChange(lead.id, value as Lead['status'])}>
+                  <SelectTrigger className="w-32 h-8 text-xs font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="New">New</SelectItem>
+                    <SelectItem value="Contacted">Contacted</SelectItem>
+                    <SelectItem value="Opened">Opened</SelectItem>
+                    <SelectItem value="Clicked">Clicked</SelectItem>
+                    <SelectItem value="Replied">Replied</SelectItem>
+                    <SelectItem value="Qualified">Qualified</SelectItem>
+                    <SelectItem value="Unqualified">Unqualified</SelectItem>
+                    <SelectItem value="Call Back">Call Back</SelectItem>
+                    <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                    <SelectItem value="Not Interested">Not Interested</SelectItem>
+                    <SelectItem value="Interested">Interested</SelectItem>
+                  </SelectContent>
+                </Select>
+              </AppleTableCell>
+              <AppleTableCell className="hidden xl:table-cell">
+                <div className="flex items-center gap-2">
+                  <Progress value={lead.completenessScore} className="w-16" />
+                  <span className="text-xs text-muted-foreground font-medium">{lead.completenessScore}%</span>
+                </div>
+              </AppleTableCell>
+              <AppleTableCell>
+                <div className="flex gap-1 justify-end">
+                  <LeadDetailPopover 
+                    lead={lead} 
+                    categories={categories}
                   >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                </LeadRemarksDialog>
-                <EmailDialog 
-                  lead={lead} 
-                  templates={templates}
-                  branding={branding}
-                  onEmailSent={handleEmailSent}
-                />
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </LeadDetailPopover>
+                  <LeadRemarksDialog
+                    lead={lead}
+                    onUpdateRemarks={handleUpdateRemarks}
+                  >
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className={`h-8 w-8 p-0 ${lead.remarks ? "text-primary" : ""}`}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                  </LeadRemarksDialog>
+                  <EmailDialog 
+                    lead={lead} 
+                    templates={templates}
+                    branding={branding}
+                    onEmailSent={handleEmailSent}
+                  />
+                </div>
+              </AppleTableCell>
+            </AppleTableRow>
+          ))}
+        </AppleTableBody>
+      </AppleTable>
+    </div>
   );
 
   const renderPagination = (totalItems: number) => (
@@ -469,54 +490,59 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Total Leads</CardTitle>
-            <CardDescription>Number of leads in the system</CardDescription>
+    <div className="space-y-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="apple-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="text-2xl font-bold">{totalLeads}</div>
+            <p className="text-xs text-muted-foreground">
+              leads in system
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Contacted Leads</CardTitle>
-            <CardDescription>Leads that have been contacted</CardDescription>
+        <Card className="apple-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Contacted</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalContacted}</div>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold text-green-600">{totalContacted}</div>
+            <p className="text-xs text-muted-foreground">
+              leads contacted
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>New Leads</CardTitle>
-            <CardDescription>Leads that are newly added</CardDescription>
+        <Card className="apple-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">New Leads</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalNew}</div>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold text-blue-600">{totalNew}</div>
+            <p className="text-xs text-muted-foreground">
+              newly added
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Duplicate Leads</CardTitle>
-            <CardDescription>Leads with duplicate emails</CardDescription>
+        <Card className="apple-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Duplicates</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             <div className="text-2xl font-bold text-orange-600">{duplicates.length}</div>
             <Button 
               onClick={handleRemoveDuplicates}
               disabled={removingDuplicates || duplicates.length === 0}
               variant="outline"
               size="sm"
-              className="mt-2 w-full"
+              className="mt-2 w-full h-8 text-xs"
             >
-              <UserMinus className="h-4 w-4 mr-2" />
-              {removingDuplicates ? 'Removing...' : 'Remove Duplicates'}
+              <UserMinus className="h-3 w-3 mr-1" />
+              {removingDuplicates ? 'Removing...' : 'Remove'}
             </Button>
           </CardContent>
         </Card>
@@ -645,3 +671,5 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     </div>
   );
 };
+
+export default LeadsDashboard;
