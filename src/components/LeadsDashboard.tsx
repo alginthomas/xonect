@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Mail, TrendingUp, Filter, Search } from 'lucide-react';
+import { Users, Mail, TrendingUp, Filter, Search, CheckCircle } from 'lucide-react';
 import type { Lead } from '@/types/lead';
 
 interface LeadsDashboardProps {
