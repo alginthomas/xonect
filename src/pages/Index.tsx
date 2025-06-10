@@ -268,6 +268,7 @@ const Index = () => {
           <TabsContent value="dashboard" className="mt-6">
             <LeadsDashboard 
               leads={leads}
+              templates={emailTemplates}
               onUpdateLead={handleUpdateLead}
             />
           </TabsContent>
@@ -279,6 +280,7 @@ const Index = () => {
           <TabsContent value="leads" className="mt-6">
             <LeadsDashboard 
               leads={leads}
+              templates={emailTemplates}
               onUpdateLead={handleUpdateLead}
             />
           </TabsContent>

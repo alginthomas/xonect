@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,9 +27,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
       
       if (char === '"') {
         if (inQuotes && line[i + 1] === '"') {
-          // Handle escaped quotes
           current += '"';
-          i++; // Skip next quote
+          i++;
         } else {
           inQuotes = !inQuotes;
         }
@@ -64,12 +62,42 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     return '';
   };
 
+  const cleanPhoneNumber = (phone: string): string => {
+    if (!phone) return '';
+    // Remove all non-digit characters except + at the beginning
+    const cleaned = phone.replace(/[^\d+]/g, '');
+    // If it starts with multiple +, keep only one
+    return cleaned.replace(/^\++/, '+');
+  };
+
+  const cleanLinkedInUrl = (linkedin: string): string => {
+    if (!linkedin) return '';
+    const url = linkedin.trim().toLowerCase();
+    
+    // If it's already a full LinkedIn URL, return as is
+    if (url.startsWith('http')) {
+      return linkedin.trim();
+    }
+    
+    // If it looks like a LinkedIn username or partial URL
+    if (url.includes('linkedin.com/in/') || url.includes('linkedin.com/pub/')) {
+      return linkedin.startsWith('http') ? linkedin.trim() : `https://${linkedin.trim()}`;
+    }
+    
+    // If it's just a username, construct the full URL
+    if (url && !url.includes('linkedin.com')) {
+      const username = url.replace(/^[@\/]+/, ''); // Remove leading @ or /
+      return `https://www.linkedin.com/in/${username}`;
+    }
+    
+    return linkedin.trim();
+  };
+
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
       
-      // Parse CSV for preview
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
@@ -131,11 +159,21 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
   const calculateCompleteness = (lead: Partial<Lead>): number => {
     let score = 0;
-    const fields = ['firstName', 'lastName', 'email', 'company', 'title'];
-    fields.forEach(field => {
+    const requiredFields = ['firstName', 'lastName', 'email', 'company', 'title'];
+    const optionalFields = ['phone', 'linkedin', 'industry', 'location'];
+    
+    // Required fields (20 points each)
+    requiredFields.forEach(field => {
       if (lead[field as keyof Lead]) score += 20;
     });
-    return score;
+    
+    // Optional fields (5 points each, max 20 additional points)
+    let optionalScore = 0;
+    optionalFields.forEach(field => {
+      if (lead[field as keyof Lead]) optionalScore += 5;
+    });
+    
+    return Math.min(100, score + Math.min(20, optionalScore));
   };
 
   const handleImport = async () => {
@@ -166,14 +204,13 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
         
         lines.slice(1).forEach((line, index) => {
           const values = parseCSVLine(line);
-          if (values.length === 0 || values.every(v => !v.trim())) return; // Skip empty rows
+          if (values.length === 0 || values.every(v => !v.trim())) return;
           
           const rawLead: any = {};
           headers.forEach((header, i) => {
             rawLead[header] = values[i] || '';
           });
 
-          // More flexible column mapping
           const firstName = findColumnValue(rawLead, [
             'First Name', 'first_name', 'firstname', 'fname', 'given_name'
           ]);
@@ -194,7 +231,14 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             'Title', 'title', 'job_title', 'position', 'role'
           ]);
 
-          // Skip rows without essential data
+          const phone = cleanPhoneNumber(findColumnValue(rawLead, [
+            'Phone', 'phone', 'phone_number', 'tel', 'mobile', 'cell', 'telephone'
+          ]));
+
+          const linkedin = cleanLinkedInUrl(findColumnValue(rawLead, [
+            'LinkedIn', 'linkedin', 'linkedin_url', 'profile', 'linkedin_profile', 'linked_in'
+          ]));
+
           if (!firstName && !lastName && !email) {
             console.log(`Skipping row ${index + 1}: Missing essential data`);
             return;
@@ -217,12 +261,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             location: findColumnValue(rawLead, [
               'Location', 'location', 'city', 'address', 'country'
             ]),
-            phone: findColumnValue(rawLead, [
-              'Phone', 'phone', 'phone_number', 'tel', 'mobile'
-            ]),
-            linkedin: findColumnValue(rawLead, [
-              'LinkedIn', 'linkedin', 'linkedin_url', 'profile'
-            ]),
+            phone: phone,
+            linkedin: linkedin,
             tags: [],
             status: 'New',
             emailsSent: 0,
@@ -232,10 +272,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
           lead.completenessScore = calculateCompleteness(lead);
           
-          // Auto-tag based on data
           if (lead.completenessScore === 100) lead.tags.push('Complete');
           if (lead.completenessScore < 60) lead.tags.push('Incomplete');
           if (lead.seniority === 'C-level' || lead.seniority === 'Executive') lead.tags.push('High Priority');
+          if (lead.phone) lead.tags.push('Has Phone');
+          if (lead.linkedin) lead.tags.push('Has LinkedIn');
 
           leads.push(lead);
           console.log(`Processed lead ${index + 1}:`, lead);
@@ -281,7 +322,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           Import Lead List
         </CardTitle>
         <CardDescription>
-          Upload a CSV file with lead data. Supported columns: First Name, Last Name, Email, Company, Title, Company Size, etc.
+          Upload a CSV file with lead data. Supported columns: First Name, Last Name, Email, Company, Title, Phone, LinkedIn, Company Size, etc.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

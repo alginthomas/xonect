@@ -5,15 +5,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Mail, TrendingUp, Filter, Search, CheckCircle } from 'lucide-react';
-import type { Lead } from '@/types/lead';
+import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin } from 'lucide-react';
+import { EmailDialog } from './EmailDialog';
+import type { Lead, EmailTemplate } from '@/types/lead';
 
 interface LeadsDashboardProps {
   leads: Lead[];
+  templates?: EmailTemplate[];
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
 }
 
-export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ leads, onUpdateLead }) => {
+export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ 
+  leads, 
+  templates = [], 
+  onUpdateLead 
+}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [seniorityFilter, setSeniorityFilter] = useState('all');
@@ -49,6 +55,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ leads, onUpdateL
       openRate: openRate.toFixed(1),
     };
   }, [leads]);
+
+  const handleEmailSent = (leadId: string) => {
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      onUpdateLead(leadId, {
+        emailsSent: lead.emailsSent + 1,
+        status: 'Contacted',
+        lastContactDate: new Date(),
+      });
+    }
+  };
 
   const getStatusColor = (status: Lead['status']) => {
     const colors = {
@@ -194,7 +211,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ leads, onUpdateL
                 <thead className="bg-muted">
                   <tr>
                     <th className="text-left p-3 font-medium">Name</th>
-                    <th className="text-left p-3 font-medium">Email</th>
+                    <th className="text-left p-3 font-medium">Contact</th>
                     <th className="text-left p-3 font-medium">Company</th>
                     <th className="text-left p-3 font-medium">Title</th>
                     <th className="text-left p-3 font-medium">Status</th>
@@ -211,7 +228,30 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ leads, onUpdateL
                           <div className="text-sm text-muted-foreground">{lead.seniority}</div>
                         </div>
                       </td>
-                      <td className="p-3">{lead.email}</td>
+                      <td className="p-3">
+                        <div className="space-y-1">
+                          <div className="text-sm">{lead.email}</div>
+                          <div className="flex gap-2">
+                            {lead.phone && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {lead.phone}
+                              </div>
+                            )}
+                            {lead.linkedin && (
+                              <a 
+                                href={lead.linkedin} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                              >
+                                <Linkedin className="h-3 w-3" />
+                                LinkedIn
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      </td>
                       <td className="p-3">
                         <div>
                           <div className="font-medium">{lead.company}</div>
@@ -236,9 +276,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({ leads, onUpdateL
                         </div>
                       </td>
                       <td className="p-3">
-                        <Button variant="outline" size="sm">
-                          Send Email
-                        </Button>
+                        <EmailDialog 
+                          lead={lead} 
+                          templates={templates}
+                          onEmailSent={handleEmailSent}
+                        />
                       </td>
                     </tr>
                   ))}
