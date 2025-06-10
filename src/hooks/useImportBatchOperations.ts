@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { ImportBatch } from '@/types/category';
 import type { LeadStatus } from '@/types/lead';
@@ -8,11 +9,21 @@ import type { LeadStatus } from '@/types/lead';
 export const useImportBatchOperations = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const deleteBatch = async (batchId: string): Promise<boolean> => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to delete batches",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     setLoading(true);
     try {
-      // First delete all leads associated with this batch
+      // First delete all leads associated with this batch (RLS will ensure user owns them)
       const { error: leadsError } = await supabase
         .from('leads')
         .delete()
@@ -20,13 +31,18 @@ export const useImportBatchOperations = () => {
 
       if (leadsError) throw leadsError;
 
-      // Then delete the batch itself
+      // Then delete the batch itself (RLS will ensure user owns it)
       const { error: batchError } = await supabase
         .from('import_batches')
         .delete()
         .eq('id', batchId);
 
       if (batchError) throw batchError;
+
+      toast({
+        title: "Batch deleted",
+        description: "Import batch and associated leads have been deleted",
+      });
 
       return true;
     } catch (error) {
@@ -43,8 +59,18 @@ export const useImportBatchOperations = () => {
   };
 
   const updateBatchLeadsStatus = async (batchId: string, status: LeadStatus): Promise<boolean> => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to update batch status",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     setLoading(true);
     try {
+      // RLS will ensure only user's leads are updated
       const { error } = await supabase
         .from('leads')
         .update({ status })
