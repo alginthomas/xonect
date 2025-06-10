@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin, MapPin, Building, Globe, Calendar, User, Briefcase, ExternalLink, Twitter, Facebook } from 'lucide-react';
 import { EmailDialog } from './EmailDialog';
+import { LeadStatusSelect } from './LeadStatusSelect';
 import type { Lead, EmailTemplate } from '@/types/lead';
 
 interface LeadsDashboardProps {
@@ -79,6 +79,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         lastContactDate: new Date(),
       });
     }
+  };
+
+  const handleStatusChange = (leadId: string, newStatus: Lead['status']) => {
+    onUpdateLead(leadId, { status: newStatus });
   };
 
   const getStatusColor = (status: Lead['status']) => {
@@ -166,7 +170,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <p className="text-xl font-bold">{stats.leadsWithLinkedIn}</p>
               </div>
             </div>
-          </CardContent>
+          </Card>
         </Card>
 
         <Card>
@@ -275,7 +279,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     <th className="text-left p-3 font-medium min-w-[300px]">Contact & Social</th>
                     <th className="text-left p-3 font-medium min-w-[250px]">Organization</th>
                     <th className="text-left p-3 font-medium min-w-[200px]">Position & Department</th>
-                    <th className="text-left p-3 font-medium">Priority & Status</th>
+                    <th className="text-left p-3 font-medium">Status</th>
                     <th className="text-left p-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -427,10 +431,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       </td>
                       
                       <td className="p-3">
-                        <div className="space-y-2">
-                          <Badge className={getStatusColor(lead.status)}>
-                            {lead.status}
-                          </Badge>
+                        <div className="space-y-3">
+                          <LeadStatusSelect
+                            leadId={lead.id}
+                            currentStatus={lead.status}
+                            onStatusChange={handleStatusChange}
+                          />
                           
                           <div className="flex items-center gap-2">
                             <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
