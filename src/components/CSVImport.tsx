@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { CategorySelectorWithCreate } from './CategorySelectorWithCreate';
+import { CategoryCombobox } from './CategoryCombobox';
 import type { Lead } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -19,7 +20,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
+  const [categoryName, setCategoryName] = useState<string>('');
   const [batchName, setBatchName] = useState<string>('');
   const { toast } = useToast();
 
@@ -99,6 +100,14 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
       const timestamp = new Date().toLocaleDateString();
       setBatchName(`${fileName} - ${timestamp}`);
       
+      // Auto-suggest category name from file name
+      if (!categoryName) {
+        const suggestedCategory = fileName
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+        setCategoryName(suggestedCategory);
+      }
+      
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
@@ -129,7 +138,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
         variant: "destructive",
       });
     }
-  }, [toast]);
+  }, [toast, categoryName]);
 
   const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
     if (!employeeCount) return 'Small (1-50)';
@@ -200,6 +209,14 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
     return parts.join(', ');
   };
 
+  const generateRandomColor = (): string => {
+    const colors = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+  };
+
   const handleImport = async () => {
     if (!file || !batchName.trim()) {
       toast({
@@ -213,6 +230,32 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
     setImporting(true);
     
     try {
+      let selectedCategoryId: string | undefined;
+
+      // Check if we need to create a new category
+      if (categoryName.trim()) {
+        const existingCategory = categories.find(cat => 
+          cat.name.toLowerCase() === categoryName.toLowerCase()
+        );
+
+        if (existingCategory) {
+          selectedCategoryId = existingCategory.id;
+        } else {
+          // Create new category automatically
+          console.log('Creating new category:', categoryName);
+          await onCreateCategory({
+            name: categoryName.trim(),
+            description: `Auto-created during import of ${file.name}`,
+            color: generateRandomColor(),
+            criteria: {}
+          });
+          
+          // Find the newly created category
+          // Note: We'll rely on the parent component to refresh categories
+          // and the category will be assigned by name matching in the import batch
+        }
+      }
+
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
@@ -350,7 +393,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           createdAt: new Date(),
           metadata: {
             headers,
-            processingTime: new Date().toISOString()
+            processingTime: new Date().toISOString(),
+            categoryName: categoryName.trim() || undefined
           }
         };
 
@@ -364,14 +408,22 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           });
         } else {
           onImportComplete(leads, importBatch);
+          
+          const successMessage = categoryName.trim() && !categories.find(cat => 
+            cat.name.toLowerCase() === categoryName.toLowerCase()
+          ) 
+            ? `Imported ${leads.length} leads and created category "${categoryName}"`
+            : `Imported ${leads.length} leads successfully`;
+          
           toast({
             title: "Import successful",
-            description: `Imported ${leads.length} leads successfully`,
+            description: successMessage,
           });
+          
           setFile(null);
           setPreview([]);
           setBatchName('');
-          setSelectedCategoryId('');
+          setCategoryName('');
         }
       };
       
@@ -396,7 +448,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           Import Lead Database
         </CardTitle>
         <CardDescription>
-          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. Assign to a category for better organization.
+          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. Categories are created automatically if they don't exist.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -412,16 +464,18 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
             />
           </div>
           <div>
-            <Label htmlFor="category">Category (Optional)</Label>
+            <Label htmlFor="category">Category</Label>
             <div className="mt-1">
-              <CategorySelectorWithCreate
+              <CategoryCombobox
                 categories={categories}
-                selectedCategoryId={selectedCategoryId}
-                onCategoryChange={setSelectedCategoryId}
-                onCreateCategory={onCreateCategory}
-                placeholder="Select or create category for these leads"
+                value={categoryName}
+                onChange={setCategoryName}
+                placeholder="Select existing or type new category..."
               />
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              New categories will be created automatically during import
+            </p>
           </div>
         </div>
 
