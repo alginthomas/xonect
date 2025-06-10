@@ -96,6 +96,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
+  const handleStatusChange = (leadId: string, newStatus: Lead['status']) => {
+    onUpdateLead(leadId, { status: newStatus });
+  };
+
   const leadQualityData = useMemo(() => {
     const highQuality = leads.filter(lead => lead.completenessScore >= 75).length;
     const mediumQuality = leads.filter(lead => lead.completenessScore >= 50 && lead.completenessScore < 75).length;
@@ -131,9 +135,20 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <TableCell>{lead.company}</TableCell>
             <TableCell>{lead.title}</TableCell>
             <TableCell>
-              <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
-                {lead.status}
-              </Badge>
+              <Select value={lead.status} onValueChange={(value) => handleStatusChange(lead.id, value as Lead['status'])}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Opened">Opened</SelectItem>
+                  <SelectItem value="Clicked">Clicked</SelectItem>
+                  <SelectItem value="Replied">Replied</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="Unqualified">Unqualified</SelectItem>
+                </SelectContent>
+              </Select>
             </TableCell>
             <TableCell>
               <Progress value={lead.completenessScore} />
