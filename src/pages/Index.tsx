@@ -51,7 +51,7 @@ const Index = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
-  const { deleteBatch, cleanupUserData, loading } = useImportBatchOperations();
+  const { deleteBatch, loading } = useImportBatchOperations();
 
   // Determine which tab should be active based on the current route
   const getActiveTab = () => {
@@ -469,22 +469,11 @@ const Index = () => {
       <div className="space-y-8">
         {/* Page Header */}
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
-              <p className="text-muted-foreground">
-                Manage your leads, track engagement, and grow your business.
-              </p>
-            </div>
-            <Button
-              variant="destructive"
-              onClick={handleCleanupData}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              {loading ? 'Cleaning...' : 'Cleanup All Data'}
-            </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
+            <p className="text-muted-foreground">
+              Manage your leads, track engagement, and grow your business.
+            </p>
           </div>
         </div>
 
