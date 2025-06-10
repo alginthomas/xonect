@@ -6,10 +6,13 @@ import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { CategoryManager } from '@/components/CategoryManager';
 import { BrandingSettings } from '@/components/BrandingSettings';
 import Header from '@/components/Header';
-import { Upload, Users, Mail, BarChart, Tag, Building2 } from 'lucide-react';
+import { Upload, Users, Mail, BarChart, Tag, Building2, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -20,6 +23,8 @@ const Index = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [branding, setBranding] = useState({
     companyName: 'XONECT powered by Thomas & Niyogi',
     companyLogo: '',
@@ -483,9 +488,56 @@ const Index = () => {
     }
   }, []);
 
+  // Mobile tab navigation items
+  const tabItems = [
+    { value: 'dashboard', label: 'Dashboard', icon: BarChart },
+    { value: 'import', label: 'Import', icon: Upload },
+    { value: 'leads', label: 'Leads', icon: Users },
+    { value: 'categories', label: 'Categories', icon: Tag },
+    { value: 'templates', label: 'Templates', icon: Mail },
+    { value: 'branding', label: 'Branding', icon: Building2 },
+  ];
+
+  // Mobile navigation component
+  const MobileNavigation = () => (
+    <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="md:hidden">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-80 p-0">
+        <div className="p-6">
+          <h2 className="text-lg font-semibold mb-4">Navigation</h2>
+          <ScrollArea className="h-[calc(100vh-8rem)]">
+            <div className="space-y-2">
+              {tabItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={item.value}
+                    variant={activeTab === item.value ? "default" : "ghost"}
+                    className="w-full justify-start"
+                    onClick={() => {
+                      setActiveTab(item.value);
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <Icon className="h-4 w-4 mr-2" />
+                    {item.label}
+                  </Button>
+                );
+              })}
+            </div>
+          </ScrollArea>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+
   if (!user || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading your data...</p>
@@ -498,93 +550,123 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
+      <div className="container mx-auto px-4 py-4 sm:py-8 max-w-7xl">
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between mb-6 md:hidden">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              Lead Management
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your leads and campaigns
+            </p>
+          </div>
+          <MobileNavigation />
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden md:block mb-8">
+          <h1 className="text-3xl lg:text-4xl font-bold text-foreground mb-2">
             Lead Management Dashboard
           </h1>
-          <p className="text-xl text-muted-foreground">
+          <p className="text-lg xl:text-xl text-muted-foreground">
             Import, organize, and nurture your leads with personalized email campaigns
           </p>
         </div>
 
-        <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <BarChart className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
-            <TabsTrigger value="import" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              Import
-            </TabsTrigger>
-            <TabsTrigger value="leads" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Leads
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              Categories
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              Templates
-            </TabsTrigger>
-            <TabsTrigger value="branding" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Branding
-            </TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Desktop Tabs */}
+          <TabsList className="hidden md:grid w-full grid-cols-3 lg:grid-cols-6 mb-6">
+            {tabItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <TabsTrigger 
+                  key={item.value} 
+                  value={item.value} 
+                  className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm"
+                >
+                  <Icon className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline">{item.label}</span>
+                </TabsTrigger>
+              );
+            })}
           </TabsList>
 
-          <TabsContent value="dashboard" className="mt-6">
-            <LeadsDashboard 
-              leads={leads}
-              templates={emailTemplates}
-              categories={categories}
-              branding={branding}
-              onUpdateLead={handleUpdateLead}
-            />
-          </TabsContent>
+          {/* Mobile Tabs - Horizontal Scroll */}
+          <div className="md:hidden mb-6">
+            <ScrollArea className="w-full whitespace-nowrap">
+              <div className="flex space-x-2 p-1">
+                {tabItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Button
+                      key={item.value}
+                      variant={activeTab === item.value ? "default" : "outline"}
+                      size="sm"
+                      className="flex items-center gap-2 whitespace-nowrap"
+                      onClick={() => setActiveTab(item.value)}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {item.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
 
-          <TabsContent value="import" className="mt-6">
-            <CSVImport 
-              onImportComplete={handleImportComplete}
-              categories={categories}
-            />
-          </TabsContent>
+          {/* Tab Content */}
+          <div className="w-full">
+            <TabsContent value="dashboard" className="mt-0">
+              <LeadsDashboard 
+                leads={leads}
+                templates={emailTemplates}
+                categories={categories}
+                branding={branding}
+                onUpdateLead={handleUpdateLead}
+              />
+            </TabsContent>
 
-          <TabsContent value="leads" className="mt-6">
-            <LeadsDashboard 
-              leads={leads}
-              templates={emailTemplates}
-              categories={categories}
-              branding={branding}
-              onUpdateLead={handleUpdateLead}
-            />
-          </TabsContent>
+            <TabsContent value="import" className="mt-0">
+              <CSVImport 
+                onImportComplete={handleImportComplete}
+                categories={categories}
+              />
+            </TabsContent>
 
-          <TabsContent value="categories" className="mt-6">
-            <CategoryManager
-              categories={categories}
-              onCreateCategory={handleCreateCategory}
-              onUpdateCategory={handleUpdateCategory}
-              onDeleteCategory={handleDeleteCategory}
-            />
-          </TabsContent>
+            <TabsContent value="leads" className="mt-0">
+              <LeadsDashboard 
+                leads={leads}
+                templates={emailTemplates}
+                categories={categories}
+                branding={branding}
+                onUpdateLead={handleUpdateLead}
+              />
+            </TabsContent>
 
-          <TabsContent value="templates" className="mt-6">
-            <EmailTemplateBuilder 
-              onSaveTemplate={handleSaveTemplate}
-              templates={emailTemplates}
-            />
-          </TabsContent>
+            <TabsContent value="categories" className="mt-0">
+              <CategoryManager
+                categories={categories}
+                onCreateCategory={handleCreateCategory}
+                onUpdateCategory={handleUpdateCategory}
+                onDeleteCategory={handleDeleteCategory}
+              />
+            </TabsContent>
 
-          <TabsContent value="branding" className="mt-6">
-            <BrandingSettings 
-              branding={branding}
-              onSave={handleSaveBranding}
-            />
-          </TabsContent>
+            <TabsContent value="templates" className="mt-0">
+              <EmailTemplateBuilder 
+                onSaveTemplate={handleSaveTemplate}
+                templates={emailTemplates}
+              />
+            </TabsContent>
+
+            <TabsContent value="branding" className="mt-0">
+              <BrandingSettings 
+                branding={branding}
+                onSave={handleSaveBranding}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>
