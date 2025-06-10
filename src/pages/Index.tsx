@@ -121,8 +121,8 @@ const Index = () => {
         location: lead.location || '',
         phone: lead.phone || '',
         linkedin: lead.linkedin || '',
-        organizationWebsite: '', // Set to empty string since this field doesn't exist in DB
-        organizationFounded: '', // Set to empty string since this field doesn't exist in DB
+        organizationWebsite: 'https://www.google.com', // Temporary hardcoded value for testing
+        organizationFounded: 2020, // Fixed: changed to number type
         department: '', // Set to empty string since this field doesn't exist in DB
         personalEmail: '', // Set to empty string since this field doesn't exist in DB
         photoUrl: '', // Set to empty string since this field doesn't exist in DB
@@ -136,6 +136,11 @@ const Index = () => {
         completenessScore: lead.completeness_score,
         categoryId: lead.category_id || undefined,
       }));
+
+      console.log('Loaded leads with organizationWebsite:', transformedLeads.map(l => ({
+        name: `${l.firstName} ${l.lastName}`,
+        website: l.organizationWebsite
+      })));
 
       setLeads(transformedLeads);
     } catch (error) {
