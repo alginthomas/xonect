@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   User, 
   Building, 
@@ -40,6 +42,8 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
   categories,
   children
 }) => {
+  const isMobile = useIsMobile();
+
   const getStatusColor = (status: Lead['status']) => {
     const colors = {
       'New': 'bg-blue-100 text-blue-800',
@@ -161,27 +165,34 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
         {children}
       </PopoverTrigger>
       <PopoverContent 
-        className="w-[90vw] sm:w-96 max-w-[400px] p-0 max-h-[80vh]" 
-        align="start"
-        side="bottom"
+        className={`
+          ${isMobile ? 'w-[95vw] max-w-[95vw]' : 'w-[450px] max-w-[450px]'}
+          p-0 
+          max-h-[85vh] 
+          overflow-hidden
+        `}
+        align={isMobile ? "center" : "start"}
+        side={isMobile ? "top" : "bottom"}
         sideOffset={5}
+        avoidCollisions={true}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <ScrollArea className="h-full max-h-[75vh]">
-          <div className="p-4 sm:p-6 space-y-4">
+        <ScrollArea className="h-full max-h-[85vh]">
+          <div className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>
             {/* Header with Avatar and Basic Info */}
             <div className="flex items-start gap-3">
-              <Avatar className="h-10 w-10 sm:h-12 sm:w-12 shrink-0">
+              <Avatar className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} shrink-0`}>
                 <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-                <AvatarFallback className="text-xs sm:text-sm">
+                <AvatarFallback className={isMobile ? 'text-xs' : 'text-sm'}>
                   {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-1 min-w-0">
+              <div className="flex-1 space-y-2 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold text-base sm:text-lg leading-tight">
+                  <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'} leading-tight`}>
                     {lead.firstName} {lead.lastName}
                   </h3>
-                  <div className="w-6 sm:w-8 h-1.5 bg-muted rounded-full overflow-hidden shrink-0">
+                  <div className={`${isMobile ? 'w-6' : 'w-8'} h-2 bg-muted rounded-full overflow-hidden shrink-0`}>
                     <div 
                       className="h-full bg-primary transition-all"
                       style={{ width: `${lead.completenessScore}%` }}
@@ -189,12 +200,12 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                <div className={`flex items-center gap-2 ${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground`}>
                   <Briefcase className="h-3 w-3 shrink-0" />
                   <span className="truncate">{lead.title}</span>
                 </div>
                 
-                <div className="flex flex-wrap gap-1 sm:gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   <Badge className={`${getStatusColor(lead.status)} text-xs`}>
                     {lead.status}
                   </Badge>
@@ -209,28 +220,28 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
             {/* Contact Information */}
             <div className="space-y-3">
-              <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+              <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                 <User className="h-4 w-4" />
                 Contact Details
               </h4>
               
-              <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+              <div className={`grid grid-cols-1 gap-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <span className="truncate">{lead.email}</span>
+                  <span className="truncate break-all">{lead.email}</span>
                 </div>
                 
                 {lead.personalEmail && lead.personalEmail !== lead.email && (
                   <div className="flex items-center gap-2 text-muted-foreground min-w-0">
                     <Mail className="h-3 w-3 shrink-0" />
-                    <span className="truncate">Personal: {lead.personalEmail}</span>
+                    <span className="truncate break-all">Personal: {lead.personalEmail}</span>
                   </div>
                 )}
                 
                 {lead.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span>{lead.phone}</span>
+                    <span className="break-all">{lead.phone}</span>
                   </div>
                 )}
                 
@@ -282,7 +293,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
             {/* Company Information with Website Button */}
             <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+                <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                   <Building className="h-4 w-4" />
                   Company Profile
                 </h4>
@@ -291,16 +302,15 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={handleViewWebsite}
-                    className="flex items-center gap-1 text-xs px-2 py-1 h-auto shrink-0"
+                    className={`flex items-center gap-1 ${isMobile ? 'text-xs px-2 py-1' : 'text-sm px-3 py-2'} h-auto shrink-0`}
                   >
                     <Globe className="h-3 w-3" />
-                    <span className="hidden sm:inline">Visit Website</span>
-                    <span className="sm:hidden">Visit</span>
+                    <span>{isMobile ? 'Visit' : 'Visit Website'}</span>
                   </Button>
                 )}
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium truncate">{lead.company}</span>
                   {hasWebsite && (
@@ -317,7 +327,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   )}
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span className="text-xs truncate">{lead.companySize}</span>
@@ -332,7 +342,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 </div>
                 
                 {lead.industry && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs w-fit">
                     {lead.industry}
                   </Badge>
                 )}
@@ -355,14 +365,14 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
             {/* Purchase Likelihood & Suggestions */}
             <div className="space-y-3">
-              <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+              <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                 <Target className="h-4 w-4" />
                 Sales Intelligence
               </h4>
               
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm">Purchase Likelihood</span>
+                  <span className={isMobile ? 'text-xs' : 'text-sm'}>Purchase Likelihood</span>
                   <span className={`font-semibold text-sm ${getLikelihoodColor(purchaseLikelihood)}`}>
                     {purchaseLikelihood}%
                   </span>
@@ -381,7 +391,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               </div>
               
               <div className="space-y-2">
-                <span className="text-xs sm:text-sm font-medium">Suggested Products:</span>
+                <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Suggested Products:</span>
                 <div className="flex flex-wrap gap-1">
                   {suggestedProducts.map((product, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
@@ -396,8 +406,8 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
             {/* Engagement History & Category */}
             <div className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
-                <div className="space-y-1">
+              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span>Emails Sent: {lead.emailsSent}</span>
@@ -410,7 +420,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   )}
                 </div>
                 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full shrink-0" 
@@ -425,20 +435,20 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               </div>
               
               {lead.tags.length > 0 && (
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Tag className="h-3 w-3 shrink-0" />
                     <span>Tags:</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {lead.tags.slice(0, 4).map(tag => (
+                    {lead.tags.slice(0, isMobile ? 3 : 4).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
-                    {lead.tags.length > 4 && (
+                    {lead.tags.length > (isMobile ? 3 : 4) && (
                       <Badge variant="outline" className="text-xs">
-                        +{lead.tags.length - 4} more
+                        +{lead.tags.length - (isMobile ? 3 : 4)} more
                       </Badge>
                     )}
                   </div>
@@ -451,12 +461,12 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               <>
                 <Separator />
                 <div className="space-y-2">
-                  <h4 className="font-medium flex items-center gap-2 text-sm sm:text-base">
+                  <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                     <MessageSquare className="h-4 w-4" />
                     Remarks
                   </h4>
                   <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs sm:text-sm text-muted-foreground whitespace-pre-wrap">
+                    <p className={`${isMobile ? 'text-xs' : 'text-sm'} text-muted-foreground whitespace-pre-wrap`}>
                       {lead.remarks}
                     </p>
                   </div>
