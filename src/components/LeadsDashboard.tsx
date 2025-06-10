@@ -8,7 +8,6 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin, MapPin, Building, Globe, Calendar, User, Briefcase, ExternalLink, Twitter, Facebook } from 'lucide-react';
 import { EmailDialog } from './EmailDialog';
-import { LeadStatusSelect } from './LeadStatusSelect';
 import type { Lead, EmailTemplate } from '@/types/lead';
 
 interface LeadsDashboardProps {
@@ -31,9 +30,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const matchesSearch = searchTerm === '' || 
-        lead.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.organization_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (lead.title && lead.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (lead.industry && lead.industry.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -42,7 +41,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       const matchesSeniority = seniorityFilter === 'all' || lead.seniority === seniorityFilter;
-      const matchesCompanySize = companySizeFilter === 'all' || lead.estimated_num_employees === companySizeFilter;
+      const matchesCompanySize = companySizeFilter === 'all' || lead.companySize === companySizeFilter;
       const matchesDepartment = departmentFilter === 'all' || lead.department === departmentFilter;
 
       return matchesSearch && matchesStatus && matchesSeniority && matchesCompanySize && matchesDepartment;
@@ -54,8 +53,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const validLeads = leads.filter(lead => lead.email && lead.completenessScore >= 60).length;
     const emailsSent = leads.reduce((sum, lead) => sum + lead.emailsSent, 0);
     const highPriorityLeads = leads.filter(lead => lead.seniority === 'C-level' || lead.seniority === 'Executive').length;
-    const leadsWithPhone = leads.filter(lead => lead.organization_phone).length;
-    const leadsWithLinkedIn = leads.filter(lead => lead.linkedin_url).length;
+    const leadsWithPhone = leads.filter(lead => lead.phone).length;
+    const leadsWithLinkedIn = leads.filter(lead => lead.linkedin).length;
 
     return {
       totalLeads,
@@ -80,10 +79,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         lastContactDate: new Date(),
       });
     }
-  };
-
-  const handleStatusChange = (leadId: string, newStatus: Lead['status']) => {
-    onUpdateLead(leadId, { status: newStatus });
   };
 
   const getStatusColor = (status: Lead['status']) => {
@@ -246,14 +241,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sizes</SelectItem>
-                <SelectItem value="1-10">1-10</SelectItem>
-                <SelectItem value="11-50">11-50</SelectItem>
-                <SelectItem value="51-200">51-200</SelectItem>
-                <SelectItem value="201-500">201-500</SelectItem>
-                <SelectItem value="501-1000">501-1000</SelectItem>
-                <SelectItem value="1001-5000">1001-5000</SelectItem>
-                <SelectItem value="5001-10000">5001-10000</SelectItem>
-                <SelectItem value="10000+">10000+</SelectItem>
+                <SelectItem value="Small (1-50)">Small (1-50)</SelectItem>
+                <SelectItem value="Medium (51-200)">Medium (51-200)</SelectItem>
+                <SelectItem value="Large (201-1000)">Large (201-1000)</SelectItem>
+                <SelectItem value="Enterprise (1000+)">Enterprise (1000+)</SelectItem>
               </SelectContent>
             </Select>
 
@@ -284,7 +275,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     <th className="text-left p-3 font-medium min-w-[300px]">Contact & Social</th>
                     <th className="text-left p-3 font-medium min-w-[250px]">Organization</th>
                     <th className="text-left p-3 font-medium min-w-[200px]">Position & Department</th>
-                    <th className="text-left p-3 font-medium">Status</th>
+                    <th className="text-left p-3 font-medium">Priority & Status</th>
                     <th className="text-left p-3 font-medium">Actions</th>
                   </tr>
                 </thead>
@@ -294,24 +285,24 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <td className="p-3">
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={lead.photo_url} alt={`${lead.first_name} ${lead.last_name}`} />
+                            <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
                             <AvatarFallback>
-                              {lead.first_name?.charAt(0)}{lead.last_name?.charAt(0)}
+                              {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="space-y-1">
                             <div className="font-medium text-sm">
-                              {lead.first_name} {lead.last_name}
+                              {lead.firstName} {lead.lastName}
                             </div>
                             {lead.headline && (
                               <div className="text-xs text-muted-foreground">
                                 {lead.headline}
                               </div>
                             )}
-                            {(lead.city || lead.state || lead.country) && (
+                            {lead.location && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3" />
-                                <span>{[lead.city, lead.state, lead.country].filter(Boolean).join(', ')}</span>
+                                <span>{lead.location}</span>
                               </div>
                             )}
                             {lead.keywords && (
@@ -330,24 +321,24 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                             <span className="truncate max-w-[200px]">{lead.email}</span>
                           </div>
                           
-                          {lead.personal_email && lead.personal_email !== lead.email && (
+                          {lead.personalEmail && lead.personalEmail !== lead.email && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Mail className="h-3 w-3" />
-                              <span className="truncate max-w-[180px]">Personal: {lead.personal_email}</span>
+                              <span className="truncate max-w-[180px]">Personal: {lead.personalEmail}</span>
                             </div>
                           )}
                           
-                          {lead.organization_phone && (
+                          {lead.phone && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Phone className="h-3 w-3" />
-                              <span>{lead.organization_phone}</span>
+                              <span>{lead.phone}</span>
                             </div>
                           )}
                           
                           <div className="flex items-center gap-2">
-                            {lead.linkedin_url && (
+                            {lead.linkedin && (
                               <a 
-                                href={lead.linkedin_url} 
+                                href={lead.linkedin} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800"
@@ -355,9 +346,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 <Linkedin className="h-4 w-4" />
                               </a>
                             )}
-                            {lead.twitter_url && (
+                            {lead.twitterUrl && (
                               <a 
-                                href={lead.twitter_url} 
+                                href={lead.twitterUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-400 hover:text-blue-600"
@@ -365,9 +356,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 <Twitter className="h-4 w-4" />
                               </a>
                             )}
-                            {lead.facebook_url && (
+                            {lead.facebookUrl && (
                               <a 
-                                href={lead.facebook_url} 
+                                href={lead.facebookUrl} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-700 hover:text-blue-900"
@@ -383,12 +374,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <Building className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium text-sm">{lead.organization_name}</span>
+                            <span className="font-medium text-sm">{lead.company}</span>
                           </div>
                           
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Users className="h-3 w-3" />
-                            <span>{lead.estimated_num_employees} employees</span>
+                            <span>{lead.companySize}</span>
                           </div>
                           
                           {lead.industry && (
@@ -398,9 +389,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           )}
                           
                           <div className="flex items-center gap-2">
-                            {lead.organization_website_url && (
+                            {lead.organizationWebsite && (
                               <a 
-                                href={lead.organization_website_url} 
+                                href={lead.organizationWebsite} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800"
@@ -408,10 +399,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 <Globe className="h-3 w-3" />
                               </a>
                             )}
-                            {lead.organization_founded_year && (
+                            {lead.organizationFounded && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                <span>Est. {lead.organization_founded_year}</span>
+                                <span>Est. {lead.organizationFounded}</span>
                               </div>
                             )}
                           </div>
@@ -436,12 +427,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       </td>
                       
                       <td className="p-3">
-                        <div className="space-y-3">
-                          <LeadStatusSelect
-                            leadId={lead.id}
-                            currentStatus={lead.status}
-                            onStatusChange={handleStatusChange}
-                          />
+                        <div className="space-y-2">
+                          <Badge className={getStatusColor(lead.status)}>
+                            {lead.status}
+                          </Badge>
                           
                           <div className="flex items-center gap-2">
                             <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
