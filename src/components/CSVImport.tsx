@@ -126,11 +126,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     }
   }, [toast]);
 
-  const categorizeCompanySize = (companySize: string): Lead['companySize'] => {
-    if (!companySize) return 'Small (1-50)';
+  const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
+    if (!employeeCount) return 'Small (1-50)';
     
-    // Handle numeric values
-    const numericMatch = companySize.match(/\d+/);
+    // Handle numeric values from estimated_num_employees
+    const numericMatch = employeeCount.match(/\d+/);
     if (numericMatch) {
       const size = parseInt(numericMatch[0]);
       if (size <= 50) return 'Small (1-50)';
@@ -140,7 +140,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     }
     
     // Handle text-based size descriptions
-    const sizeLower = companySize.toLowerCase();
+    const sizeLower = employeeCount.toLowerCase();
     if (sizeLower.includes('small') || sizeLower.includes('startup')) return 'Small (1-50)';
     if (sizeLower.includes('medium') || sizeLower.includes('mid')) return 'Medium (51-200)';
     if (sizeLower.includes('large')) return 'Large (201-1000)';
@@ -149,7 +149,17 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     return 'Small (1-50)';
   };
 
-  const categorizeSeniority = (title: string): Lead['seniority'] => {
+  const categorizeSeniority = (title: string, seniorityField?: string): Lead['seniority'] => {
+    // First check if there's a dedicated seniority field
+    if (seniorityField) {
+      const seniorityLower = seniorityField.toLowerCase();
+      if (seniorityLower.includes('c-level') || seniorityLower.includes('executive')) return 'C-level';
+      if (seniorityLower.includes('senior')) return 'Senior';
+      if (seniorityLower.includes('junior')) return 'Junior';
+      if (seniorityLower.includes('mid')) return 'Mid-level';
+    }
+
+    // Fall back to title analysis
     if (!title) return 'Mid-level';
     const titleLower = title.toLowerCase();
     if (titleLower.includes('ceo') || titleLower.includes('cto') || titleLower.includes('cfo') || titleLower.includes('chief')) {
@@ -182,6 +192,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     });
     
     return Math.min(100, score + Math.min(20, optionalScore));
+  };
+
+  const buildLocation = (city: string, state: string, country: string): string => {
+    const parts = [city, state, country].filter(part => part && part.trim());
+    return parts.join(', ');
   };
 
   const handleImport = async () => {
@@ -219,50 +234,37 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             rawLead[header] = values[i] || '';
           });
 
-          // Enhanced column mapping for better organization data parsing
-          const firstName = findColumnValue(rawLead, [
-            'First Name', 'first_name', 'firstname', 'fname', 'given_name', 'FirstName'
-          ]);
+          // Map fields based on your specific column structure
+          const firstName = findColumnValue(rawLead, ['first_name']);
+          const lastName = findColumnValue(rawLead, ['last_name']);
+          const email = findColumnValue(rawLead, ['email']);
           
-          const lastName = findColumnValue(rawLead, [
-            'Last Name', 'last_name', 'lastname', 'lname', 'surname', 'family_name', 'LastName'
-          ]);
+          // Use organization_name for company, not estimated_num_employees or other fields
+          const company = findColumnValue(rawLead, ['organization_name']);
           
-          const email = findColumnValue(rawLead, [
-            'Email', 'email', 'email_address', 'mail', 'Email Address', 'EmailAddress'
-          ]);
+          // Use title or headline for job title
+          const title = findColumnValue(rawLead, ['title', 'headline']);
           
-          // Improved company name mapping - avoid company size columns
-          const company = findColumnValue(rawLead, [
-            'Company', 'company', 'organization', 'org', 'company_name', 'CompanyName', 
-            'Organization Name', 'organization_name', 'employer', 'business', 'corporation'
-          ]);
+          // Use seniority field if available
+          const seniorityField = findColumnValue(rawLead, ['seniority']);
           
-          const title = findColumnValue(rawLead, [
-            'Title', 'title', 'job_title', 'position', 'role', 'JobTitle', 'Job Title'
-          ]);
+          // Get phone from organization_phone or any phone field
+          const phone = cleanPhoneNumber(findColumnValue(rawLead, ['organization_phone', 'phone']));
 
-          const phone = cleanPhoneNumber(findColumnValue(rawLead, [
-            'Phone', 'phone', 'phone_number', 'tel', 'mobile', 'cell', 'telephone', 'Phone Number'
-          ]));
+          // Use linkedin_url for LinkedIn profile
+          const linkedin = cleanLinkedInUrl(findColumnValue(rawLead, ['linkedin_url']));
 
-          const linkedin = cleanLinkedInUrl(findColumnValue(rawLead, [
-            'LinkedIn', 'linkedin', 'linkedin_url', 'profile', 'linkedin_profile', 'linked_in', 'LinkedIn URL'
-          ]));
+          // Use estimated_num_employees for company size categorization
+          const employeeCount = findColumnValue(rawLead, ['estimated_num_employees']);
 
-          // Separate company size mapping
-          const companySizeRaw = findColumnValue(rawLead, [
-            'Company Size', 'company_size', 'employees', 'emp_count', 'size', 'CompanySize',
-            'Employee Count', 'employee_count', 'team_size', 'headcount', 'workforce'
-          ]);
+          // Use industry field
+          const industry = findColumnValue(rawLead, ['industry']);
 
-          const industry = findColumnValue(rawLead, [
-            'Industry', 'industry', 'sector', 'vertical', 'business_type', 'field'
-          ]);
-
-          const location = findColumnValue(rawLead, [
-            'Location', 'location', 'city', 'address', 'country', 'region', 'state', 'City'
-          ]);
+          // Build location from city, state, country (personal location first, then organization)
+          const city = findColumnValue(rawLead, ['city', 'organization_city']);
+          const state = findColumnValue(rawLead, ['state', 'organization_state']);
+          const country = findColumnValue(rawLead, ['country', 'organization_country']);
+          const location = buildLocation(city, state, country);
 
           if (!firstName && !lastName && !email) {
             console.log(`Skipping row ${index + 1}: Missing essential data`);
@@ -276,8 +278,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             email: email || '',
             company: company || '',
             title: title || '',
-            seniority: categorizeSeniority(title),
-            companySize: categorizeCompanySize(companySizeRaw),
+            seniority: categorizeSeniority(title, seniorityField),
+            companySize: categorizeCompanySize(employeeCount),
             industry: industry,
             location: location,
             phone: phone,
@@ -341,7 +343,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           Import Lead List
         </CardTitle>
         <CardDescription>
-          Upload a CSV file with lead data. Supported columns: First Name, Last Name, Email, Company, Title, Phone, LinkedIn, Company Size, Industry, Location, etc.
+          Upload a CSV file with lead data. Supports your specific format with first_name, last_name, email, organization_name, title, estimated_num_employees, linkedin_url, organization_phone, industry, city/state/country, etc.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
