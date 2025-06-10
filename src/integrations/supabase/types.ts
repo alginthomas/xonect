@@ -9,18 +9,152 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      invoice_id: {
+      campaigns: {
         Row: {
+          click_rate: number
           created_at: string
           id: string
+          lead_ids: string[] | null
+          name: string
+          open_rate: number
+          reply_rate: number
+          sent_count: number
+          status: Database["public"]["Enums"]["campaign_status"]
+          template_id: string | null
+          updated_at: string
         }
         Insert: {
+          click_rate?: number
           created_at?: string
           id?: string
+          lead_ids?: string[] | null
+          name: string
+          open_rate?: number
+          reply_rate?: number
+          sent_count?: number
+          status?: Database["public"]["Enums"]["campaign_status"]
+          template_id?: string | null
+          updated_at?: string
         }
         Update: {
+          click_rate?: number
           created_at?: string
           id?: string
+          lead_ids?: string[] | null
+          name?: string
+          open_rate?: number
+          reply_rate?: number
+          sent_count?: number
+          status?: Database["public"]["Enums"]["campaign_status"]
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          last_used: string | null
+          name: string
+          subject: string
+          updated_at: string
+          variables: string[] | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          last_used?: string | null
+          name: string
+          subject: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          last_used?: string | null
+          name?: string
+          subject?: string
+          updated_at?: string
+          variables?: string[] | null
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          company: string
+          company_size: Database["public"]["Enums"]["company_size_category"]
+          completeness_score: number
+          created_at: string
+          email: string
+          emails_sent: number
+          first_name: string
+          id: string
+          industry: string | null
+          last_contact_date: string | null
+          last_name: string
+          linkedin: string | null
+          location: string | null
+          phone: string | null
+          seniority: Database["public"]["Enums"]["seniority_level"]
+          status: Database["public"]["Enums"]["lead_status"]
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          company: string
+          company_size?: Database["public"]["Enums"]["company_size_category"]
+          completeness_score?: number
+          created_at?: string
+          email: string
+          emails_sent?: number
+          first_name: string
+          id?: string
+          industry?: string | null
+          last_contact_date?: string | null
+          last_name: string
+          linkedin?: string | null
+          location?: string | null
+          phone?: string | null
+          seniority?: Database["public"]["Enums"]["seniority_level"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          company?: string
+          company_size?: Database["public"]["Enums"]["company_size_category"]
+          completeness_score?: number
+          created_at?: string
+          email?: string
+          emails_sent?: number
+          first_name?: string
+          id?: string
+          industry?: string | null
+          last_contact_date?: string | null
+          last_name?: string
+          linkedin?: string | null
+          location?: string | null
+          phone?: string | null
+          seniority?: Database["public"]["Enums"]["seniority_level"]
+          status?: Database["public"]["Enums"]["lead_status"]
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -32,7 +166,26 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      campaign_status: "Draft" | "Active" | "Paused" | "Completed"
+      company_size_category:
+        | "Small (1-50)"
+        | "Medium (51-200)"
+        | "Large (201-1000)"
+        | "Enterprise (1000+)"
+      lead_status:
+        | "New"
+        | "Contacted"
+        | "Opened"
+        | "Clicked"
+        | "Replied"
+        | "Qualified"
+        | "Unqualified"
+      seniority_level:
+        | "Junior"
+        | "Mid-level"
+        | "Senior"
+        | "Executive"
+        | "C-level"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -147,6 +300,30 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      campaign_status: ["Draft", "Active", "Paused", "Completed"],
+      company_size_category: [
+        "Small (1-50)",
+        "Medium (51-200)",
+        "Large (201-1000)",
+        "Enterprise (1000+)",
+      ],
+      lead_status: [
+        "New",
+        "Contacted",
+        "Opened",
+        "Clicked",
+        "Replied",
+        "Qualified",
+        "Unqualified",
+      ],
+      seniority_level: [
+        "Junior",
+        "Mid-level",
+        "Senior",
+        "Executive",
+        "C-level",
+      ],
+    },
   },
 } as const
