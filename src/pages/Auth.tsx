@@ -242,7 +242,7 @@ const Auth = () => {
         </Card>
 
         <div className="text-center text-sm text-gray-600">
-          <p>© 2024 Thomas & Niyogi. All rights reserved.</p>
+          <p>© 2025 Thomas & Niyogi. All rights reserved.</p>
         </div>
       </div>
     </div>
