@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,8 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
-import { Loader2, Users, Building2 } from 'lucide-react';
+import { Navigate, useSearchParams } from 'react-router-dom';
+import { Loader2, Building2 } from 'lucide-react';
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -18,6 +18,45 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  // Handle email confirmation on component mount
+  useEffect(() => {
+    const handleEmailConfirmation = async () => {
+      const token = searchParams.get('token');
+      const type = searchParams.get('type');
+      
+      if (token && type === 'signup') {
+        try {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'signup'
+          });
+          
+          if (error) {
+            toast({
+              title: 'Email verification failed',
+              description: error.message,
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: 'Email verified!',
+              description: 'Your account has been verified successfully.',
+            });
+          }
+        } catch (error: any) {
+          toast({
+            title: 'Email verification failed',
+            description: 'There was an error verifying your email.',
+            variant: 'destructive',
+          });
+        }
+      }
+    };
+
+    handleEmailConfirmation();
+  }, [searchParams, toast]);
 
   // Redirect if already authenticated
   if (user) {
@@ -63,7 +102,7 @@ const Auth = () => {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: `${window.location.origin}/auth`,
         },
       });
 
