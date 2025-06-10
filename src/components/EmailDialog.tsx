@@ -8,15 +8,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { Lead, EmailTemplate } from '@/types/lead';
 
 interface EmailDialogProps {
   lead: Lead;
   templates: EmailTemplate[];
   onEmailSent: (leadId: string) => void;
+  branding: {
+    companyName: string;
+    companyLogo: string;
+    companyWebsite: string;
+    companyAddress: string;
+    senderName: string;
+    senderEmail: string;
+  };
 }
 
-export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEmailSent }) => {
+export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEmailSent, branding }) => {
   const [open, setOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   const [subject, setSubject] = useState('');
@@ -54,16 +63,38 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEma
       return;
     }
 
+    if (!branding.senderEmail || !branding.senderName) {
+      toast({
+        title: "Branding not configured",
+        description: "Please configure your email branding settings first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSending(true);
     
     try {
-      // Here you would typically call your email sending API
-      // For now, we'll simulate the email sending
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const { data, error } = await supabase.functions.invoke('send-email', {
+        body: {
+          to: lead.email,
+          subject,
+          content,
+          leadName: `${lead.firstName} ${lead.lastName}`,
+          senderName: branding.senderName,
+          senderEmail: branding.senderEmail,
+          companyName: branding.companyName,
+          companyLogo: branding.companyLogo,
+          companyWebsite: branding.companyWebsite,
+          companyAddress: branding.companyAddress,
+        },
+      });
+
+      if (error) throw error;
       
       toast({
         title: "Email sent successfully",
-        description: `Email sent to ${lead.firstName} ${lead.lastName}`,
+        description: `Professional email sent to ${lead.firstName} ${lead.lastName}`,
       });
       
       onEmailSent(lead.id);
@@ -71,10 +102,11 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEma
       setSubject('');
       setContent('');
       setSelectedTemplate('');
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Email sending error:', error);
       toast({
         title: "Failed to send email",
-        description: "There was an error sending the email",
+        description: error.message || "There was an error sending the email",
         variant: "destructive",
       });
     } finally {
@@ -92,9 +124,9 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEma
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Send Email to {lead.firstName} {lead.lastName}</DialogTitle>
+          <DialogTitle>Send Professional Email to {lead.firstName} {lead.lastName}</DialogTitle>
           <DialogDescription>
-            Compose and send a personalized email to this lead
+            Compose and send a branded email using your company template
           </DialogDescription>
         </DialogHeader>
         
@@ -104,6 +136,16 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEma
             <Input
               id="recipient"
               value={`${lead.firstName} ${lead.lastName} <${lead.email}>`}
+              disabled
+              className="bg-muted"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="sender">Sender</Label>
+            <Input
+              id="sender"
+              value={`${branding.senderName} <${branding.senderEmail}>`}
               disabled
               className="bg-muted"
             />
@@ -149,13 +191,12 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEma
           </div>
 
           <div className="bg-muted p-3 rounded text-sm">
-            <strong>Lead Information:</strong>
+            <strong>Branding Preview:</strong>
             <ul className="mt-1 space-y-1">
-              <li>Company: {lead.company}</li>
-              <li>Title: {lead.title}</li>
-              {lead.phone && <li>Phone: {lead.phone}</li>}
-              {lead.linkedin && <li>LinkedIn: {lead.linkedin}</li>}
-              {lead.location && <li>Location: {lead.location}</li>}
+              <li>Company: {branding.companyName}</li>
+              <li>Sender: {branding.senderName}</li>
+              {branding.companyWebsite && <li>Website: {branding.companyWebsite}</li>}
+              {branding.companyLogo && <li>Logo: Configured ✓</li>}
             </ul>
           </div>
 
@@ -164,7 +205,7 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, onEma
               Cancel
             </Button>
             <Button onClick={handleSendEmail} disabled={sending}>
-              {sending ? 'Sending...' : 'Send Email'}
+              {sending ? 'Sending...' : 'Send Professional Email'}
             </Button>
           </div>
         </div>

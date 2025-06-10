@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CSVImport } from '@/components/CSVImport';
@@ -6,7 +5,7 @@ import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { CategoryManager } from '@/components/CategoryManager';
 import Header from '@/components/Header';
-import { Upload, Users, Mail, BarChart, Tag } from 'lucide-react';
+import { Upload, Users, Mail, BarChart, Tag, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import type { Lead, EmailTemplate } from '@/types/lead';
@@ -18,6 +17,14 @@ const Index = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [branding, setBranding] = useState({
+    companyName: 'XONECT powered by Thomas & Niyogi',
+    companyLogo: '',
+    companyWebsite: '',
+    companyAddress: '',
+    senderName: '',
+    senderEmail: '',
+  });
   const { toast } = useToast();
 
   // Load categories from Supabase
@@ -388,6 +395,20 @@ const Index = () => {
     }
   };
 
+  const handleSaveBranding = (brandingData: typeof branding) => {
+    setBranding(brandingData);
+    // You can also save this to localStorage or a database
+    localStorage.setItem('emailBranding', JSON.stringify(brandingData));
+  };
+
+  // Load branding settings on mount
+  useEffect(() => {
+    const savedBranding = localStorage.getItem('emailBranding');
+    if (savedBranding) {
+      setBranding(JSON.parse(savedBranding));
+    }
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -414,7 +435,7 @@ const Index = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart className="h-4 w-4" />
               Dashboard
@@ -435,6 +456,10 @@ const Index = () => {
               <Mail className="h-4 w-4" />
               Templates
             </TabsTrigger>
+            <TabsTrigger value="branding" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Branding
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="mt-6">
@@ -442,6 +467,7 @@ const Index = () => {
               leads={leads}
               templates={emailTemplates}
               categories={categories}
+              branding={branding}
               onUpdateLead={handleUpdateLead}
             />
           </TabsContent>
@@ -458,6 +484,7 @@ const Index = () => {
               leads={leads}
               templates={emailTemplates}
               categories={categories}
+              branding={branding}
               onUpdateLead={handleUpdateLead}
             />
           </TabsContent>
@@ -475,6 +502,13 @@ const Index = () => {
             <EmailTemplateBuilder 
               onSaveTemplate={handleSaveTemplate}
               templates={emailTemplates}
+            />
+          </TabsContent>
+
+          <TabsContent value="branding" className="mt-6">
+            <BrandingSettings 
+              branding={branding}
+              onSave={handleSaveBranding}
             />
           </TabsContent>
         </Tabs>
