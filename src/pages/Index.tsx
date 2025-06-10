@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -151,8 +150,11 @@ const Index = () => {
           name: category.name,
           description: category.description || '',
           color: category.color || '#3B82F6',
-          criteria: (category.criteria as Record<string, any>) || {},
-          createdAt: new Date(category.created_at)
+          criteria: (typeof category.criteria === 'object' && category.criteria !== null) 
+            ? category.criteria as Record<string, any> 
+            : {},
+          createdAt: new Date(category.created_at),
+          updatedAt: new Date(category.updated_at)
         }));
         setCategories(transformedCategories);
       }
@@ -187,7 +189,9 @@ const Index = () => {
           failedImports: batch.failed_imports || 0,
           createdAt: new Date(batch.created_at),
           sourceFile: batch.source_file || '',
-          metadata: (batch.metadata as Record<string, any>) || {}
+          metadata: (typeof batch.metadata === 'object' && batch.metadata !== null) 
+            ? batch.metadata as Record<string, any> 
+            : {}
         }));
         setImportBatches(transformedBatches);
       }
@@ -297,8 +301,11 @@ const Index = () => {
           name: data.name,
           description: data.description || '',
           color: data.color || '#3B82F6',
-          criteria: (data.criteria as Record<string, any>) || {},
-          createdAt: new Date(data.created_at)
+          criteria: (typeof data.criteria === 'object' && data.criteria !== null) 
+            ? data.criteria as Record<string, any> 
+            : {},
+          createdAt: new Date(data.created_at),
+          updatedAt: new Date(data.updated_at)
         };
         setCategories(prev => [transformedCategory, ...prev]);
       }
