@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -132,14 +133,20 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
   const suggestedProducts = getSuggestedProducts();
 
-  console.log('Lead organizationWebsite:', lead.organizationWebsite); // Debug log
+  // Check if there's a website URL and ensure it's properly formatted
+  const hasWebsite = lead.organizationWebsite && lead.organizationWebsite.trim() !== '';
+  console.log('Lead website check:', {
+    leadName: `${lead.firstName} ${lead.lastName}`,
+    organizationWebsite: lead.organizationWebsite,
+    hasWebsite: hasWebsite
+  });
 
   const handleViewWebsite = () => {
-    console.log('Opening website:', lead.organizationWebsite); // Debug log
-    if (lead.organizationWebsite) {
-      const url = lead.organizationWebsite.startsWith('http') 
+    if (hasWebsite) {
+      const url = lead.organizationWebsite!.startsWith('http') 
         ? lead.organizationWebsite 
         : `https://${lead.organizationWebsite}`;
+      console.log('Opening website URL:', url);
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -262,14 +269,14 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
           <Separator />
 
-          {/* Company Information with Enhanced View Website Button */}
+          {/* Company Information with Website Button */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="font-medium flex items-center gap-2">
                 <Building className="h-4 w-4" />
                 Company Profile
               </h4>
-              {lead.organizationWebsite && (
+              {hasWebsite && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -285,9 +292,9 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-medium">{lead.company}</span>
-                {lead.organizationWebsite && (
+                {hasWebsite && (
                   <a 
-                    href={lead.organizationWebsite.startsWith('http') 
+                    href={lead.organizationWebsite!.startsWith('http') 
                       ? lead.organizationWebsite 
                       : `https://${lead.organizationWebsite}`} 
                     target="_blank" 
@@ -325,7 +332,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 </div>
               )}
 
-              {lead.organizationWebsite && (
+              {hasWebsite && (
                 <div className="text-xs text-muted-foreground">
                   Website: {lead.organizationWebsite}
                 </div>
