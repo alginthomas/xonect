@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { CategorySelector } from './CategorySelector';
+import { useToast } from '@/hooks/use-toast';
 import type { Category } from '@/types/category';
 
 interface CategoryManagerProps {
@@ -30,16 +31,38 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
     description: '',
     color: '#3B82F6'
   });
+  const { toast } = useToast();
 
   const handleCreateCategory = () => {
-    if (newCategory.name.trim()) {
-      onCreateCategory({
-        ...newCategory,
-        criteria: {}
+    if (!newCategory.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Category name is required",
+        variant: "destructive",
       });
-      setNewCategory({ name: '', description: '', color: '#3B82F6' });
-      setIsCreateOpen(false);
+      return;
     }
+
+    // Check if category name already exists
+    const nameExists = categories.some(
+      category => category.name.toLowerCase() === newCategory.name.toLowerCase()
+    );
+
+    if (nameExists) {
+      toast({
+        title: "Category Already Exists",
+        description: `A category with the name "${newCategory.name}" already exists. Please choose a different name.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onCreateCategory({
+      ...newCategory,
+      criteria: {}
+    });
+    setNewCategory({ name: '', description: '', color: '#3B82F6' });
+    setIsCreateOpen(false);
   };
 
   const defaultColors = [
@@ -80,6 +103,11 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                     onChange={(e) => setNewCategory(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., Tech Companies"
                   />
+                  {newCategory.name && categories.some(cat => cat.name.toLowerCase() === newCategory.name.toLowerCase()) && (
+                    <p className="text-sm text-destructive mt-1">
+                      A category with this name already exists
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="categoryDescription">Description (Optional)</Label>
@@ -105,7 +133,11 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                     ))}
                   </div>
                 </div>
-                <Button onClick={handleCreateCategory} className="w-full">
+                <Button 
+                  onClick={handleCreateCategory} 
+                  className="w-full"
+                  disabled={!newCategory.name.trim() || categories.some(cat => cat.name.toLowerCase() === newCategory.name.toLowerCase())}
+                >
                   Create Category
                 </Button>
               </div>

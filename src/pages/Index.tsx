@@ -342,6 +342,20 @@ const Index = () => {
     if (!user) return;
     
     try {
+      // Check if category name already exists locally first
+      const nameExists = categories.some(
+        category => category.name.toLowerCase() === categoryData.name.toLowerCase()
+      );
+
+      if (nameExists) {
+        toast({
+          title: "Category Already Exists",
+          description: `A category with the name "${categoryData.name}" already exists`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase
         .from('categories')
         .insert({
@@ -352,7 +366,19 @@ const Index = () => {
           user_id: user.id,
         });
 
-      if (error) throw error;
+      if (error) {
+        // Handle specific duplicate key error
+        if (error.code === '23505' && error.message.includes('categories_name_key')) {
+          toast({
+            title: "Category Already Exists",
+            description: `A category with the name "${categoryData.name}" already exists`,
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       await loadCategories();
       
