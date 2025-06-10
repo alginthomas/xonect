@@ -12,17 +12,14 @@ export const useCategoryOperations = () => {
   const queryClient = useQueryClient();
 
   const createCategoryMutation = useMutation({
-    mutationFn: async (category: {
-      name: string;
-      description?: string;
-      color?: string;
-    }) => {
+    mutationFn: async (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
       if (!user) throw new Error('User not authenticated');
 
       const sanitizedCategory = {
-        name: sanitizeInput(category.name),
-        description: category.description ? sanitizeInput(category.description) : undefined,
-        color: category.color || '#3B82F6',
+        name: sanitizeInput(categoryData.name),
+        description: categoryData.description ? sanitizeInput(categoryData.description) : null,
+        color: categoryData.color || '#3B82F6',
+        criteria: categoryData.criteria || {},
         user_id: user.id,
       };
 
@@ -53,13 +50,15 @@ export const useCategoryOperations = () => {
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Category> }) => {
       if (!user) throw new Error('User not authenticated');
 
+      const sanitizedUpdates: any = {};
+      if (updates.name) sanitizedUpdates.name = sanitizeInput(updates.name);
+      if (updates.description) sanitizedUpdates.description = sanitizeInput(updates.description);
+      if (updates.color) sanitizedUpdates.color = updates.color;
+      if (updates.criteria) sanitizedUpdates.criteria = updates.criteria;
+
       const { error } = await supabase
         .from('categories')
-        .update({
-          name: updates.name,
-          description: updates.description,
-          color: updates.color,
-        })
+        .update(sanitizedUpdates)
         .eq('id', id)
         .eq('user_id', user.id);
 
@@ -112,7 +111,7 @@ export const useCategoryOperations = () => {
   });
 
   return {
-    createCategory: createCategoryMutation.mutate,
+    createCategory: createCategoryMutation.mutateAsync,
     updateCategory: updateCategoryMutation.mutate,
     deleteCategory: deleteCategoryMutation.mutate,
     isCreatingCategory: createCategoryMutation.isPending,

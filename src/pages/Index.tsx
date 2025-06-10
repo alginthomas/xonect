@@ -71,7 +71,7 @@ const Index = () => {
     saveTemplate(template);
   }, [user, saveTemplate, toast]);
 
-  const handleCreateCategory = useCallback((category: {
+  const handleCreateCategory = useCallback(async (category: {
     name: string;
     description?: string;
     color?: string;
@@ -85,7 +85,16 @@ const Index = () => {
       return;
     }
 
-    createCategory(category);
+    try {
+      await createCategory({
+        name: category.name,
+        description: category.description || '',
+        color: category.color || '#3B82F6',
+        criteria: {}
+      });
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
   }, [user, createCategory, toast]);
 
   const handleUpdateCategory = useCallback((id: string, updates: any) => {

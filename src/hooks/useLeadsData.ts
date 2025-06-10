@@ -22,10 +22,8 @@ export const useLeadsData = () => {
           personal_email,
           company,
           title,
-          headline,
           seniority,
           department,
-          keywords,
           company_size,
           industry,
           location,
@@ -35,10 +33,7 @@ export const useLeadsData = () => {
           facebook_url,
           photo_url,
           organization_website,
-          organization_logo,
-          organization_domain,
           organization_founded,
-          organization_address,
           tags,
           status,
           emails_sent,
@@ -63,10 +58,10 @@ export const useLeadsData = () => {
         personalEmail: lead.personal_email || '',
         company: lead.company,
         title: lead.title,
-        headline: lead.headline || '',
+        headline: '', // Default value since column doesn't exist
         seniority: lead.seniority,
         department: lead.department || '',
-        keywords: lead.keywords || '',
+        keywords: '', // Default value since column doesn't exist
         companySize: lead.company_size,
         industry: lead.industry || '',
         location: lead.location || '',
@@ -76,10 +71,10 @@ export const useLeadsData = () => {
         facebookUrl: lead.facebook_url || '',
         photoUrl: lead.photo_url || '',
         organizationWebsite: lead.organization_website || '',
-        organizationLogo: lead.organization_logo || '',
-        organizationDomain: lead.organization_domain || '',
+        organizationLogo: '', // Default value since column doesn't exist
+        organizationDomain: '', // Default value since column doesn't exist
         organizationFounded: lead.organization_founded || 0,
-        organizationAddress: lead.organization_address || '',
+        organizationAddress: '', // Default value since column doesn't exist
         tags: lead.tags || [],
         status: lead.status,
         emailsSent: lead.emails_sent,
