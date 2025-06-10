@@ -5,6 +5,7 @@ import { CSVImport } from '@/components/CSVImport';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { CategoryManager } from '@/components/CategoryManager';
+import Header from '@/components/Header';
 import { Upload, Users, Mail, BarChart, Tag } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -400,10 +401,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Header />
+      
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Lead Management System
+            Lead Management Dashboard
           </h1>
           <p className="text-xl text-muted-foreground">
             Import, organize, and nurture your leads with personalized email campaigns
