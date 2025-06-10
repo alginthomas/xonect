@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -108,6 +109,119 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     ];
   }, [leads]);
 
+  const renderLeadsTable = (filteredData: Lead[]) => (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Name</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Company</TableHead>
+          <TableHead>Title</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Completeness</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {filteredData.slice(indexOfFirstLead, indexOfLastLead).map((lead) => (
+          <TableRow key={lead.id}>
+            <TableCell>{lead.firstName} {lead.lastName}</TableCell>
+            <TableCell>{lead.email}</TableCell>
+            <TableCell>{lead.company}</TableCell>
+            <TableCell>{lead.title}</TableCell>
+            <TableCell>
+              <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
+                {lead.status}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Progress value={lead.completenessScore} />
+            </TableCell>
+            <TableCell>
+              <div className="flex gap-2 justify-end">
+                <LeadDetailPopover 
+                  lead={lead} 
+                  categories={categories}
+                />
+                <EmailDialog 
+                  lead={lead} 
+                  templates={templates}
+                  branding={branding}
+                  onEmailSent={handleEmailSent}
+                />
+              </div>
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
+  const renderPagination = (totalItems: number) => (
+    <div className="flex justify-between items-center mt-4">
+      <Button
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        variant="outline"
+        size="sm"
+      >
+        Previous
+      </Button>
+      <span>Page {currentPage} of {Math.ceil(totalItems / leadsPerPage)}</span>
+      <Button
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === Math.ceil(totalItems / leadsPerPage)}
+        variant="outline"
+        size="sm"
+      >
+        Next
+      </Button>
+    </div>
+  );
+
+  const renderFilterControls = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="relative">
+        <Input
+          type="search"
+          placeholder="Search leads..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pr-10"
+        />
+        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <Select onValueChange={setCategoryFilter}>
+          <SelectTrigger className="w-full md:w-52">
+            <SelectValue placeholder="Filter by Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Categories</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full md:w-40">
+            <SelectValue placeholder="Filter by Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All Statuses</SelectItem>
+            <SelectItem value="New">New</SelectItem>
+            <SelectItem value="Contacted">Contacted</SelectItem>
+            <SelectItem value="Qualified">Qualified</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -211,461 +325,53 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </TabsList>
 
         <TabsContent value="all" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Input
-                type="search"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Select onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-52">
-                  <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+          {renderFilterControls()}
           <Card>
             <CardHeader>
               <CardTitle>All Leads ({filteredLeads.length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completeness</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedLeads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell>{lead.firstName} {lead.lastName}</TableCell>
-                      <TableCell>{lead.email}</TableCell>
-                      <TableCell>{lead.company}</TableCell>
-                      <TableCell>{lead.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
-                          {lead.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Progress value={lead.completenessScore} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          <LeadDetailPopover 
-                            lead={lead} 
-                            categories={categories}
-                          />
-                          <EmailDialog 
-                            lead={lead} 
-                            templates={templates}
-                            branding={branding}
-                            onEmailSent={handleEmailSent}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Previous
-                </Button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <Button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                </Button>
-              </div>
+              {renderLeadsTable(filteredLeads)}
+              {renderPagination(filteredLeads.length)}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="contacted" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Input
-                type="search"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Select onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-52">
-                  <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+          {renderFilterControls()}
           <Card>
             <CardHeader>
-              <CardTitle>Contacted Leads ({filteredLeads.length})</CardTitle>
+              <CardTitle>Contacted Leads ({leads.filter(lead => lead.status === 'Contacted').length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completeness</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedLeads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell>{lead.firstName} {lead.lastName}</TableCell>
-                      <TableCell>{lead.email}</TableCell>
-                      <TableCell>{lead.company}</TableCell>
-                      <TableCell>{lead.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
-                          {lead.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Progress value={lead.completenessScore} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          <LeadDetailPopover 
-                            lead={lead} 
-                            categories={categories}
-                          />
-                          <EmailDialog 
-                            lead={lead} 
-                            templates={templates}
-                            branding={branding}
-                            onEmailSent={handleEmailSent}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Previous
-                </Button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <Button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                </Button>
-              </div>
+              {renderLeadsTable(leads.filter(lead => lead.status === 'Contacted'))}
+              {renderPagination(leads.filter(lead => lead.status === 'Contacted').length)}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="new" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Input
-                type="search"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Select onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-52">
-                  <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+          {renderFilterControls()}
           <Card>
             <CardHeader>
-              <CardTitle>New Leads ({filteredLeads.length})</CardTitle>
+              <CardTitle>New Leads ({leads.filter(lead => lead.status === 'New').length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completeness</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedLeads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell>{lead.firstName} {lead.lastName}</TableCell>
-                      <TableCell>{lead.email}</TableCell>
-                      <TableCell>{lead.company}</TableCell>
-                      <TableCell>{lead.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
-                          {lead.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Progress value={lead.completenessScore} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          <LeadDetailPopover 
-                            lead={lead} 
-                            categories={categories}
-                          />
-                          <EmailDialog 
-                            lead={lead} 
-                            templates={templates}
-                            branding={branding}
-                            onEmailSent={handleEmailSent}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Previous
-                </Button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <Button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                </Button>
-              </div>
+              {renderLeadsTable(leads.filter(lead => lead.status === 'New'))}
+              {renderPagination(leads.filter(lead => lead.status === 'New').length)}
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="qualified" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="relative">
-              <Input
-                type="search"
-                placeholder="Search leads..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Select onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-full md:w-52">
-                  <SelectValue placeholder="Filter by Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-40">
-                  <SelectValue placeholder="Filter by Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={undefined}>All Statuses</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+          {renderFilterControls()}
           <Card>
             <CardHeader>
-              <CardTitle>Qualified Leads ({filteredLeads.length})</CardTitle>
+              <CardTitle>Qualified Leads ({leads.filter(lead => lead.status === 'Qualified').length})</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Company</TableHead>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Completeness</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedLeads.map((lead) => (
-                    <TableRow key={lead.id}>
-                      <TableCell>{lead.firstName} {lead.lastName}</TableCell>
-                      <TableCell>{lead.email}</TableCell>
-                      <TableCell>{lead.company}</TableCell>
-                      <TableCell>{lead.title}</TableCell>
-                      <TableCell>
-                        <Badge variant={lead.status === 'Contacted' ? 'secondary' : 'default'}>
-                          {lead.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Progress value={lead.completenessScore} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2 justify-end">
-                          <LeadDetailPopover 
-                            lead={lead} 
-                            categories={categories}
-                          />
-                          <EmailDialog 
-                            lead={lead} 
-                            templates={templates}
-                            branding={branding}
-                            onEmailSent={handleEmailSent}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex justify-between items-center mt-4">
-                <Button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                >
-                  Previous
-                </Button>
-                <span>Page {currentPage} of {totalPages}</span>
-                <Button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  variant="outline"
-                  size="sm"
-                >
-                  Next
-                </Button>
-              </div>
+              {renderLeadsTable(leads.filter(lead => lead.status === 'Qualified'))}
+              {renderPagination(leads.filter(lead => lead.status === 'Qualified').length)}
             </CardContent>
           </Card>
         </TabsContent>
