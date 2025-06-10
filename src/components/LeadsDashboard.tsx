@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,9 +31,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
       const matchesSearch = searchTerm === '' || 
-        lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.organization_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (lead.title && lead.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (lead.industry && lead.industry.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -41,7 +42,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       const matchesSeniority = seniorityFilter === 'all' || lead.seniority === seniorityFilter;
-      const matchesCompanySize = companySizeFilter === 'all' || lead.companySize === companySizeFilter;
+      const matchesCompanySize = companySizeFilter === 'all' || lead.estimated_num_employees === companySizeFilter;
       const matchesDepartment = departmentFilter === 'all' || lead.department === departmentFilter;
 
       return matchesSearch && matchesStatus && matchesSeniority && matchesCompanySize && matchesDepartment;
@@ -53,8 +54,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const validLeads = leads.filter(lead => lead.email && lead.completenessScore >= 60).length;
     const emailsSent = leads.reduce((sum, lead) => sum + lead.emailsSent, 0);
     const highPriorityLeads = leads.filter(lead => lead.seniority === 'C-level' || lead.seniority === 'Executive').length;
-    const leadsWithPhone = leads.filter(lead => lead.phone).length;
-    const leadsWithLinkedIn = leads.filter(lead => lead.linkedin).length;
+    const leadsWithPhone = leads.filter(lead => lead.organization_phone).length;
+    const leadsWithLinkedIn = leads.filter(lead => lead.linkedin_url).length;
 
     return {
       totalLeads,
@@ -170,7 +171,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <p className="text-xl font-bold">{stats.leadsWithLinkedIn}</p>
               </div>
             </div>
-          </Card>
+          </CardContent>
         </Card>
 
         <Card>
@@ -245,10 +246,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sizes</SelectItem>
-                <SelectItem value="Small (1-50)">Small (1-50)</SelectItem>
-                <SelectItem value="Medium (51-200)">Medium (51-200)</SelectItem>
-                <SelectItem value="Large (201-1000)">Large (201-1000)</SelectItem>
-                <SelectItem value="Enterprise (1000+)">Enterprise (1000+)</SelectItem>
+                <SelectItem value="1-10">1-10</SelectItem>
+                <SelectItem value="11-50">11-50</SelectItem>
+                <SelectItem value="51-200">51-200</SelectItem>
+                <SelectItem value="201-500">201-500</SelectItem>
+                <SelectItem value="501-1000">501-1000</SelectItem>
+                <SelectItem value="1001-5000">1001-5000</SelectItem>
+                <SelectItem value="5001-10000">5001-10000</SelectItem>
+                <SelectItem value="10000+">10000+</SelectItem>
               </SelectContent>
             </Select>
 
@@ -289,24 +294,24 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <td className="p-3">
                         <div className="flex items-start gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+                            <AvatarImage src={lead.photo_url} alt={`${lead.first_name} ${lead.last_name}`} />
                             <AvatarFallback>
-                              {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+                              {lead.first_name?.charAt(0)}{lead.last_name?.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="space-y-1">
                             <div className="font-medium text-sm">
-                              {lead.firstName} {lead.lastName}
+                              {lead.first_name} {lead.last_name}
                             </div>
                             {lead.headline && (
                               <div className="text-xs text-muted-foreground">
                                 {lead.headline}
                               </div>
                             )}
-                            {lead.location && (
+                            {(lead.city || lead.state || lead.country) && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <MapPin className="h-3 w-3" />
-                                <span>{lead.location}</span>
+                                <span>{[lead.city, lead.state, lead.country].filter(Boolean).join(', ')}</span>
                               </div>
                             )}
                             {lead.keywords && (
@@ -325,24 +330,24 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                             <span className="truncate max-w-[200px]">{lead.email}</span>
                           </div>
                           
-                          {lead.personalEmail && lead.personalEmail !== lead.email && (
+                          {lead.personal_email && lead.personal_email !== lead.email && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Mail className="h-3 w-3" />
-                              <span className="truncate max-w-[180px]">Personal: {lead.personalEmail}</span>
+                              <span className="truncate max-w-[180px]">Personal: {lead.personal_email}</span>
                             </div>
                           )}
                           
-                          {lead.phone && (
+                          {lead.organization_phone && (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <Phone className="h-3 w-3" />
-                              <span>{lead.phone}</span>
+                              <span>{lead.organization_phone}</span>
                             </div>
                           )}
                           
                           <div className="flex items-center gap-2">
-                            {lead.linkedin && (
+                            {lead.linkedin_url && (
                               <a 
-                                href={lead.linkedin} 
+                                href={lead.linkedin_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800"
@@ -350,9 +355,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 <Linkedin className="h-4 w-4" />
                               </a>
                             )}
-                            {lead.twitterUrl && (
+                            {lead.twitter_url && (
                               <a 
-                                href={lead.twitterUrl} 
+                                href={lead.twitter_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-400 hover:text-blue-600"
@@ -360,9 +365,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 <Twitter className="h-4 w-4" />
                               </a>
                             )}
-                            {lead.facebookUrl && (
+                            {lead.facebook_url && (
                               <a 
-                                href={lead.facebookUrl} 
+                                href={lead.facebook_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-700 hover:text-blue-900"
@@ -378,12 +383,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <Building className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium text-sm">{lead.company}</span>
+                            <span className="font-medium text-sm">{lead.organization_name}</span>
                           </div>
                           
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <Users className="h-3 w-3" />
-                            <span>{lead.companySize}</span>
+                            <span>{lead.estimated_num_employees} employees</span>
                           </div>
                           
                           {lead.industry && (
@@ -393,9 +398,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           )}
                           
                           <div className="flex items-center gap-2">
-                            {lead.organizationWebsite && (
+                            {lead.organization_website_url && (
                               <a 
-                                href={lead.organizationWebsite} 
+                                href={lead.organization_website_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 className="text-blue-600 hover:text-blue-800"
@@ -403,10 +408,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 <Globe className="h-3 w-3" />
                               </a>
                             )}
-                            {lead.organizationFounded && (
+                            {lead.organization_founded_year && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Calendar className="h-3 w-3" />
-                                <span>Est. {lead.organizationFounded}</span>
+                                <span>Est. {lead.organization_founded_year}</span>
                               </div>
                             )}
                           </div>
