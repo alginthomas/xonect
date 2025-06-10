@@ -7,7 +7,8 @@ import {
   Upload,
   Tag,
   History,
-  Palette
+  Palette,
+  PanelLeft
 } from 'lucide-react';
 import {
   Sidebar,
@@ -18,8 +19,10 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarHeader,
   useSidebar,
 } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
 
 const navigationItems = [
   {
@@ -61,7 +64,7 @@ const navigationItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, toggleSidebar } = useSidebar();
   const location = useLocation();
   const isCollapsed = state === 'collapsed';
 
@@ -74,11 +77,34 @@ export function AppSidebar() {
 
   return (
     <Sidebar className="border-r border-sidebar-border bg-sidebar" collapsible="icon">
-      <SidebarContent className="py-4">
+      <SidebarHeader className="border-b border-sidebar-border bg-sidebar">
+        <div className="flex items-center justify-between px-3 py-3">
+          {!isCollapsed && (
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+                <span className="text-xs font-semibold text-primary-foreground">L</span>
+              </div>
+              <span className="text-sm font-semibold text-sidebar-foreground">LeadManager</span>
+            </div>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleSidebar}
+            className="h-7 w-7 text-sidebar-foreground hover:bg-sidebar-accent"
+          >
+            <PanelLeft className="h-4 w-4" />
+          </Button>
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent className="py-2">
         <SidebarGroup>
-          <SidebarGroupLabel className={`px-4 py-2 text-xs font-semibold text-sidebar-foreground/70 uppercase tracking-wider ${isCollapsed ? 'sr-only' : ''}`}>
-            Navigation
-          </SidebarGroupLabel>
+          {!isCollapsed && (
+            <SidebarGroupLabel className="px-4 py-2 text-xs font-medium text-sidebar-foreground/60 uppercase tracking-wider">
+              Navigation
+            </SidebarGroupLabel>
+          )}
           <SidebarGroupContent className="px-2">
             <SidebarMenu className="space-y-1">
               {navigationItems.map((item) => (
@@ -87,12 +113,12 @@ export function AppSidebar() {
                     asChild
                     isActive={isActive(item.url)}
                     tooltip={isCollapsed ? item.title : undefined}
-                    className="h-10 px-3"
+                    className="h-11 px-3 rounded-lg"
                   >
                     <NavLink 
                       to={item.url}
                       className={({ isActive }) =>
-                        `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                        `flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200 rounded-lg ${
                           isActive 
                             ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-sm' 
                             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
@@ -101,9 +127,9 @@ export function AppSidebar() {
                     >
                       <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!isCollapsed && (
-                        <div className="flex flex-col min-w-0">
+                        <div className="flex flex-col min-w-0 flex-1">
                           <span className="font-medium truncate">{item.title}</span>
-                          <span className="text-xs text-sidebar-foreground/60 truncate">
+                          <span className="text-xs text-sidebar-foreground/50 truncate leading-tight">
                             {item.description}
                           </span>
                         </div>
