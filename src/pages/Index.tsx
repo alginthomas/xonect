@@ -80,7 +80,7 @@ const Index = () => {
     name: cat.name,
     description: cat.description,
     color: cat.color,
-    criteria: cat.criteria,
+    criteria: (cat.criteria && typeof cat.criteria === 'object') ? cat.criteria as Record<string, any> : {},
     createdAt: new Date(cat.created_at),
     updatedAt: new Date(cat.updated_at)
   }));
@@ -94,7 +94,55 @@ const Index = () => {
     successfulImports: batch.successful_imports,
     failedImports: batch.failed_imports,
     createdAt: new Date(batch.created_at),
-    metadata: batch.metadata
+    metadata: (batch.metadata && typeof batch.metadata === 'object') ? batch.metadata as Record<string, any> : {}
+  }));
+
+  // Transform leads data to match Lead interface
+  const transformedLeads: Lead[] = (leadsData || []).map(lead => ({
+    id: lead.id,
+    firstName: lead.first_name,
+    lastName: lead.last_name,
+    name: lead.first_name + ' ' + lead.last_name,
+    email: lead.email,
+    personalEmail: lead.personal_email,
+    company: lead.company,
+    title: lead.title,
+    headline: lead.headline,
+    seniority: lead.seniority,
+    department: lead.department,
+    keywords: lead.keywords,
+    companySize: lead.company_size,
+    industry: lead.industry || '',
+    location: lead.location || '',
+    phone: lead.phone || '',
+    linkedin: lead.linkedin || '',
+    twitterUrl: lead.twitter_url,
+    facebookUrl: lead.facebook_url,
+    photoUrl: lead.photo_url,
+    organizationWebsite: lead.organization_website,
+    organizationLogo: lead.organization_logo,
+    organizationDomain: lead.organization_domain,
+    organizationFounded: lead.organization_founded,
+    organizationAddress: lead.organization_address,
+    tags: lead.tags || [],
+    status: lead.status,
+    emailsSent: lead.emails_sent,
+    lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
+    createdAt: new Date(lead.created_at),
+    completenessScore: lead.completeness_score,
+    categoryId: lead.category_id,
+    remarks: lead.remarks
+  }));
+
+  // Transform templates data to match EmailTemplate interface
+  const transformedTemplates = (templatesData || []).map(template => ({
+    id: template.id,
+    name: template.name,
+    subject: template.subject,
+    content: template.content,
+    variables: template.variables || [],
+    createdAt: new Date(template.created_at),
+    lastUsed: template.last_used ? new Date(template.last_used) : undefined
   }));
 
   const handleImportComplete = async (
@@ -121,7 +169,7 @@ const Index = () => {
         email: sanitizeInput(lead.email),
         company: sanitizeInput(lead.company),
         title: sanitizeInput(lead.title),
-        user_id: user.id, // Critical security fix: assign user_id
+        user_id: user.id,
       }));
 
       // Validate CSV data structure
@@ -143,7 +191,7 @@ const Index = () => {
           category_id: importBatch.categoryId,
           source_file: importBatch.sourceFile,
           total_leads: leads.length,
-          user_id: user.id, // Critical security fix: assign user_id
+          user_id: user.id,
         })
         .select()
         .single();
@@ -152,12 +200,39 @@ const Index = () => {
 
       console.log('Created import batch:', batchData);
 
-      // Process leads with user_id and import_batch_id
+      // Transform leads to database format
       const leadsToInsert = sanitizedLeads.map(lead => ({
-        ...lead,
+        first_name: lead.firstName,
+        last_name: lead.lastName,
+        email: lead.email,
+        company: lead.company,
+        title: lead.title,
+        seniority: lead.seniority,
+        company_size: lead.companySize,
+        industry: lead.industry,
+        location: lead.location,
+        phone: lead.phone,
+        linkedin: lead.linkedin,
+        personal_email: lead.personalEmail,
+        headline: lead.headline,
+        department: lead.department,
+        keywords: lead.keywords,
+        twitter_url: lead.twitterUrl,
+        facebook_url: lead.facebookUrl,
+        photo_url: lead.photoUrl,
+        organization_website: lead.organizationWebsite,
+        organization_logo: lead.organizationLogo,
+        organization_domain: lead.organizationDomain,
+        organization_founded: lead.organizationFounded,
+        organization_address: lead.organizationAddress,
+        tags: lead.tags,
+        status: lead.status,
+        emails_sent: lead.emailsSent || 0,
+        completeness_score: lead.completenessScore || 0,
+        remarks: lead.remarks,
         import_batch_id: batchData.id,
         category_id: importBatch.categoryId,
-        user_id: user.id, // Critical security fix: assign user_id
+        user_id: user.id,
       }));
 
       const { error: leadsError } = await supabase
@@ -217,7 +292,7 @@ const Index = () => {
         subject: sanitizeInput(template.subject),
         content: sanitizeInput(template.content),
         variables: template.variables.map(v => sanitizeInput(v)),
-        user_id: user.id, // Critical security fix: assign user_id
+        user_id: user.id,
       };
 
       const { error } = await supabase
@@ -262,7 +337,7 @@ const Index = () => {
         name: sanitizeInput(category.name),
         description: category.description ? sanitizeInput(category.description) : undefined,
         color: category.color || '#3B82F6',
-        user_id: user.id, // Critical security fix: assign user_id
+        user_id: user.id,
       };
 
       const { error } = await supabase
@@ -287,19 +362,76 @@ const Index = () => {
     }
   };
 
+  const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: updates.name,
+          description: updates.description,
+          color: updates.color,
+        })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Category updated",
+        description: "Category has been updated successfully",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast({
+        title: "Error updating category",
+        description: "Failed to update the category",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Category deleted",
+        description: "Category has been deleted successfully",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: "Error deleting category",
+        description: "Failed to delete the category",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDeleteBatch = async (batchId: string) => {
-    // Implementation would use useImportBatchOperations hook
     queryClient.invalidateQueries({ queryKey: ['import-batches'] });
     queryClient.invalidateQueries({ queryKey: ['leads'] });
   };
 
   const handleViewBatchLeads = (batchId: string) => {
-    // Switch to dashboard tab and filter by batch
     setActiveTab('dashboard');
   };
 
   const handleSaveBranding = async (branding: any) => {
-    // Implementation for saving branding settings
     toast({
       title: "Branding saved",
       description: "Branding settings have been saved successfully",
@@ -322,8 +454,8 @@ const Index = () => {
 
           <TabsContent value="dashboard" className="space-y-4">
             <LeadsDashboard 
-              leads={leadsData || []}
-              templates={templatesData || []}
+              leads={transformedLeads}
+              templates={transformedTemplates}
               categories={transformedCategories}
               importBatches={transformedBatches}
               onSendEmail={() => {}}
@@ -334,7 +466,7 @@ const Index = () => {
           <TabsContent value="templates" className="space-y-4">
             <EmailTemplateBuilder 
               onSaveTemplate={handleSaveTemplate}
-              templates={templatesData || []}
+              templates={transformedTemplates}
             />
           </TabsContent>
 
@@ -342,6 +474,7 @@ const Index = () => {
             <CSVImport 
               onImportComplete={handleImportComplete}
               categories={transformedCategories}
+              onCreateCategory={handleCreateCategory}
             />
           </TabsContent>
 
@@ -349,12 +482,14 @@ const Index = () => {
             <CategoryManager 
               categories={transformedCategories}
               onCreateCategory={handleCreateCategory}
+              onUpdateCategory={handleUpdateCategory}
+              onDeleteCategory={handleDeleteCategory}
             />
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
             <ImportHistory 
-              leads={leadsData || []}
+              leads={transformedLeads}
               importBatches={transformedBatches}
               categories={transformedCategories}
               onDeleteBatch={handleDeleteBatch}
@@ -364,7 +499,14 @@ const Index = () => {
 
           <TabsContent value="branding" className="space-y-4">
             <BrandingSettings 
-              branding={{}}
+              branding={{
+                companyName: '',
+                companyLogo: '',
+                companyWebsite: '',
+                companyAddress: '',
+                primaryColor: '#3B82F6',
+                secondaryColor: '#10B981'
+              }}
               onSave={handleSaveBranding}
             />
           </TabsContent>
