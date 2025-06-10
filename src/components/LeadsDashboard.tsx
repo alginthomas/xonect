@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin } from 'lucide-react';
+import { Users, Mail, TrendingUp, Filter, Search, CheckCircle, Phone, Linkedin, MapPin, Building, Globe } from 'lucide-react';
 import { EmailDialog } from './EmailDialog';
 import type { Lead, EmailTemplate } from '@/types/lead';
 
@@ -31,7 +31,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         lead.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+        lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lead.title && lead.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (lead.industry && lead.industry.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       const matchesSeniority = seniorityFilter === 'all' || lead.seniority === seniorityFilter;
@@ -204,16 +206,16 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             </div>
           </div>
 
-          {/* Leads Table */}
+          {/* Enhanced Leads Table */}
           <div className="border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted">
                   <tr>
-                    <th className="text-left p-3 font-medium">Name</th>
-                    <th className="text-left p-3 font-medium">Contact</th>
-                    <th className="text-left p-3 font-medium">Company</th>
-                    <th className="text-left p-3 font-medium">Title</th>
+                    <th className="text-left p-3 font-medium min-w-[200px]">Lead Info</th>
+                    <th className="text-left p-3 font-medium min-w-[250px]">Contact Details</th>
+                    <th className="text-left p-3 font-medium min-w-[200px]">Organization</th>
+                    <th className="text-left p-3 font-medium min-w-[150px]">Location</th>
                     <th className="text-left p-3 font-medium">Status</th>
                     <th className="text-left p-3 font-medium">Score</th>
                     <th className="text-left p-3 font-medium">Actions</th>
@@ -223,22 +225,44 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   {filteredLeads.map(lead => (
                     <tr key={lead.id} className="border-b hover:bg-muted/50">
                       <td className="p-3">
-                        <div>
-                          <div className="font-medium">{lead.firstName} {lead.lastName}</div>
-                          <div className="text-sm text-muted-foreground">{lead.seniority}</div>
+                        <div className="space-y-1">
+                          <div className="font-medium text-sm">
+                            {lead.firstName} {lead.lastName}
+                          </div>
+                          {lead.title && (
+                            <div className="text-xs text-muted-foreground font-medium">
+                              {lead.title}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Badge variant="outline" className="text-xs">
+                              {lead.seniority}
+                            </Badge>
+                            {lead.industry && (
+                              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                                {lead.industry}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </td>
+                      
                       <td className="p-3">
-                        <div className="space-y-1">
-                          <div className="text-sm">{lead.email}</div>
-                          <div className="flex gap-2 items-center">
-                            {lead.phone && (
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Phone className="h-3 w-3" />
-                                <span>{lead.phone}</span>
-                              </div>
-                            )}
-                            {lead.linkedin && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span className="truncate max-w-[200px]">{lead.email}</span>
+                          </div>
+                          
+                          {lead.phone && (
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <span>{lead.phone}</span>
+                            </div>
+                          )}
+                          
+                          {lead.linkedin && (
+                            <div className="flex items-center gap-2">
                               <a 
                                 href={lead.linkedin} 
                                 target="_blank" 
@@ -246,24 +270,40 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
                               >
                                 <Linkedin className="h-3 w-3" />
-                                <span>LinkedIn</span>
+                                <span>LinkedIn Profile</span>
                               </a>
-                            )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      
+                      <td className="p-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Building className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-medium text-sm">{lead.company}</span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {lead.companySize}
                           </div>
                         </div>
                       </td>
+                      
                       <td className="p-3">
-                        <div>
-                          <div className="font-medium">{lead.company}</div>
-                          <div className="text-sm text-muted-foreground">{lead.companySize}</div>
-                        </div>
+                        {lead.location && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span className="truncate max-w-[120px]">{lead.location}</span>
+                          </div>
+                        )}
                       </td>
-                      <td className="p-3">{lead.title}</td>
+                      
                       <td className="p-3">
                         <Badge className={getStatusColor(lead.status)}>
                           {lead.status}
                         </Badge>
                       </td>
+                      
                       <td className="p-3">
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
@@ -272,9 +312,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                               style={{ width: `${lead.completenessScore}%` }}
                             />
                           </div>
-                          <span className="text-sm">{lead.completenessScore}%</span>
+                          <span className="text-sm font-medium">{lead.completenessScore}%</span>
                         </div>
                       </td>
+                      
                       <td className="p-3">
                         <EmailDialog 
                           lead={lead} 
