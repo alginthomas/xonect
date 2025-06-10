@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -310,21 +309,6 @@ const Index = () => {
 
   const handleViewBatchLeads = (batchId: string) => {
     setSelectedBatchId(batchId);
-  };
-
-  const handleCleanupData = async () => {
-    const success = await cleanupUserData();
-    if (success) {
-      // Refresh all data
-      setLeads([]);
-      setImportBatches([]);
-      setCategories([]);
-      setTemplates([]);
-      fetchLeads();
-      fetchTemplates();
-      fetchCategories();
-      fetchImportBatches();
-    }
   };
 
   const handleCreateCategory = async (categoryData: Partial<Category>) => {
