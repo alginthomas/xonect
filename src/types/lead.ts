@@ -1,4 +1,5 @@
-export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested';
+
+export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested';
 export type Seniority = 'Junior' | 'Mid-level' | 'Senior' | 'Executive' | 'C-level';
 export type CompanySize = 'Small (1-50)' | 'Medium (51-200)' | 'Large (201-1000)' | 'Enterprise (1000+)';
 

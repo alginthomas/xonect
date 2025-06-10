@@ -633,6 +633,7 @@ const Index = () => {
               <CSVImport 
                 onImportComplete={handleImportComplete}
                 categories={categories}
+                onCreateCategory={handleCreateCategory}
               />
             </TabsContent>
 

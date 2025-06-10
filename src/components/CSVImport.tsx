@@ -5,16 +5,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { CategorySelector } from './CategorySelector';
+import { CategorySelectorWithCreate } from './CategorySelectorWithCreate';
 import type { Lead } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
 interface CSVImportProps {
   onImportComplete: (leads: Lead[], importBatch: ImportBatch) => void;
   categories: Category[];
+  onCreateCategory: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
 
-export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categories }) => {
+export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categories, onCreateCategory }) => {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [preview, setPreview] = useState<any[]>([]);
@@ -412,12 +413,15 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           </div>
           <div>
             <Label htmlFor="category">Category (Optional)</Label>
-            <CategorySelector
-              categories={categories}
-              selectedCategoryId={selectedCategoryId}
-              onCategoryChange={setSelectedCategoryId}
-              placeholder="Select category for these leads"
-            />
+            <div className="mt-1">
+              <CategorySelectorWithCreate
+                categories={categories}
+                selectedCategoryId={selectedCategoryId}
+                onCategoryChange={setSelectedCategoryId}
+                onCreateCategory={onCreateCategory}
+                placeholder="Select or create category for these leads"
+              />
+            </div>
           </div>
         </div>
 

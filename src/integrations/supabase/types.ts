@@ -380,6 +380,7 @@ export type Database = {
         | "Call Back"
         | "Unresponsive"
         | "Not Interested"
+        | "Interested"
       seniority_level:
         | "Junior"
         | "Mid-level"
@@ -519,6 +520,7 @@ export const Constants = {
         "Call Back",
         "Unresponsive",
         "Not Interested",
+        "Interested",
       ],
       seniority_level: [
         "Junior",
