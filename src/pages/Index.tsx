@@ -78,9 +78,9 @@ const Index = () => {
   const transformedCategories: Category[] = (categoriesData || []).map(cat => ({
     id: cat.id,
     name: cat.name,
-    description: cat.description,
+    description: cat.description || '',
     color: cat.color,
-    criteria: (cat.criteria && typeof cat.criteria === 'object') ? cat.criteria as Record<string, any> : {},
+    criteria: (cat.criteria && typeof cat.criteria === 'object' && cat.criteria !== null) ? cat.criteria as Record<string, any> : {},
     createdAt: new Date(cat.created_at),
     updatedAt: new Date(cat.updated_at)
   }));
@@ -88,13 +88,13 @@ const Index = () => {
   const transformedBatches: ImportBatch[] = (batchesData || []).map(batch => ({
     id: batch.id,
     name: batch.name,
-    categoryId: batch.category_id,
-    sourceFile: batch.source_file,
+    categoryId: batch.category_id || '',
+    sourceFile: batch.source_file || '',
     totalLeads: batch.total_leads,
     successfulImports: batch.successful_imports,
     failedImports: batch.failed_imports,
     createdAt: new Date(batch.created_at),
-    metadata: (batch.metadata && typeof batch.metadata === 'object') ? batch.metadata as Record<string, any> : {}
+    metadata: (batch.metadata && typeof batch.metadata === 'object' && batch.metadata !== null) ? batch.metadata as Record<string, any> : {}
   }));
 
   // Transform leads data to match Lead interface
@@ -104,34 +104,34 @@ const Index = () => {
     lastName: lead.last_name,
     name: lead.first_name + ' ' + lead.last_name,
     email: lead.email,
-    personalEmail: lead.personal_email,
+    personalEmail: lead.personal_email || '',
     company: lead.company,
     title: lead.title,
-    headline: lead.headline,
+    headline: lead.headline || '',
     seniority: lead.seniority,
-    department: lead.department,
-    keywords: lead.keywords,
+    department: lead.department || '',
+    keywords: lead.keywords || '',
     companySize: lead.company_size,
     industry: lead.industry || '',
     location: lead.location || '',
     phone: lead.phone || '',
     linkedin: lead.linkedin || '',
-    twitterUrl: lead.twitter_url,
-    facebookUrl: lead.facebook_url,
-    photoUrl: lead.photo_url,
-    organizationWebsite: lead.organization_website,
-    organizationLogo: lead.organization_logo,
-    organizationDomain: lead.organization_domain,
-    organizationFounded: lead.organization_founded,
-    organizationAddress: lead.organization_address,
+    twitterUrl: lead.twitter_url || '',
+    facebookUrl: lead.facebook_url || '',
+    photoUrl: lead.photo_url || '',
+    organizationWebsite: lead.organization_website || '',
+    organizationLogo: lead.organization_logo || '',
+    organizationDomain: lead.organization_domain || '',
+    organizationFounded: lead.organization_founded || 0,
+    organizationAddress: lead.organization_address || '',
     tags: lead.tags || [],
     status: lead.status,
     emailsSent: lead.emails_sent,
     lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
     createdAt: new Date(lead.created_at),
     completenessScore: lead.completeness_score,
-    categoryId: lead.category_id,
-    remarks: lead.remarks
+    categoryId: lead.category_id || '',
+    remarks: lead.remarks || ''
   }));
 
   // Transform templates data to match EmailTemplate interface
@@ -431,6 +431,34 @@ const Index = () => {
     setActiveTab('dashboard');
   };
 
+  const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({
+          status: updates.status,
+          emails_sent: updates.emailsSent,
+          last_contact_date: updates.lastContactDate?.toISOString(),
+          remarks: updates.remarks,
+        })
+        .eq('id', leadId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['leads'] });
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error updating lead",
+        description: "Failed to update the lead",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSaveBranding = async (branding: any) => {
     toast({
       title: "Branding saved",
@@ -458,8 +486,15 @@ const Index = () => {
               templates={transformedTemplates}
               categories={transformedCategories}
               importBatches={transformedBatches}
-              onSendEmail={() => {}}
-              onUpdateLead={() => {}}
+              branding={{
+                companyName: '',
+                companyLogo: '',
+                companyWebsite: '',
+                companyAddress: '',
+                senderName: '',
+                senderEmail: ''
+              }}
+              onUpdateLead={handleUpdateLead}
             />
           </TabsContent>
 
@@ -504,8 +539,8 @@ const Index = () => {
                 companyLogo: '',
                 companyWebsite: '',
                 companyAddress: '',
-                primaryColor: '#3B82F6',
-                secondaryColor: '#10B981'
+                senderName: '',
+                senderEmail: ''
               }}
               onSave={handleSaveBranding}
             />
