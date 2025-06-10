@@ -59,7 +59,7 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase
+        // Transform snake_case to camelCase and convert dates
         const transformedLeads: Lead[] = data.map(lead => ({
           id: lead.id,
           firstName: lead.first_name,
@@ -70,16 +70,13 @@ const Index = () => {
           phone: lead.phone || '',
           linkedin: lead.linkedin || '',
           status: lead.status,
-          createdAt: lead.created_at,
-          updatedAt: lead.updated_at,
+          createdAt: new Date(lead.created_at),
           categoryId: lead.category_id,
-          importBatchId: lead.import_batch_id,
-          userId: lead.user_id,
           companySize: lead.company_size,
           seniority: lead.seniority,
-          emailsSent: lead.emails_sent,
-          lastContactDate: lead.last_contact_date,
-          completenessScore: lead.completeness_score,
+          emailsSent: lead.emails_sent || 0,
+          lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
+          completenessScore: lead.completeness_score || 0,
           industry: lead.industry || '',
           location: lead.location || '',
           department: lead.department || '',
@@ -115,17 +112,15 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase
+        // Transform snake_case to camelCase and convert dates
         const transformedTemplates: EmailTemplate[] = data.map(template => ({
           id: template.id,
           name: template.name,
           subject: template.subject,
           content: template.content,
           variables: template.variables || [],
-          createdAt: template.created_at,
-          updatedAt: template.updated_at,
-          lastUsed: template.last_used,
-          userId: template.user_id
+          createdAt: new Date(template.created_at),
+          lastUsed: template.last_used ? new Date(template.last_used) : undefined
         }));
         setTemplates(transformedTemplates);
       }
@@ -150,16 +145,14 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase
+        // Transform snake_case to camelCase and convert dates
         const transformedCategories: Category[] = data.map(category => ({
           id: category.id,
           name: category.name,
           description: category.description || '',
           color: category.color || '#3B82F6',
-          criteria: category.criteria || {},
-          createdAt: category.created_at,
-          updatedAt: category.updated_at,
-          userId: category.user_id
+          criteria: (category.criteria as Record<string, any>) || {},
+          createdAt: new Date(category.created_at)
         }));
         setCategories(transformedCategories);
       }
@@ -184,7 +177,7 @@ const Index = () => {
       }
 
       if (data) {
-        // Transform snake_case to camelCase
+        // Transform snake_case to camelCase and convert dates
         const transformedBatches: ImportBatch[] = data.map(batch => ({
           id: batch.id,
           name: batch.name,
@@ -192,10 +185,9 @@ const Index = () => {
           totalLeads: batch.total_leads || 0,
           successfulImports: batch.successful_imports || 0,
           failedImports: batch.failed_imports || 0,
-          createdAt: batch.created_at,
+          createdAt: new Date(batch.created_at),
           sourceFile: batch.source_file || '',
-          metadata: batch.metadata || {},
-          userId: batch.user_id
+          metadata: (batch.metadata as Record<string, any>) || {}
         }));
         setImportBatches(transformedBatches);
       }
@@ -214,7 +206,14 @@ const Index = () => {
       const supabaseUpdates: any = {};
       Object.keys(updates).forEach(key => {
         const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        supabaseUpdates[snakeKey] = updates[key as keyof Lead];
+        let value = updates[key as keyof Lead];
+        
+        // Convert Date objects to ISO strings for Supabase
+        if (value instanceof Date) {
+          value = value.toISOString();
+        }
+        
+        supabaseUpdates[snakeKey] = value;
       });
 
       const { error } = await supabase
@@ -298,10 +297,8 @@ const Index = () => {
           name: data.name,
           description: data.description || '',
           color: data.color || '#3B82F6',
-          criteria: data.criteria || {},
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-          userId: data.user_id
+          criteria: (data.criteria as Record<string, any>) || {},
+          createdAt: new Date(data.created_at)
         };
         setCategories(prev => [transformedCategory, ...prev]);
       }
@@ -389,10 +386,8 @@ const Index = () => {
           subject: data.subject,
           content: data.content,
           variables: data.variables || [],
-          createdAt: data.created_at,
-          updatedAt: data.updated_at,
-          lastUsed: data.last_used,
-          userId: data.user_id
+          createdAt: new Date(data.created_at),
+          lastUsed: data.last_used ? new Date(data.last_used) : undefined
         };
         setTemplates(prev => [transformedTemplate, ...prev]);
       }

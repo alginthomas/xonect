@@ -56,6 +56,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
       'Call Back': 'bg-orange-100 text-orange-800',
       'Unresponsive': 'bg-gray-100 text-gray-800',
       'Not Interested': 'bg-red-100 text-red-800',
+      'Interested': 'bg-green-100 text-green-800',
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
@@ -156,6 +157,20 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
         : `https://${lead.organizationWebsite}`;
       console.log('Opening website URL:', url);
       window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  // Helper function to safely format dates
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return 'N/A';
+    
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return 'Invalid Date';
+      return dateObj.toLocaleDateString();
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return 'Invalid Date';
     }
   };
 
@@ -415,7 +430,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   {lead.lastContactDate && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Clock className="h-3 w-3 shrink-0" />
-                      <span className="truncate">Last Contact: {lead.lastContactDate.toLocaleDateString()}</span>
+                      <span className="truncate">Last Contact: {formatDate(lead.lastContactDate)}</span>
                     </div>
                   )}
                 </div>
@@ -429,12 +444,12 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                     <span className="text-muted-foreground truncate">{categoryInfo.name}</span>
                   </div>
                   <div className="text-muted-foreground">
-                    Added: {lead.createdAt.toLocaleDateString()}
+                    Added: {formatDate(lead.createdAt)}
                   </div>
                 </div>
               </div>
               
-              {lead.tags.length > 0 && (
+              {lead.tags && lead.tags.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Tag className="h-3 w-3 shrink-0" />
