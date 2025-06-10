@@ -18,6 +18,52 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   const [preview, setPreview] = useState<any[]>([]);
   const { toast } = useToast();
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          // Handle escaped quotes
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    
+    result.push(current.trim());
+    return result;
+  };
+
+  const normalizeHeader = (header: string): string => {
+    return header.toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .replace(/\s+/g, '');
+  };
+
+  const findColumnValue = (rowData: any, possibleNames: string[]): string => {
+    for (const name of possibleNames) {
+      const normalizedName = normalizeHeader(name);
+      for (const [key, value] of Object.entries(rowData)) {
+        if (normalizeHeader(key) === normalizedName && value) {
+          return String(value).trim();
+        }
+      }
+    }
+    return '';
+  };
+
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile && selectedFile.type === 'text/csv') {
@@ -27,15 +73,23 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         const text = e.target?.result as string;
-        const lines = text.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim());
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length === 0) return;
+        
+        const headers = parseCSVLine(lines[0]);
+        console.log('CSV Headers found:', headers);
+        
         const sampleRows = lines.slice(1, 4).map(line => {
-          const values = line.split(',').map(v => v.trim());
-          return headers.reduce((obj, header, index) => {
-            obj[header] = values[index] || '';
-            return obj;
-          }, {} as any);
+          const values = parseCSVLine(line);
+          const row: any = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
+          return row;
         });
+        
+        console.log('Sample rows:', sampleRows);
         setPreview(sampleRows);
       };
       reader.readAsText(selectedFile);
@@ -49,7 +103,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   }, [toast]);
 
   const categorizeCompanySize = (companySize: string): Lead['companySize'] => {
-    const size = parseInt(companySize) || 0;
+    if (!companySize) return 'Small (1-50)';
+    const size = parseInt(companySize.replace(/[^0-9]/g, '')) || 0;
     if (size <= 50) return 'Small (1-50)';
     if (size <= 200) return 'Medium (51-200)';
     if (size <= 1000) return 'Large (201-1000)';
@@ -57,6 +112,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
   };
 
   const categorizeSeniority = (title: string): Lead['seniority'] => {
+    if (!title) return 'Mid-level';
     const titleLower = title.toLowerCase();
     if (titleLower.includes('ceo') || titleLower.includes('cto') || titleLower.includes('cfo') || titleLower.includes('chief')) {
       return 'C-level';
@@ -92,29 +148,81 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
       reader.onload = (e) => {
         const text = e.target?.result as string;
         const lines = text.split('\n').filter(line => line.trim());
-        const headers = lines[0].split(',').map(h => h.trim());
         
-        const leads: Lead[] = lines.slice(1).map((line, index) => {
-          const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
-          const rawLead: any = {};
+        if (lines.length < 2) {
+          toast({
+            title: "Invalid CSV",
+            description: "CSV file must contain headers and at least one data row",
+            variant: "destructive",
+          });
+          setImporting(false);
+          return;
+        }
+        
+        const headers = parseCSVLine(lines[0]);
+        console.log('Processing CSV with headers:', headers);
+        
+        const leads: Lead[] = [];
+        
+        lines.slice(1).forEach((line, index) => {
+          const values = parseCSVLine(line);
+          if (values.length === 0 || values.every(v => !v.trim())) return; // Skip empty rows
           
+          const rawLead: any = {};
           headers.forEach((header, i) => {
             rawLead[header] = values[i] || '';
           });
 
+          // More flexible column mapping
+          const firstName = findColumnValue(rawLead, [
+            'First Name', 'first_name', 'firstname', 'fname', 'given_name'
+          ]);
+          
+          const lastName = findColumnValue(rawLead, [
+            'Last Name', 'last_name', 'lastname', 'lname', 'surname', 'family_name'
+          ]);
+          
+          const email = findColumnValue(rawLead, [
+            'Email', 'email', 'email_address', 'mail'
+          ]);
+          
+          const company = findColumnValue(rawLead, [
+            'Company', 'company', 'organization', 'org', 'company_name'
+          ]);
+          
+          const title = findColumnValue(rawLead, [
+            'Title', 'title', 'job_title', 'position', 'role'
+          ]);
+
+          // Skip rows without essential data
+          if (!firstName && !lastName && !email) {
+            console.log(`Skipping row ${index + 1}: Missing essential data`);
+            return;
+          }
+
           const lead: Lead = {
             id: `lead_${Date.now()}_${index}`,
-            firstName: rawLead['First Name'] || rawLead['first_name'] || '',
-            lastName: rawLead['Last Name'] || rawLead['last_name'] || '',
-            email: rawLead['Email'] || rawLead['email'] || '',
-            company: rawLead['Company'] || rawLead['Organization'] || rawLead['company'] || '',
-            title: rawLead['Title'] || rawLead['Job Title'] || rawLead['title'] || '',
-            seniority: categorizeSeniority(rawLead['Title'] || rawLead['Job Title'] || ''),
-            companySize: categorizeCompanySize(rawLead['Company Size'] || rawLead['Employees'] || '0'),
-            industry: rawLead['Industry'] || '',
-            location: rawLead['Location'] || rawLead['City'] || '',
-            phone: rawLead['Phone'] || '',
-            linkedin: rawLead['LinkedIn'] || rawLead['LinkedIn URL'] || '',
+            firstName: firstName || '',
+            lastName: lastName || '',
+            email: email || '',
+            company: company || '',
+            title: title || '',
+            seniority: categorizeSeniority(title),
+            companySize: categorizeCompanySize(findColumnValue(rawLead, [
+              'Company Size', 'company_size', 'employees', 'emp_count', 'size'
+            ])),
+            industry: findColumnValue(rawLead, [
+              'Industry', 'industry', 'sector'
+            ]),
+            location: findColumnValue(rawLead, [
+              'Location', 'location', 'city', 'address', 'country'
+            ]),
+            phone: findColumnValue(rawLead, [
+              'Phone', 'phone', 'phone_number', 'tel', 'mobile'
+            ]),
+            linkedin: findColumnValue(rawLead, [
+              'LinkedIn', 'linkedin', 'linkedin_url', 'profile'
+            ]),
             tags: [],
             status: 'New',
             emailsSent: 0,
@@ -129,20 +237,32 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           if (lead.completenessScore < 60) lead.tags.push('Incomplete');
           if (lead.seniority === 'C-level' || lead.seniority === 'Executive') lead.tags.push('High Priority');
 
-          return lead;
+          leads.push(lead);
+          console.log(`Processed lead ${index + 1}:`, lead);
         });
 
-        onImportComplete(leads);
-        toast({
-          title: "Import successful",
-          description: `Imported ${leads.length} leads successfully`,
-        });
-        setFile(null);
-        setPreview([]);
+        console.log(`Successfully processed ${leads.length} leads`);
+        
+        if (leads.length === 0) {
+          toast({
+            title: "No valid leads found",
+            description: "Please check your CSV format and ensure it contains valid lead data",
+            variant: "destructive",
+          });
+        } else {
+          onImportComplete(leads);
+          toast({
+            title: "Import successful",
+            description: `Imported ${leads.length} leads successfully`,
+          });
+          setFile(null);
+          setPreview([]);
+        }
       };
       
       reader.readAsText(file);
     } catch (error) {
+      console.error('Import error:', error);
       toast({
         title: "Import failed",
         description: "There was an error importing your CSV file",
