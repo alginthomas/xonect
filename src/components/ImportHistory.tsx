@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Search, Trash2, Download, Eye, Calendar, Users, TrendingUp, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate } from '@/types/lead';
@@ -20,7 +20,7 @@ interface ImportHistoryProps {
   importBatches: ImportBatch[];
   categories: Category[];
   onDeleteBatch: (batchId: string) => void;
-  onViewBatchLeads: (batchId: string) => void;
+  onViewBatchLeads?: (batchId: string) => void;
 }
 
 export const ImportHistory: React.FC<ImportHistoryProps> = ({
@@ -33,6 +33,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'leads'>('date');
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const filteredBatches = useMemo(() => {
     if (!importBatches || !Array.isArray(importBatches)) {
@@ -106,6 +107,11 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       title: "Batch deleted",
       description: `Import batch "${batchName}" has been deleted`,
     });
+  };
+
+  const handleViewBatchLeads = (batchId: string) => {
+    // Navigate directly to the leads dashboard with the batch filter applied
+    navigate(`/?tab=dashboard&batch=${batchId}`);
   };
 
   const getCategoryName = (categoryId?: string) => {
@@ -258,7 +264,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => onViewBatchLeads(batch.id)}
+                            onClick={() => handleViewBatchLeads(batch.id)}
                             className="flex items-center gap-2"
                           >
                             <Eye className="h-4 w-4" />

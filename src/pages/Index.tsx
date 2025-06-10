@@ -56,6 +56,14 @@ const Index = () => {
   const getActiveTab = () => {
     const searchParams = new URLSearchParams(location.search);
     const tab = searchParams.get('tab');
+    const batch = searchParams.get('batch');
+    
+    // If there's a batch parameter, set it as selected and go to dashboard
+    if (batch) {
+      setSelectedBatchId(batch);
+      return 'dashboard';
+    }
+    
     if (tab) return tab;
     
     switch (location.pathname) {
@@ -79,6 +87,10 @@ const Index = () => {
   // Handle tab changes and update URL
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Clear selected batch when changing tabs
+    if (value !== 'dashboard') {
+      setSelectedBatchId(null);
+    }
     navigate(`/?tab=${value}`, { replace: true });
   };
 
@@ -461,135 +473,125 @@ const Index = () => {
           </div>
         </div>
 
-        {selectedBatchId ? (
-          <ImportHistory 
-            leads={leads}
-            importBatches={importBatches}
-            categories={categories}
-            onDeleteBatch={handleDeleteBatch}
-            onViewBatchLeads={handleViewBatchLeads}
-          />
-        ) : (
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-              <TabsList className="grid w-full sm:w-auto grid-cols-6 lg:grid-cols-6 bg-muted rounded-xl p-1">
-                <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
-                <TabsTrigger value="leads" className="rounded-lg font-medium">Leads</TabsTrigger>
-                <TabsTrigger value="import" className="rounded-lg font-medium">Import</TabsTrigger>
-                <TabsTrigger value="categories" className="rounded-lg font-medium">Categories</TabsTrigger>
-                <TabsTrigger value="templates" className="rounded-lg font-medium">Templates</TabsTrigger>
-                <TabsTrigger value="settings" className="rounded-lg font-medium">Settings</TabsTrigger>
-              </TabsList>
-            </div>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <TabsList className="grid w-full sm:w-auto grid-cols-6 lg:grid-cols-6 bg-muted rounded-xl p-1">
+              <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
+              <TabsTrigger value="leads" className="rounded-lg font-medium">Leads</TabsTrigger>
+              <TabsTrigger value="import" className="rounded-lg font-medium">Import</TabsTrigger>
+              <TabsTrigger value="categories" className="rounded-lg font-medium">Categories</TabsTrigger>
+              <TabsTrigger value="templates" className="rounded-lg font-medium">Templates</TabsTrigger>
+              <TabsTrigger value="settings" className="rounded-lg font-medium">Settings</TabsTrigger>
+            </TabsList>
+          </div>
 
-            <TabsContent value="dashboard" className="space-y-6">
-              <LeadsDashboard
-                leads={leads}
-                templates={templates}
-                categories={categories}
-                importBatches={importBatches}
-                branding={branding}
-                onUpdateLead={handleUpdateLead}
-                selectedBatchId={selectedBatchId}
-              />
-            </TabsContent>
+          <TabsContent value="dashboard" className="space-y-6">
+            <LeadsDashboard
+              leads={leads}
+              templates={templates}
+              categories={categories}
+              importBatches={importBatches}
+              branding={branding}
+              onUpdateLead={handleUpdateLead}
+              selectedBatchId={selectedBatchId}
+            />
+          </TabsContent>
 
-            <TabsContent value="leads" className="space-y-6">
-              <Card className="apple-card">
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-xl">All Leads</CardTitle>
-                  <CardDescription>
-                    View and manage all your leads in one place.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <LeadsDashboard
-                    leads={leads}
-                    templates={templates}
-                    categories={categories}
-                    importBatches={importBatches}
-                    branding={branding}
-                    onUpdateLead={handleUpdateLead}
-                    selectedBatchId={selectedBatchId}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="import" className="space-y-8">
-              <div className="max-w-6xl mx-auto">
-                <CSVImport 
-                  categories={categories} 
-                  onImportComplete={handleImportComplete}
-                  onCreateCategory={handleCreateCategory}
+          <TabsContent value="leads" className="space-y-6">
+            <Card className="apple-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl">All Leads</CardTitle>
+                <CardDescription>
+                  View and manage all your leads in one place.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <LeadsDashboard
+                  leads={leads}
+                  templates={templates}
+                  categories={categories}
+                  importBatches={importBatches}
+                  branding={branding}
+                  onUpdateLead={handleUpdateLead}
+                  selectedBatchId={selectedBatchId}
                 />
-                
-                <div className="mt-12">
-                  <ImportHistory 
-                    leads={leads}
-                    importBatches={importBatches}
-                    categories={categories}
-                    onDeleteBatch={handleDeleteBatch}
-                    onViewBatchLeads={handleViewBatchLeads}
-                  />
-                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="import" className="space-y-8">
+            <div className="max-w-6xl mx-auto">
+              <CSVImport 
+                categories={categories} 
+                onImportComplete={handleImportComplete}
+                onCreateCategory={handleCreateCategory}
+              />
+              
+              <div className="mt-12">
+                <ImportHistory 
+                  leads={leads}
+                  importBatches={importBatches}
+                  categories={categories}
+                  onDeleteBatch={handleDeleteBatch}
+                  onViewBatchLeads={handleViewBatchLeads}
+                />
               </div>
-            </TabsContent>
+            </div>
+          </TabsContent>
 
-            <TabsContent value="categories" className="space-y-6">
-              <Card className="apple-card">
-                <CardHeader>
-                  <CardTitle className="text-xl">Lead Categories</CardTitle>
-                  <CardDescription>
-                    Organize your leads with custom categories.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <CategoryManager 
-                    categories={categories}
-                    onCreateCategory={handleCreateCategory}
-                    onUpdateCategory={handleUpdateCategory}
-                    onDeleteCategory={handleDeleteCategory}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <TabsContent value="categories" className="space-y-6">
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-xl">Lead Categories</CardTitle>
+                <CardDescription>
+                  Organize your leads with custom categories.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CategoryManager 
+                  categories={categories}
+                  onCreateCategory={handleCreateCategory}
+                  onUpdateCategory={handleUpdateCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="templates" className="space-y-6">
-              <Card className="apple-card">
-                <CardHeader>
-                  <CardTitle className="text-xl">Email Templates</CardTitle>
-                  <CardDescription>
-                    Create and manage email templates for your campaigns.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <EmailTemplateBuilder 
-                    onSaveTemplate={handleSaveTemplate}
-                    templates={templates}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+          <TabsContent value="templates" className="space-y-6">
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-xl">Email Templates</CardTitle>
+                <CardDescription>
+                  Create and manage email templates for your campaigns.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EmailTemplateBuilder 
+                  onSaveTemplate={handleSaveTemplate}
+                  templates={templates}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <TabsContent value="settings" className="space-y-6">
-              <Card className="apple-card">
-                <CardHeader>
-                  <CardTitle className="text-xl">Brand Settings</CardTitle>
-                  <CardDescription>
-                    Customize your company branding for email communications.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <BrandingSettings 
-                    branding={branding}
-                    onSave={handleSaveBranding}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        )}
+          <TabsContent value="settings" className="space-y-6">
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-xl">Brand Settings</CardTitle>
+                <CardDescription>
+                  Customize your company branding for email communications.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BrandingSettings 
+                  branding={branding}
+                  onSave={handleSaveBranding}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppleLayout>
   );
