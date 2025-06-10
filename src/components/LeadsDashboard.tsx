@@ -231,11 +231,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       <td className="p-3">
                         <div className="space-y-1">
                           <div className="text-sm">{lead.email}</div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 items-center">
                             {lead.phone && (
                               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                                 <Phone className="h-3 w-3" />
-                                {lead.phone}
+                                <span>{lead.phone}</span>
                               </div>
                             )}
                             {lead.linkedin && (
@@ -246,7 +246,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
                               >
                                 <Linkedin className="h-3 w-3" />
-                                LinkedIn
+                                <span>LinkedIn</span>
                               </a>
                             )}
                           </div>
