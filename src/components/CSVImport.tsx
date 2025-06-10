@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,9 +65,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
   const cleanPhoneNumber = (phone: string): string => {
     if (!phone) return '';
-    // Remove all non-digit characters except + at the beginning
     const cleaned = phone.replace(/[^\d+]/g, '');
-    // If it starts with multiple +, keep only one
     return cleaned.replace(/^\++/, '+');
   };
 
@@ -74,19 +73,16 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     if (!linkedin) return '';
     const url = linkedin.trim().toLowerCase();
     
-    // If it's already a full LinkedIn URL, return as is
     if (url.startsWith('http')) {
       return linkedin.trim();
     }
     
-    // If it looks like a LinkedIn username or partial URL
     if (url.includes('linkedin.com/in/') || url.includes('linkedin.com/pub/')) {
       return linkedin.startsWith('http') ? linkedin.trim() : `https://${linkedin.trim()}`;
     }
     
-    // If it's just a username, construct the full URL
     if (url && !url.includes('linkedin.com')) {
-      const username = url.replace(/^[@\/]+/, ''); // Remove leading @ or /
+      const username = url.replace(/^[@\/]+/, '');
       return `https://www.linkedin.com/in/${username}`;
     }
     
@@ -132,11 +128,25 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
 
   const categorizeCompanySize = (companySize: string): Lead['companySize'] => {
     if (!companySize) return 'Small (1-50)';
-    const size = parseInt(companySize.replace(/[^0-9]/g, '')) || 0;
-    if (size <= 50) return 'Small (1-50)';
-    if (size <= 200) return 'Medium (51-200)';
-    if (size <= 1000) return 'Large (201-1000)';
-    return 'Enterprise (1000+)';
+    
+    // Handle numeric values
+    const numericMatch = companySize.match(/\d+/);
+    if (numericMatch) {
+      const size = parseInt(numericMatch[0]);
+      if (size <= 50) return 'Small (1-50)';
+      if (size <= 200) return 'Medium (51-200)';
+      if (size <= 1000) return 'Large (201-1000)';
+      return 'Enterprise (1000+)';
+    }
+    
+    // Handle text-based size descriptions
+    const sizeLower = companySize.toLowerCase();
+    if (sizeLower.includes('small') || sizeLower.includes('startup')) return 'Small (1-50)';
+    if (sizeLower.includes('medium') || sizeLower.includes('mid')) return 'Medium (51-200)';
+    if (sizeLower.includes('large')) return 'Large (201-1000)';
+    if (sizeLower.includes('enterprise') || sizeLower.includes('corporate')) return 'Enterprise (1000+)';
+    
+    return 'Small (1-50)';
   };
 
   const categorizeSeniority = (title: string): Lead['seniority'] => {
@@ -162,12 +172,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
     const requiredFields = ['firstName', 'lastName', 'email', 'company', 'title'];
     const optionalFields = ['phone', 'linkedin', 'industry', 'location'];
     
-    // Required fields (20 points each)
     requiredFields.forEach(field => {
       if (lead[field as keyof Lead]) score += 20;
     });
     
-    // Optional fields (5 points each, max 20 additional points)
     let optionalScore = 0;
     optionalFields.forEach(field => {
       if (lead[field as keyof Lead]) optionalScore += 5;
@@ -211,33 +219,50 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             rawLead[header] = values[i] || '';
           });
 
+          // Enhanced column mapping for better organization data parsing
           const firstName = findColumnValue(rawLead, [
-            'First Name', 'first_name', 'firstname', 'fname', 'given_name'
+            'First Name', 'first_name', 'firstname', 'fname', 'given_name', 'FirstName'
           ]);
           
           const lastName = findColumnValue(rawLead, [
-            'Last Name', 'last_name', 'lastname', 'lname', 'surname', 'family_name'
+            'Last Name', 'last_name', 'lastname', 'lname', 'surname', 'family_name', 'LastName'
           ]);
           
           const email = findColumnValue(rawLead, [
-            'Email', 'email', 'email_address', 'mail'
+            'Email', 'email', 'email_address', 'mail', 'Email Address', 'EmailAddress'
           ]);
           
+          // Improved company name mapping - avoid company size columns
           const company = findColumnValue(rawLead, [
-            'Company', 'company', 'organization', 'org', 'company_name'
+            'Company', 'company', 'organization', 'org', 'company_name', 'CompanyName', 
+            'Organization Name', 'organization_name', 'employer', 'business', 'corporation'
           ]);
           
           const title = findColumnValue(rawLead, [
-            'Title', 'title', 'job_title', 'position', 'role'
+            'Title', 'title', 'job_title', 'position', 'role', 'JobTitle', 'Job Title'
           ]);
 
           const phone = cleanPhoneNumber(findColumnValue(rawLead, [
-            'Phone', 'phone', 'phone_number', 'tel', 'mobile', 'cell', 'telephone'
+            'Phone', 'phone', 'phone_number', 'tel', 'mobile', 'cell', 'telephone', 'Phone Number'
           ]));
 
           const linkedin = cleanLinkedInUrl(findColumnValue(rawLead, [
-            'LinkedIn', 'linkedin', 'linkedin_url', 'profile', 'linkedin_profile', 'linked_in'
+            'LinkedIn', 'linkedin', 'linkedin_url', 'profile', 'linkedin_profile', 'linked_in', 'LinkedIn URL'
           ]));
+
+          // Separate company size mapping
+          const companySizeRaw = findColumnValue(rawLead, [
+            'Company Size', 'company_size', 'employees', 'emp_count', 'size', 'CompanySize',
+            'Employee Count', 'employee_count', 'team_size', 'headcount', 'workforce'
+          ]);
+
+          const industry = findColumnValue(rawLead, [
+            'Industry', 'industry', 'sector', 'vertical', 'business_type', 'field'
+          ]);
+
+          const location = findColumnValue(rawLead, [
+            'Location', 'location', 'city', 'address', 'country', 'region', 'state', 'City'
+          ]);
 
           if (!firstName && !lastName && !email) {
             console.log(`Skipping row ${index + 1}: Missing essential data`);
@@ -252,15 +277,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
             company: company || '',
             title: title || '',
             seniority: categorizeSeniority(title),
-            companySize: categorizeCompanySize(findColumnValue(rawLead, [
-              'Company Size', 'company_size', 'employees', 'emp_count', 'size'
-            ])),
-            industry: findColumnValue(rawLead, [
-              'Industry', 'industry', 'sector'
-            ]),
-            location: findColumnValue(rawLead, [
-              'Location', 'location', 'city', 'address', 'country'
-            ]),
+            companySize: categorizeCompanySize(companySizeRaw),
+            industry: industry,
+            location: location,
             phone: phone,
             linkedin: linkedin,
             tags: [],
@@ -322,7 +341,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete }) => {
           Import Lead List
         </CardTitle>
         <CardDescription>
-          Upload a CSV file with lead data. Supported columns: First Name, Last Name, Email, Company, Title, Phone, LinkedIn, Company Size, etc.
+          Upload a CSV file with lead data. Supported columns: First Name, Last Name, Email, Company, Title, Phone, LinkedIn, Company Size, Industry, Location, etc.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
