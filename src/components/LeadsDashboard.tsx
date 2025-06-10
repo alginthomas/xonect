@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -154,18 +156,22 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setRemovingDuplicates(true);
     
     try {
-      // Here we would normally call a function to delete the duplicates from the database
-      // For now, we'll just show a toast with the count
+      // Use the secure Supabase function to delete duplicates
+      const duplicateIds = duplicates.map(lead => lead.id);
+      
+      const { data, error } = await supabase.rpc('delete_duplicate_leads', {
+        lead_ids: duplicateIds
+      });
+
+      if (error) throw error;
+      
       toast({
         title: "Duplicates removed",
-        description: `Found and would remove ${duplicates.length} duplicate leads`,
+        description: `Successfully removed ${data} duplicate leads`,
       });
       
-      console.log('Duplicate leads to remove:', duplicates.map(lead => ({
-        id: lead.id,
-        email: lead.email,
-        name: `${lead.firstName} ${lead.lastName}`
-      })));
+      // Refresh the page to reload data after deletion
+      window.location.reload();
       
     } catch (error) {
       console.error('Error removing duplicates:', error);

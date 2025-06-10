@@ -9,11 +9,13 @@ import { BrandingSettings } from '@/components/BrandingSettings';
 import Header from '@/components/Header';
 import { Upload, Users, Mail, BarChart, Tag, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
+  const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -31,10 +33,13 @@ const Index = () => {
 
   // Load categories from Supabase
   const loadCategories = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('categories')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -62,10 +67,13 @@ const Index = () => {
 
   // Load import batches from Supabase
   const loadImportBatches = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('import_batches')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -88,12 +96,15 @@ const Index = () => {
     }
   };
 
-  // Load leads from Supabase (updated to include category info)
+  // Load leads from Supabase (updated to include user filtering)
   const loadLeads = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('leads')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -133,10 +144,13 @@ const Index = () => {
 
   // Load email templates from Supabase
   const loadEmailTemplates = async () => {
+    if (!user) return;
+    
     try {
       const { data, error } = await supabase
         .from('email_templates')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -162,20 +176,24 @@ const Index = () => {
     }
   };
 
-  // Load data on component mount
+  // Load data when user is available
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([loadLeads(), loadEmailTemplates(), loadCategories(), loadImportBatches()]);
-      setLoading(false);
-    };
-    
-    loadData();
-  }, []);
+    if (user) {
+      const loadData = async () => {
+        setLoading(true);
+        await Promise.all([loadLeads(), loadEmailTemplates(), loadCategories(), loadImportBatches()]);
+        setLoading(false);
+      };
+      
+      loadData();
+    }
+  }, [user]);
 
   const handleImportComplete = async (importedLeads: Lead[], importBatch: ImportBatch) => {
+    if (!user) return;
+    
     try {
-      // First, save the import batch
+      // First, save the import batch with user_id
       const { data: batchData, error: batchError } = await supabase
         .from('import_batches')
         .insert({
@@ -186,13 +204,14 @@ const Index = () => {
           successful_imports: importBatch.successfulImports,
           failed_imports: importBatch.failedImports,
           metadata: importBatch.metadata,
+          user_id: user.id,
         })
         .select()
         .single();
 
       if (batchError) throw batchError;
 
-      // Transform leads to match Supabase schema and include batch ID
+      // Transform leads to match Supabase schema and include batch ID and user_id
       const leadsToInsert = importedLeads.map(lead => ({
         first_name: lead.firstName,
         last_name: lead.lastName,
@@ -211,6 +230,7 @@ const Index = () => {
         completeness_score: lead.completenessScore,
         category_id: lead.categoryId || null,
         import_batch_id: batchData.id,
+        user_id: user.id,
       }));
 
       const { error: leadsError } = await supabase
@@ -237,6 +257,8 @@ const Index = () => {
   };
 
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
+    if (!user) return;
+    
     try {
       const supabaseUpdates: any = {};
       if (updates.firstName !== undefined) supabaseUpdates.first_name = updates.firstName;
@@ -260,7 +282,8 @@ const Index = () => {
       const { error } = await supabase
         .from('leads')
         .update(supabaseUpdates)
-        .eq('id', leadId);
+        .eq('id', leadId)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -283,6 +306,8 @@ const Index = () => {
   };
 
   const handleSaveTemplate = async (template: EmailTemplate) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('email_templates')
@@ -291,6 +316,7 @@ const Index = () => {
           subject: template.subject,
           content: template.content,
           variables: template.variables,
+          user_id: user.id,
         });
 
       if (error) throw error;
@@ -313,6 +339,8 @@ const Index = () => {
 
   // Category management functions
   const handleCreateCategory = async (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('categories')
@@ -321,6 +349,7 @@ const Index = () => {
           description: categoryData.description || null,
           color: categoryData.color,
           criteria: categoryData.criteria,
+          user_id: user.id,
         });
 
       if (error) throw error;
@@ -342,6 +371,8 @@ const Index = () => {
   };
 
   const handleUpdateCategory = async (id: string, updates: Partial<Category>) => {
+    if (!user) return;
+    
     try {
       const supabaseUpdates: any = {};
       if (updates.name !== undefined) supabaseUpdates.name = updates.name;
@@ -352,7 +383,8 @@ const Index = () => {
       const { error } = await supabase
         .from('categories')
         .update(supabaseUpdates)
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -373,11 +405,14 @@ const Index = () => {
   };
 
   const handleDeleteCategory = async (id: string) => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('categories')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
@@ -411,7 +446,7 @@ const Index = () => {
     }
   }, []);
 
-  if (loading) {
+  if (!user || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

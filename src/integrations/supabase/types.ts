@@ -22,6 +22,7 @@ export type Database = {
           status: Database["public"]["Enums"]["campaign_status"]
           template_id: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           click_rate?: number
@@ -35,6 +36,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           click_rate?: number
@@ -48,6 +50,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -68,6 +71,7 @@ export type Database = {
           id: string
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           color?: string | null
@@ -77,6 +81,7 @@ export type Database = {
           id?: string
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           color?: string | null
@@ -86,6 +91,7 @@ export type Database = {
           id?: string
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -98,6 +104,7 @@ export type Database = {
           name: string
           subject: string
           updated_at: string
+          user_id: string | null
           variables: string[] | null
         }
         Insert: {
@@ -108,6 +115,7 @@ export type Database = {
           name: string
           subject: string
           updated_at?: string
+          user_id?: string | null
           variables?: string[] | null
         }
         Update: {
@@ -118,6 +126,7 @@ export type Database = {
           name?: string
           subject?: string
           updated_at?: string
+          user_id?: string | null
           variables?: string[] | null
         }
         Relationships: []
@@ -133,6 +142,7 @@ export type Database = {
           source_file: string | null
           successful_imports: number | null
           total_leads: number | null
+          user_id: string | null
         }
         Insert: {
           category_id?: string | null
@@ -144,6 +154,7 @@ export type Database = {
           source_file?: string | null
           successful_imports?: number | null
           total_leads?: number | null
+          user_id?: string | null
         }
         Update: {
           category_id?: string | null
@@ -155,6 +166,7 @@ export type Database = {
           source_file?: string | null
           successful_imports?: number | null
           total_leads?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -175,6 +187,7 @@ export type Database = {
           is_smart: boolean | null
           name: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -184,6 +197,7 @@ export type Database = {
           is_smart?: boolean | null
           name: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -193,6 +207,7 @@ export type Database = {
           is_smart?: boolean | null
           name?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -219,6 +234,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           category_id?: string | null
@@ -242,6 +258,7 @@ export type Database = {
           tags?: string[] | null
           title: string
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           category_id?: string | null
@@ -265,6 +282,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -315,7 +333,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_duplicate_leads: {
+        Args: { lead_ids: string[] }
+        Returns: number
+      }
     }
     Enums: {
       campaign_status: "Draft" | "Active" | "Paused" | "Completed"
