@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -66,34 +67,47 @@ import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { BulkStatusUpdater } from '@/components/BulkStatusUpdater';
 import type { Lead, EmailTemplate } from '@/types/lead';
-import type { Category } from '@/types/category';
+import type { Category, ImportBatch } from '@/types/category';
+
+interface BrandingData {
+  companyName: string;
+  companyLogo: string;
+  companyWebsite: string;
+  companyAddress: string;
+  senderName: string;
+  senderEmail: string;
+}
 
 interface LeadsDashboardProps {
   leads: Lead[];
+  templates: EmailTemplate[];
   categories: Category[];
-  emailTemplates: EmailTemplate[];
-  onSendEmail: (leadIds: string[], templateId: string) => Promise<void>;
+  importBatches: ImportBatch[];
+  branding: BrandingData;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
-  onDeleteLeads: (leadIds: string[]) => void;
-  onUpdateRemarks: (leadId: string, remarks: string) => void;
-  onBulkUpdateStatus: (leadIds: string[], status: Lead['status']) => void;
-  isLoading?: boolean;
+  onDeleteLead: (leadId: string) => void;
+  onBulkUpdateStatus: (leadIds: string[], status: 'New' | 'Contacted' | 'Qualified' | 'Unqualified') => void;
+  onBulkDelete: (leadIds: string[]) => void;
+  onSendEmail: (leadIds: string[], templateId: string) => Promise<void>;
+  selectedBatchId: string | null;
 }
 
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   leads = [],
   categories = [],
-  emailTemplates = [],
+  templates = [],
+  importBatches = [],
+  branding,
   onSendEmail,
   onUpdateLead,
-  onDeleteLeads,
-  onUpdateRemarks,
+  onDeleteLead,
   onBulkUpdateStatus,
-  isLoading = false
+  onBulkDelete,
+  selectedBatchId
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   
-  // Load saved state from localStorage
+  // Load saved state from localStorage with proper null handling
   const [searchQuery, setSearchQuery] = useState(() => {
     return localStorage.getItem('leadsDashboard_searchQuery') || '';
   });
@@ -105,7 +119,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   });
   const [selectedLeads, setSelectedLeads] = useState<string[]>(() => {
     const storedLeads = localStorage.getItem('leadsDashboard_selectedLeads');
-    return storedLeads ? JSON.parse(storedLeads) : [];
+    if (!storedLeads || storedLeads === 'undefined') return [];
+    try {
+      return JSON.parse(storedLeads);
+    } catch {
+      return [];
+    }
   });
   const [sortField, setSortField] = useState<'firstName' | 'email' | 'company' | 'title' | 'status'>(() => {
     return (localStorage.getItem('leadsDashboard_sortField') as 'firstName' | 'email' | 'company' | 'title' | 'status') || 'firstName';
@@ -127,7 +146,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   });
   const [date, setDate] = useState<DateRange | undefined>(() => {
     const storedDate = localStorage.getItem('leadsDashboard_dateRange');
-    return storedDate ? JSON.parse(storedDate) : undefined;
+    if (!storedDate || storedDate === 'undefined') return undefined;
+    try {
+      return JSON.parse(storedDate);
+    } catch {
+      return undefined;
+    }
   });
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(() => {
     return localStorage.getItem('leadsDashboard_isBulkStatusOpen') === 'true';
@@ -370,7 +394,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       return;
     }
 
-    onDeleteLeads(selectedLeads);
+    onBulkDelete(selectedLeads);
     setSelectedLeads([]);
     localStorage.removeItem('leadsDashboard_selectedLeads');
     toast({
@@ -388,15 +412,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   // Update the checkbox state calculation
   const allCurrentPageSelected = paginatedLeads.length > 0 && paginatedLeads.every(lead => selectedLeads.includes(lead.id));
   const someCurrentPageSelected = paginatedLeads.some(lead => selectedLeads.includes(lead.id)) && !allCurrentPageSelected;
-
-  // Create a ref for the checkbox to handle indeterminate state - Fixed type
-  const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (selectAllCheckboxRef.current) {
-      selectAllCheckboxRef.current.indeterminate = someCurrentPageSelected;
-    }
-  }, [someCurrentPageSelected]);
 
   return (
     <div className="space-y-6">
@@ -591,7 +606,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
-                        ref={selectAllCheckboxRef}
                         checked={allCurrentPageSelected}
                         onCheckedChange={handleSelectAll}
                       />
@@ -681,8 +695,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <QuickRemarkEditor lead={lead} onUpdateRemarks={onUpdateRemarks} />
-                          <LeadRemarksDialog lead={lead} onUpdateRemarks={onUpdateRemarks}>
+                          <QuickRemarkEditor lead={lead} onUpdateRemarks={(leadId: string, remarks: string) => 
+                            onUpdateLead(leadId, { remarks })
+                          } />
+                          <LeadRemarksDialog lead={lead} onUpdateRemarks={(leadId: string, remarks: string) => 
+                            onUpdateLead(leadId, { remarks })
+                          }>
                             <Button variant="ghost" size="sm">
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -715,7 +733,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                               <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-destructive hover:bg-destructive/20 focus:bg-destructive/20"
                                 onClick={() => {
-                                  onDeleteLeads([lead.id]);
+                                  onDeleteLead(lead.id);
                                   toast({
                                     title: "Lead deleted",
                                     description: `${lead.firstName} ${lead.lastName} has been deleted.`,
@@ -781,7 +799,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
                 <SelectContent>
-                  {emailTemplates.map(template => (
+                  {templates.map(template => (
                     <SelectItem key={template.id} value={template.id}>{template.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -806,3 +824,4 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 };
 
 export default LeadsDashboard;
+
