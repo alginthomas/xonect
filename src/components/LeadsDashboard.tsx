@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableHead, AppleTableRow, AppleTableCell } from '@/components/ui/apple-table';
-import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { EmailDialog } from '@/components/EmailDialog';
@@ -30,6 +30,16 @@ import {
   ExternalLink,
   ChevronUp,
   ChevronDown,
+  Globe,
+  Linkedin,
+  MapPin,
+  Building,
+  Calendar,
+  Briefcase,
+  Target,
+  Tag,
+  X,
+  Eye,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -77,6 +87,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [selectedLeadForPanel, setSelectedLeadForPanel] = useState<Lead | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [sortField, setSortField] = useState<keyof Lead | null>('createdAt');
@@ -86,6 +98,16 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const handleSort = (field: keyof Lead) => {
     setSortField(field);
     setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+  };
+
+  const openLeadPanel = (lead: Lead) => {
+    setSelectedLeadForPanel(lead);
+    setIsPanelOpen(true);
+  };
+
+  const closeLeadPanel = () => {
+    setIsPanelOpen(false);
+    setSelectedLeadForPanel(null);
   };
 
   const getCategoryName = (categoryId?: string) => {
@@ -405,6 +427,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <AppleTableHead>
                     <Button
                       variant="ghost"
+                      onClick={() => handleSort('status')}
+                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
+                    >
+                      Status
+                      {sortField === 'status' && (
+                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
+                      )}
+                    </Button>
+                  </AppleTableHead>
+                  <AppleTableHead>
+                    <Button
+                      variant="ghost"
                       onClick={() => handleSort('company')}
                       className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
                     >
@@ -438,18 +472,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       )}
                     </Button>
                   </AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('status')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Status
-                      {sortField === 'status' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
                   <AppleTableHead>Category</AppleTableHead>
                   <AppleTableHead>Remarks</AppleTableHead>
                   <AppleTableHead>
@@ -477,25 +499,35 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     </AppleTableCell>
                     <AppleTableCell>
                       <div className="flex items-center gap-3">
-                        <LeadDetailPopover lead={lead} categories={categories}>
-                          <Button variant="ghost" className="h-auto p-0 text-left">
-                            <div>
-                              <div className="font-medium">
-                                {lead.firstName} {lead.lastName}
-                              </div>
-                              {lead.phone && (
-                                <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                  <Phone className="h-3 w-3" />
-                                  {lead.phone}
-                                </div>
-                              )}
+                        <Button 
+                          variant="ghost" 
+                          className="h-auto p-0 text-left"
+                          onClick={() => openLeadPanel(lead)}
+                        >
+                          <div>
+                            <div className="font-medium">
+                              {lead.firstName} {lead.lastName}
                             </div>
-                          </Button>
-                        </LeadDetailPopover>
+                            {lead.phone && (
+                              <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {lead.phone}
+                              </div>
+                            )}
+                          </div>
+                        </Button>
                       </div>
                     </AppleTableCell>
                     <AppleTableCell>
                       <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openLeadPanel(lead)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <QuickRemarkEditor
                           lead={lead}
                           onUpdateRemarks={handleUpdateRemarks}
@@ -555,24 +587,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       </div>
                     </AppleTableCell>
                     <AppleTableCell>
-                      <div className="font-medium">{lead.company}</div>
-                      {lead.industry && (
-                        <div className="text-sm text-muted-foreground">{lead.industry}</div>
-                      )}
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="font-medium">{lead.title}</div>
-                      {lead.department && (
-                        <div className="text-sm text-muted-foreground">{lead.department}</div>
-                      )}
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="font-medium">{lead.email}</div>
-                      {lead.personalEmail && (
-                        <div className="text-sm text-muted-foreground">{lead.personalEmail}</div>
-                      )}
-                    </AppleTableCell>
-                    <AppleTableCell>
                       <Select
                         value={lead.status}
                         onValueChange={(newStatus: LeadStatus) => handleStatusChange(lead.id, newStatus)}
@@ -616,6 +630,24 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           </SelectItem>
                         </SelectContent>
                       </Select>
+                    </AppleTableCell>
+                    <AppleTableCell>
+                      <div className="font-medium">{lead.company}</div>
+                      {lead.industry && (
+                        <div className="text-sm text-muted-foreground">{lead.industry}</div>
+                      )}
+                    </AppleTableCell>
+                    <AppleTableCell>
+                      <div className="font-medium">{lead.title}</div>
+                      {lead.department && (
+                        <div className="text-sm text-muted-foreground">{lead.department}</div>
+                      )}
+                    </AppleTableCell>
+                    <AppleTableCell>
+                      <div className="font-medium">{lead.email}</div>
+                      {lead.personalEmail && (
+                        <div className="text-sm text-muted-foreground">{lead.personalEmail}</div>
+                      )}
                     </AppleTableCell>
                     <AppleTableCell>
                       {getCategoryName(lead.categoryId)}
@@ -668,6 +700,279 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Lead Detail Panel */}
+      <Drawer open={isPanelOpen} onOpenChange={setIsPanelOpen}>
+        <DrawerContent className="h-[80vh]">
+          <DrawerHeader className="border-b">
+            <div className="flex items-center justify-between">
+              <DrawerTitle>
+                {selectedLeadForPanel && `${selectedLeadForPanel.firstName} ${selectedLeadForPanel.lastName}`}
+              </DrawerTitle>
+              <DrawerClose>
+                <Button variant="ghost" size="sm">
+                  <X className="h-4 w-4" />
+                </Button>
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+          
+          {selectedLeadForPanel && (
+            <div className="p-6 overflow-y-auto">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Personal Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Personal Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                      <p className="font-medium">{selectedLeadForPanel.firstName} {selectedLeadForPanel.lastName}</p>
+                    </div>
+                    
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Email</label>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{selectedLeadForPanel.email}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => copyToClipboard(selectedLeadForPanel.email, 'Email copied')}
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {selectedLeadForPanel.personalEmail && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Personal Email</label>
+                        <p className="font-medium">{selectedLeadForPanel.personalEmail}</p>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.phone && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{selectedLeadForPanel.phone}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(selectedLeadForPanel.phone, 'Phone copied')}
+                          >
+                            <Phone className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.location && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Location</label>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <p className="font-medium">{selectedLeadForPanel.location}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.linkedin && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">LinkedIn</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(selectedLeadForPanel.linkedin, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <Linkedin className="h-4 w-4" />
+                          View Profile
+                        </Button>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Company Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building className="h-5 w-5" />
+                      Company Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Company</label>
+                      <p className="font-medium">{selectedLeadForPanel.company}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Title</label>
+                      <p className="font-medium">{selectedLeadForPanel.title}</p>
+                    </div>
+
+                    {selectedLeadForPanel.department && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Department</label>
+                        <p className="font-medium">{selectedLeadForPanel.department}</p>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.industry && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Industry</label>
+                        <p className="font-medium">{selectedLeadForPanel.industry}</p>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Company Size</label>
+                      <p className="font-medium">{selectedLeadForPanel.companySize}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Seniority</label>
+                      <p className="font-medium">{selectedLeadForPanel.seniority}</p>
+                    </div>
+
+                    {selectedLeadForPanel.organizationWebsite && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Website</label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(selectedLeadForPanel.organizationWebsite?.startsWith('http') 
+                            ? selectedLeadForPanel.organizationWebsite 
+                            : `https://${selectedLeadForPanel.organizationWebsite}`, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <Globe className="h-4 w-4" />
+                          Visit Website
+                        </Button>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.organizationAddress && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Address</label>
+                        <p className="font-medium">{selectedLeadForPanel.organizationAddress}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Lead Status & Tracking */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Target className="h-5 w-5" />
+                      Lead Status & Tracking
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Status</label>
+                      <Badge className={getStatusBadgeColor(selectedLeadForPanel.status)}>
+                        {selectedLeadForPanel.status}
+                      </Badge>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Category</label>
+                      <p className="font-medium">{getCategoryName(selectedLeadForPanel.categoryId)}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Emails Sent</label>
+                      <p className="font-medium">{selectedLeadForPanel.emailsSent}</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Completeness Score</label>
+                      <p className="font-medium">{selectedLeadForPanel.completenessScore}%</p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Created</label>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <p className="font-medium">{format(new Date(selectedLeadForPanel.createdAt), 'MMM dd, yyyy HH:mm')}</p>
+                      </div>
+                    </div>
+
+                    {selectedLeadForPanel.lastContactDate && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Last Contact</label>
+                        <p className="font-medium">{format(new Date(selectedLeadForPanel.lastContactDate), 'MMM dd, yyyy')}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Additional Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Tag className="h-5 w-5" />
+                      Additional Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {selectedLeadForPanel.headline && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Headline</label>
+                        <p className="font-medium">{selectedLeadForPanel.headline}</p>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.keywords && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Keywords</label>
+                        <p className="font-medium">{selectedLeadForPanel.keywords}</p>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.tags && selectedLeadForPanel.tags.length > 0 && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Tags</label>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {selectedLeadForPanel.tags.map((tag, index) => (
+                            <Badge key={index} variant="outline">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.remarks && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Remarks</label>
+                        <div className="bg-muted p-3 rounded-md">
+                          <p className="text-sm">{selectedLeadForPanel.remarks}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedLeadForPanel.organizationFounded && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Company Founded</label>
+                        <p className="font-medium">{selectedLeadForPanel.organizationFounded}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };
