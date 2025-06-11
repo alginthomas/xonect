@@ -847,9 +847,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         categories={categories}
         isOpen={isLeadSheetOpen}
         onClose={handleCloseLeadSheet}
+        onUpdateLead={onUpdateLead}
       />
     </div>
   );
 };
 
 export default LeadsDashboard;
+
+}
