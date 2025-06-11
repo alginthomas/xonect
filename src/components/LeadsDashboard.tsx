@@ -21,15 +21,7 @@ import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableHead, AppleTabl
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { EmailDialog } from '@/components/EmailDialog';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination';
+import { CategoryCombobox } from '@/components/CategoryCombobox';
 import {
   Search,
   Download,
@@ -57,48 +49,13 @@ import {
   Save,
   Filter,
   ChevronLeft,
-  ChevronRight as ChevronRightIcon,
+  ChevronRightIcon,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
-
-// Cache keys for localStorage
-const CACHE_KEYS = {
-  SEARCH_QUERY: 'leadsDashboard_searchQuery',
-  STATUS_FILTER: 'leadsDashboard_statusFilter',
-  CATEGORY_FILTER: 'leadsDashboard_categoryFilter',
-  ITEMS_PER_PAGE: 'leadsDashboard_itemsPerPage',
-  SORT_FIELD: 'leadsDashboard_sortField',
-  SORT_DIRECTION: 'leadsDashboard_sortDirection',
-  SELECTED_LEADS: 'leadsDashboard_selectedLeads',
-  EXPANDED_ROWS: 'leadsDashboard_expandedRows',
-  SELECTED_LEAD_PANEL: 'leadsDashboard_selectedLeadPanel',
-  IS_PANEL_OPEN: 'leadsDashboard_isPanelOpen',
-  HAS_PHONE_FILTER: 'leadsDashboard_hasPhoneFilter',
-  HAS_EMAIL_FILTER: 'leadsDashboard_hasEmailFilter',
-};
-
-// Helper functions for localStorage
-const saveToCache = (key: string, value: any) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.warn('Failed to save to cache:', error);
-  }
-};
-
-const loadFromCache = (key: string, defaultValue: any) => {
-  try {
-    const cached = localStorage.getItem(key);
-    return cached ? JSON.parse(cached) : defaultValue;
-  } catch (error) {
-    console.warn('Failed to load from cache:', error);
-    return defaultValue;
-  }
-};
 
 interface BrandingData {
   companyName: string;
@@ -111,1259 +68,981 @@ interface BrandingData {
 
 interface LeadsDashboardProps {
   leads: Lead[];
-  categories: Category[];
   templates: EmailTemplate[];
+  categories: Category[];
   importBatches: ImportBatch[];
   branding: BrandingData;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
+  onDeleteLead: (leadId: string) => void;
+  onBulkUpdateStatus: (leadIds: string[], status: LeadStatus) => void;
+  onBulkDelete: (leadIds: string[]) => void;
+  onSendEmail: (leadId: string) => void;
   selectedBatchId?: string | null;
-  onDeleteLead?: (leadId: string) => void;
-  onBulkUpdateStatus?: (leadIds: string[], status: LeadStatus) => void;
-  onBulkDelete?: (leadIds: string[]) => void;
-  onSendEmail?: (leadId: string) => void;
+  onCreateCategory?: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
 
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
-  leads = [],
-  categories = [],
-  templates = [],
-  importBatches = [],
+  leads,
+  templates,
+  categories,
+  importBatches,
   branding,
   onUpdateLead,
-  selectedBatchId,
   onDeleteLead,
   onBulkUpdateStatus,
   onBulkDelete,
   onSendEmail,
+  selectedBatchId,
+  onCreateCategory
 }) => {
-  // Initialize state with cached values
-  const [searchQuery, setSearchQuery] = useState(() => loadFromCache(CACHE_KEYS.SEARCH_QUERY, ''));
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>(() => loadFromCache(CACHE_KEYS.STATUS_FILTER, 'all'));
-  const [categoryFilter, setCategoryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.CATEGORY_FILTER, 'all'));
-  const [selectedLeads, setSelectedLeads] = useState<string[]>(() => loadFromCache(CACHE_KEYS.SELECTED_LEADS, []));
-  const [expandedRows, setExpandedRows] = useState<string[]>(() => loadFromCache(CACHE_KEYS.EXPANDED_ROWS, []));
-  const [selectedLeadForPanel, setSelectedLeadForPanel] = useState<Lead | null>(() => {
-    const cachedLeadId = loadFromCache(CACHE_KEYS.SELECTED_LEAD_PANEL, null);
-    if (cachedLeadId && leads.length > 0) {
-      return leads.find(lead => lead.id === cachedLeadId) || null;
-    }
-    return null;
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [dataAvailabilityFilter, setDataAvailabilityFilter] = useState<string>('all');
+  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
+  const [sortField, setSortField] = useState<string>('createdAt');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    const saved = localStorage.getItem('leadsPerPage');
+    return saved ? parseInt(saved) : 25;
   });
-  const [editingRemarks, setEditingRemarks] = useState(false);
-  const [remarksText, setRemarksText] = useState('');
-  const [isPanelOpen, setIsPanelOpen] = useState(() => loadFromCache(CACHE_KEYS.IS_PANEL_OPEN, false));
-  const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 10));
-  const [sortField, setSortField] = useState<keyof Lead | null>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
-  const [hasPhoneFilter, setHasPhoneFilter] = useState(() => loadFromCache(CACHE_KEYS.HAS_PHONE_FILTER, false));
-  const [hasEmailFilter, setHasEmailFilter] = useState(() => loadFromCache(CACHE_KEYS.HAS_EMAIL_FILTER, false));
+  const [expandedLead, setExpandedLead] = useState<string | null>(null);
+  const [editingLead, setEditingLead] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [showRemarksDialog, setShowRemarksDialog] = useState(false);
+  const [selectedLeadForRemarks, setSelectedLeadForRemarks] = useState<Lead | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [selectedLeadForEmail, setSelectedLeadForEmail] = useState<Lead | null>(null);
   const { toast } = useToast();
 
-  // Auto-save states to cache whenever they change
+  // Persist items per page setting
   useEffect(() => {
-    saveToCache(CACHE_KEYS.SEARCH_QUERY, searchQuery);
-  }, [searchQuery]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.STATUS_FILTER, statusFilter);
-  }, [statusFilter]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.CATEGORY_FILTER, categoryFilter);
-  }, [categoryFilter]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SELECTED_LEADS, selectedLeads);
-  }, [selectedLeads]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.EXPANDED_ROWS, expandedRows);
-  }, [expandedRows]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SELECTED_LEAD_PANEL, selectedLeadForPanel?.id || null);
-  }, [selectedLeadForPanel]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.IS_PANEL_OPEN, isPanelOpen);
-  }, [isPanelOpen]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.ITEMS_PER_PAGE, itemsPerPage);
+    localStorage.setItem('leadsPerPage', itemsPerPage.toString());
   }, [itemsPerPage]);
 
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SORT_FIELD, sortField);
-  }, [sortField]);
+  // Filter leads based on batch selection and other filters
+  const filteredLeads = useMemo(() => {
+    let filtered = leads;
 
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SORT_DIRECTION, sortDirection);
-  }, [sortDirection]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.HAS_PHONE_FILTER, hasPhoneFilter);
-  }, [hasPhoneFilter]);
-
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.HAS_EMAIL_FILTER, hasEmailFilter);
-  }, [hasEmailFilter]);
-
-  // Update selectedLeadForPanel when leads change (after data refresh)
-  useEffect(() => {
-    if (selectedLeadForPanel && leads.length > 0) {
-      const updatedLead = leads.find(lead => lead.id === selectedLeadForPanel.id);
-      if (updatedLead) {
-        setSelectedLeadForPanel(updatedLead);
-      }
+    // Filter by selected batch
+    if (selectedBatchId) {
+      filtered = filtered.filter(lead => lead.importBatchId === selectedBatchId);
     }
-  }, [leads, selectedLeadForPanel?.id]);
 
-  const handleSort = (field: keyof Lead) => {
-    setSortField(field);
-    setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    // Filter by search term
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(lead =>
+        lead.firstName.toLowerCase().includes(term) ||
+        lead.lastName.toLowerCase().includes(term) ||
+        lead.email.toLowerCase().includes(term) ||
+        lead.company.toLowerCase().includes(term) ||
+        lead.title.toLowerCase().includes(term)
+      );
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(lead => lead.status === statusFilter);
+    }
+
+    // Filter by category
+    if (categoryFilter !== 'all') {
+      filtered = filtered.filter(lead => lead.categoryId === categoryFilter);
+    }
+
+    // Filter by data availability
+    if (dataAvailabilityFilter === 'has-phone') {
+      filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '');
+    } else if (dataAvailabilityFilter === 'has-email') {
+      filtered = filtered.filter(lead => lead.email && lead.email.trim() !== '');
+    } else if (dataAvailabilityFilter === 'has-both') {
+      filtered = filtered.filter(lead => 
+        lead.phone && lead.phone.trim() !== '' && 
+        lead.email && lead.email.trim() !== ''
+      );
+    }
+
+    return filtered;
+  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter]);
+
+  // Sort leads
+  const sortedLeads = useMemo(() => {
+    return [...filteredLeads].sort((a, b) => {
+      let aValue: any = a[sortField as keyof Lead];
+      let bValue: any = b[sortField as keyof Lead];
+
+      if (aValue instanceof Date) aValue = aValue.getTime();
+      if (bValue instanceof Date) bValue = bValue.getTime();
+
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [filteredLeads, sortField, sortDirection]);
+
+  // Pagination
+  const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedLeads = sortedLeads.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, selectedBatchId]);
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
   };
 
-  const toggleRowExpansion = (leadId: string) => {
-    setExpandedRows(prev => 
-      prev.includes(leadId) 
-        ? prev.filter(id => id !== leadId)
-        : [...prev, leadId]
+  const handleSelectAll = useCallback(() => {
+    const currentPageLeadIds = paginatedLeads.map(lead => lead.id);
+    const allCurrentSelected = currentPageLeadIds.every(id => selectedLeads.has(id));
+    
+    if (allCurrentSelected) {
+      // Deselect all current page leads
+      setSelectedLeads(prev => {
+        const newSet = new Set(prev);
+        currentPageLeadIds.forEach(id => newSet.delete(id));
+        return newSet;
+      });
+    } else {
+      // Select all current page leads
+      setSelectedLeads(prev => new Set([...prev, ...currentPageLeadIds]));
+    }
+  }, [paginatedLeads, selectedLeads]);
+
+  const handleSelectLead = (leadId: string, checked: boolean) => {
+    setSelectedLeads(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(leadId);
+      } else {
+        newSet.delete(leadId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
+    if (selectedLeads.size === 0) {
+      toast({
+        title: 'No leads selected',
+        description: 'Please select leads to perform bulk actions.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const leadIds = Array.from(selectedLeads);
+
+    try {
+      if (action === 'delete') {
+        await onBulkDelete(leadIds);
+        toast({
+          title: 'Leads deleted',
+          description: `${leadIds.length} leads have been deleted.`,
+        });
+      } else if (action === 'status' && value) {
+        await onBulkUpdateStatus(leadIds, value as LeadStatus);
+        toast({
+          title: 'Status updated',
+          description: `${leadIds.length} leads status updated to ${value}.`,
+        });
+      }
+      setSelectedLeads(new Set());
+    } catch (error) {
+      toast({
+        title: 'Action failed',
+        description: 'Failed to perform bulk action. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleExport = () => {
+    const leadsToExport = selectedLeads.size > 0 
+      ? sortedLeads.filter(lead => selectedLeads.has(lead.id))
+      : sortedLeads;
+    
+    exportLeadsToCSV(leadsToExport, categories);
+    toast({
+      title: 'Export successful',
+      description: `${leadsToExport.length} leads exported to CSV.`,
+    });
+  };
+
+  const startEdit = (leadId: string, field: string, currentValue: string) => {
+    setEditingLead(leadId);
+    setEditingField(field);
+    setEditValue(currentValue || '');
+  };
+
+  const saveEdit = async () => {
+    if (!editingLead || !editingField) return;
+
+    try {
+      const updates: Partial<Lead> = {
+        [editingField]: editValue
+      };
+      
+      await onUpdateLead(editingLead, updates);
+      
+      setEditingLead(null);
+      setEditingField(null);
+      setEditValue('');
+    } catch (error) {
+      toast({
+        title: 'Update failed',
+        description: 'Failed to update lead. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingLead(null);
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const handleCategoryChange = async (leadId: string, categoryName: string) => {
+    try {
+      // Check if category exists
+      let categoryId = '';
+      const existingCategory = categories.find(cat => 
+        cat.name.toLowerCase() === categoryName.toLowerCase()
+      );
+
+      if (existingCategory) {
+        categoryId = existingCategory.id;
+      } else if (onCreateCategory) {
+        // Create new category
+        await onCreateCategory({
+          name: categoryName,
+          description: `Created automatically`,
+          color: '#3B82F6',
+          criteria: {}
+        });
+        
+        // Find the newly created category
+        const newCategory = categories.find(cat => 
+          cat.name.toLowerCase() === categoryName.toLowerCase()
+        );
+        
+        if (newCategory) {
+          categoryId = newCategory.id;
+        }
+      }
+
+      if (categoryId) {
+        await onUpdateLead(leadId, { categoryId });
+        toast({
+          title: 'Category updated',
+          description: `Lead category updated to ${categoryName}`,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Update failed',
+        description: 'Failed to update category. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getBatchName = (batchId: string | undefined) => {
+    if (!batchId) return 'Direct Entry';
+    const batch = importBatches.find(b => b.id === batchId);
+    return batch ? batch.name : 'Unknown Batch';
+  };
+
+  const getCategoryInfo = (categoryId: string | undefined) => {
+    if (!categoryId) return { name: 'Uncategorized', color: '#6B7280' };
+    const category = categories.find(c => c.id === categoryId);
+    return category ? { name: category.name, color: category.color } : { name: 'Unknown', color: '#6B7280' };
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'New': return 'bg-blue-100 text-blue-800';
+      case 'Contacted': return 'bg-yellow-100 text-yellow-800';
+      case 'Qualified': return 'bg-green-100 text-green-800';
+      case 'Unqualified': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSizeColor = (size: string) => {
+    switch (size) {
+      case 'Small (1-50)': return 'bg-blue-100 text-blue-800';
+      case 'Medium (51-200)': return 'bg-yellow-100 text-yellow-800';
+      case 'Large (201-1000)': return 'bg-orange-100 text-orange-800';
+      case 'Enterprise (1000+)': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSeniorityColor = (seniority: string) => {
+    switch (seniority) {
+      case 'Entry-level': return 'bg-green-100 text-green-800';
+      case 'Mid-level': return 'bg-blue-100 text-blue-800';
+      case 'Senior': return 'bg-orange-100 text-orange-800';
+      case 'Executive': return 'bg-purple-100 text-purple-800';
+      case 'C-level': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const renderEditableField = (lead: Lead, field: string, value: string, type: 'text' | 'select' = 'text', options?: string[]) => {
+    const isEditing = editingLead === lead.id && editingField === field;
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2">
+          {type === 'select' && options ? (
+            <Select value={editValue} onValueChange={setEditValue}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {options.map(option => (
+                  <SelectItem key={option} value={option}>{option}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <Input
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              className="h-8 text-xs"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveEdit();
+                if (e.key === 'Escape') cancelEdit();
+              }}
+            />
+          )}
+          <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
+            <Save className="h-3 w-3" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1"
+        onClick={() => startEdit(lead.id, field, value)}
+      >
+        <span className="flex-1">{value || 'Not set'}</span>
+        <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+      </div>
     );
   };
 
-  const openLeadPanel = (lead: Lead) => {
-    setSelectedLeadForPanel(lead);
-    setRemarksText(lead.remarks || '');
-    setEditingRemarks(false);
-    setIsPanelOpen(true);
-  };
-
-  const closeLeadPanel = () => {
-    setIsPanelOpen(false);
-    setSelectedLeadForPanel(null);
-    setEditingRemarks(false);
-    setRemarksText('');
-  };
-
-  const handlePanelStatusChange = (newStatus: LeadStatus) => {
-    if (selectedLeadForPanel) {
-      onUpdateLead(selectedLeadForPanel.id, { status: newStatus });
-      setSelectedLeadForPanel({ ...selectedLeadForPanel, status: newStatus });
-      toast({
-        title: "Status updated",
-        description: `Lead status updated to ${newStatus}`,
-      });
-    }
-  };
-
-  const handleSaveRemarks = () => {
-    if (selectedLeadForPanel) {
-      onUpdateLead(selectedLeadForPanel.id, { remarks: remarksText });
-      setSelectedLeadForPanel({ ...selectedLeadForPanel, remarks: remarksText });
-      setEditingRemarks(false);
-      toast({
-        title: "Remarks updated",
-        description: "Lead remarks updated successfully",
-      });
-    }
-  };
-
-  const handlePanelEmailSent = (leadId: string) => {
-    if (onSendEmail) {
-      onSendEmail(leadId);
-    }
-    if (selectedLeadForPanel && selectedLeadForPanel.id === leadId) {
-      setSelectedLeadForPanel({
-        ...selectedLeadForPanel,
-        emailsSent: selectedLeadForPanel.emailsSent + 1,
-        lastContactDate: new Date()
-      });
-    }
-  };
-
-  const getCategoryName = (categoryId?: string) => {
-    if (!categoryId || !categories || !Array.isArray(categories)) return 'Uncategorized';
-    const category = categories.find(cat => cat.id === categoryId);
-    return category?.name || 'Unknown Category';
-  };
-
-  const getStatusBadgeVariant = (status: LeadStatus) => {
-    switch (status) {
-      case 'New':
-        return 'secondary';
-      case 'Contacted':
-        return 'default';
-      case 'Opened':
-        return 'outline';
-      case 'Clicked':
-        return 'outline';
-      case 'Replied':
-        return 'default';
-      case 'Qualified':
-        return 'default';
-      case 'Unqualified':
-        return 'destructive';
-      case 'Call Back':
-        return 'outline';
-      case 'Unresponsive':
-        return 'secondary';
-      case 'Not Interested':
-        return 'destructive';
-      case 'Interested':
-        return 'default';
-      default:
-        return 'secondary';
-    }
-  };
-
-  const getStatusBadgeColor = (status: LeadStatus) => {
-    switch (status) {
-      case 'New':
-        return 'bg-blue-100 text-blue-800';
-      case 'Contacted':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Opened':
-        return 'bg-green-100 text-green-800';
-      case 'Clicked':
-        return 'bg-purple-100 text-purple-800';
-      case 'Replied':
-        return 'bg-emerald-100 text-emerald-800';
-      case 'Qualified':
-        return 'bg-green-500 text-white';
-      case 'Unqualified':
-        return 'bg-red-500 text-white';
-      case 'Call Back':
-        return 'bg-orange-100 text-orange-800';
-      case 'Unresponsive':
-        return 'bg-gray-100 text-gray-800';
-      case 'Not Interested':
-        return 'bg-red-100 text-red-800';
-      case 'Interested':
-        return 'bg-green-100 text-green-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const sortedAndFilteredLeads = useMemo(() => {
-    let filteredLeads = leads.filter(lead => {
-      const searchRegex = new RegExp(searchQuery, 'i');
-      const matchesSearch =
-        searchRegex.test(lead.firstName) ||
-        searchRegex.test(lead.lastName) ||
-        searchRegex.test(lead.company) ||
-        searchRegex.test(lead.title) ||
-        searchRegex.test(lead.email);
-
-      const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-      const matchesCategory = categoryFilter === 'all' || lead.categoryId === categoryFilter;
-      
-      // Add phone and email filters
-      const matchesPhone = !hasPhoneFilter || (lead.phone && lead.phone.trim() !== '');
-      const matchesEmail = !hasEmailFilter || (lead.email && lead.email.trim() !== '');
-
-      return matchesSearch && matchesStatus && matchesCategory && matchesPhone && matchesEmail;
-    });
-
-    if (sortField) {
-      filteredLeads = [...filteredLeads].sort((a, b) => {
-        const aValue = a[sortField] || '';
-        const bValue = b[sortField] || '';
-
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-        } else {
-          if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-          if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-          return 0;
-        }
-      });
-    }
-
-    return filteredLeads;
-  }, [leads, searchQuery, statusFilter, categoryFilter, sortField, sortDirection, hasPhoneFilter, hasEmailFilter]);
-
-  const totalItems = sortedAndFilteredLeads.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const currentPageLeads = useMemo(() => {
-    const startIndex = (page - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return sortedAndFilteredLeads.slice(startIndex, endIndex);
-  }, [sortedAndFilteredLeads, page, itemsPerPage]);
-
-  const handleStatusChange = async (leadId: string, newStatus: LeadStatus) => {
-    onUpdateLead(leadId, { status: newStatus });
-    toast({
-      title: "Lead status updated",
-      description: `Lead status updated to ${newStatus}`,
-    });
-  };
-
-  const handleUpdateRemarks = async (leadId: string, remarks: string) => {
-    onUpdateLead(leadId, { remarks: remarks });
-    toast({
-      title: "Lead remarks updated",
-      description: "Lead remarks updated successfully",
-    });
-  };
-
-  const handleSelectLead = (leadId: string) => {
-    setSelectedLeads(prev => {
-      if (prev.includes(leadId)) {
-        return prev.filter(id => id !== leadId);
-      } else {
-        return [...prev, leadId];
-      }
-    });
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedLeads(currentPageLeads.map(lead => lead.id));
-    } else {
-      setSelectedLeads([]);
-    }
-  };
-
-  const handleBulkStatusUpdate = (status: LeadStatus) => {
-    if (selectedLeads.length === 0) {
-      toast({
-        title: "No leads selected",
-        description: "Please select leads to update status",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (onBulkUpdateStatus) {
-      onBulkUpdateStatus(selectedLeads, status);
-      setSelectedLeads([]);
-      toast({
-        title: "Leads status updated",
-        description: `Updated status of ${selectedLeads.length} leads to ${status}`,
-      });
-    }
-  };
-
-  const handleBulkDelete = () => {
-    if (selectedLeads.length === 0) {
-      toast({
-        title: "No leads selected",
-        description: "Please select leads to delete",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (onBulkDelete) {
-      onBulkDelete(selectedLeads);
-      setSelectedLeads([]);
-      toast({
-        title: "Leads deleted",
-        description: `Deleted ${selectedLeads.length} leads`,
-      });
-    }
-  };
-
-  const copyToClipboard = (text: string, message: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ description: message });
-  };
-
-  const handleViewWebsite = (website: string) => {
-    const url = website.startsWith('http') ? website : `https://${website}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
-  };
-
-  // Clear cache function (optional - can be called when needed)
-  const clearCache = () => {
-    Object.values(CACHE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
-    });
-    // Reset states to defaults
-    setSearchQuery('');
-    setStatusFilter('all');
-    setCategoryFilter('all');
-    setSelectedLeads([]);
-    setExpandedRows([]);
-    setSelectedLeadForPanel(null);
-    setIsPanelOpen(false);
-    setPage(1);
-    setItemsPerPage(10);
-    setSortField('createdAt');
-    setSortDirection('desc');
-    setHasPhoneFilter(false);
-    setHasEmailFilter(false);
-    toast({
-      title: "Cache cleared",
-      description: "All filters and selections have been reset",
-    });
-  };
-
-  // Check if all current page leads are selected
-  const allCurrentPageSelected = currentPageLeads.length > 0 && currentPageLeads.every(lead => selectedLeads.includes(lead.id));
-  const someCurrentPageSelected = currentPageLeads.some(lead => selectedLeads.includes(lead.id));
-
-  // Generate pagination items
-  const generatePaginationItems = () => {
-    const items = [];
-    const maxVisiblePages = 5;
-    
-    if (totalPages <= maxVisiblePages) {
-      for (let i = 1; i <= totalPages; i++) {
-        items.push(i);
-      }
-    } else {
-      if (page <= 3) {
-        for (let i = 1; i <= 4; i++) {
-          items.push(i);
-        }
-        items.push('...');
-        items.push(totalPages);
-      } else if (page >= totalPages - 2) {
-        items.push(1);
-        items.push('...');
-        for (let i = totalPages - 3; i <= totalPages; i++) {
-          items.push(i);
-        }
-      } else {
-        items.push(1);
-        items.push('...');
-        for (let i = page - 1; i <= page + 1; i++) {
-          items.push(i);
-        }
-        items.push('...');
-        items.push(totalPages);
-      }
-    }
-    
-    return items;
-  };
+  // Calculate checkbox state for select all
+  const currentPageLeadIds = paginatedLeads.map(lead => lead.id);
+  const selectedCurrentPageCount = currentPageLeadIds.filter(id => selectedLeads.has(id)).length;
+  const isAllCurrentPageSelected = currentPageLeadIds.length > 0 && selectedCurrentPageCount === currentPageLeadIds.length;
+  const isPartialSelection = selectedCurrentPageCount > 0 && selectedCurrentPageCount < currentPageLeadIds.length;
 
   return (
     <div className="space-y-6">
-      {/* Search and Filter Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Input
-          type="search"
-          placeholder="Search leads..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
+      {/* Header and Actions */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Search leads..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <div className="flex gap-2">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="New">New</SelectItem>
+                <SelectItem value="Contacted">Contacted</SelectItem>
+                <SelectItem value="Qualified">Qualified</SelectItem>
+                <SelectItem value="Unqualified">Unqualified</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <Select value={statusFilter} onValueChange={(value: LeadStatus | 'all') => setStatusFilter(value)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="New">New</SelectItem>
-            <SelectItem value="Contacted">Contacted</SelectItem>
-            <SelectItem value="Opened">Opened</SelectItem>
-            <SelectItem value="Clicked">Clicked</SelectItem>
-            <SelectItem value="Replied">Replied</SelectItem>
-            <SelectItem value="Qualified">Qualified</SelectItem>
-            <SelectItem value="Unqualified">Unqualified</SelectItem>
-            <SelectItem value="Call Back">Call Back</SelectItem>
-            <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-            <SelectItem value="Not Interested">Not Interested</SelectItem>
-            <SelectItem value="Interested">Interested</SelectItem>
-          </SelectContent>
-        </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(category => (
+                  <SelectItem key={category.id} value={category.id}>
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map(category => (
-              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Data Filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Leads</SelectItem>
+                <SelectItem value="has-phone">Has Phone</SelectItem>
+                <SelectItem value="has-email">Has Email</SelectItem>
+                <SelectItem value="has-both">Has Both</SelectItem>
+              </SelectContent>
+            </Select>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="justify-between">
-              <Filter className="h-4 w-4 mr-2" />
-              Data Filters
-              {(hasPhoneFilter || hasEmailFilter) && (
-                <Badge variant="secondary" className="ml-2">
-                  {[hasPhoneFilter && 'Phone', hasEmailFilter && 'Email'].filter(Boolean).length}
-                </Badge>
-              )}
+            <Button onClick={handleExport} variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Data Availability</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setHasPhoneFilter(!hasPhoneFilter)}>
-              <div className="flex items-center space-x-2">
-                <Checkbox checked={hasPhoneFilter} />
-                <Phone className="h-4 w-4" />
-                <span>Has Phone Number</span>
-              </div>
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setHasEmailFilter(!hasEmailFilter)}>
-              <div className="flex items-center space-x-2">
-                <Checkbox checked={hasEmailFilter} />
-                <Mail className="h-4 w-4" />
-                <span>Has Email Address</span>
-              </div>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Bulk Actions and Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {selectedLeads.length > 0 && (
-            <>
-              <Select onValueChange={(value: LeadStatus) => handleBulkStatusUpdate(value)}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Update Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Opened">Opened</SelectItem>
-                  <SelectItem value="Clicked">Clicked</SelectItem>
-                  <SelectItem value="Replied">Replied</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                  <SelectItem value="Unqualified">Unqualified</SelectItem>
-                  <SelectItem value="Call Back">Call Back</SelectItem>
-                  <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-                  <SelectItem value="Not Interested">Not Interested</SelectItem>
-                  <SelectItem value="Interested">Interested</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-                Delete ({selectedLeads.length})
-              </Button>
-            </>
-          )}
-          <Button variant="outline" size="sm" onClick={clearCache}>
-            Clear Filters
-          </Button>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Items per page:</span>
-          <Select value={itemsPerPage.toString()} onValueChange={(value) => {
-            setItemsPerPage(parseInt(value));
-            setPage(1); // Reset to first page when changing items per page
-          }}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="10">10</SelectItem>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-              <SelectItem value="500">500</SelectItem>
-              <SelectItem value={totalItems.toString()}>All ({totalItems})</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>
-                Leads ({sortedAndFilteredLeads.length})
-              </CardTitle>
-              <CardDescription>
-                Manage and track your leads
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => exportLeadsToCSV(sortedAndFilteredLeads, categories)}
-                className="flex items-center gap-2"
+        {/* Bulk Actions */}
+        {selectedLeads.size > 0 && (
+          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+            <span className="text-sm font-medium">
+              {selectedLeads.size} lead{selectedLeads.size > 1 ? 's' : ''} selected
+            </span>
+            
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    Update Status
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'New')}>
+                    Mark as New
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'Contacted')}>
+                    Mark as Contacted
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'Qualified')}>
+                    Mark as Qualified
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'Unqualified')}>
+                    Mark as Unqualified
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleBulkAction('delete')}
+                className="text-red-600 hover:text-red-700"
               >
-                <Download className="h-4 w-4" />
-                Export CSV
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
               </Button>
             </div>
           </div>
+        )}
+
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Show</span>
+            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-muted-foreground">per page</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedLeads.length)} of {sortedLeads.length} leads
+            </span>
+            
+            <div className="flex gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <span className="flex items-center px-3 text-sm">
+                {currentPage} of {totalPages}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRightIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Results Summary */}
+      <Card>
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Leads Overview
+            {selectedBatchId && (
+              <Badge variant="secondary">
+                Batch: {getBatchName(selectedBatchId)}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} found
+            {selectedLeads.size > 0 && ` (${selectedLeads.size} selected)`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {sortedAndFilteredLeads.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No leads found</h3>
-              <p>
-                {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || hasPhoneFilter || hasEmailFilter
-                  ? 'Try adjusting your filters to see more results.'
-                  : 'Import some leads to get started.'}
-              </p>
-            </div>
-          ) : (
-            <AppleTable>
-              <AppleTableHeader>
-                <AppleTableRow>
-                  <AppleTableHead className="w-12">
-                    <Checkbox
-                      checked={allCurrentPageSelected}
-                      indeterminate={someCurrentPageSelected && !allCurrentPageSelected}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('firstName')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Name
-                      {sortField === 'firstName' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
-                  <AppleTableHead>Actions</AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('status')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Status
-                      {sortField === 'status' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('company')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Company
-                      {sortField === 'company' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('title')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Title
-                      {sortField === 'title' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('email')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Contact
-                      {sortField === 'email' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
-                  <AppleTableHead>Category</AppleTableHead>
-                  <AppleTableHead>Remarks</AppleTableHead>
-                  <AppleTableHead>
-                    <Button
-                      variant="ghost"
-                      onClick={() => handleSort('createdAt')}
-                      className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      Created
-                      {sortField === 'createdAt' && (
-                        sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
-                      )}
-                    </Button>
-                  </AppleTableHead>
-                </AppleTableRow>
-              </AppleTableHeader>
-              <AppleTableBody>
-                {currentPageLeads.map((lead) => (
-                  <AppleTableRow key={lead.id}>
-                    <AppleTableCell>
-                      <Checkbox
-                        checked={selectedLeads.includes(lead.id)}
-                        onCheckedChange={() => handleSelectLead(lead.id)}
-                      />
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="flex items-center gap-3">
-                        <Button 
-                          variant="ghost" 
-                          className="h-auto p-0 text-left"
-                          onClick={() => openLeadPanel(lead)}
-                        >
+          <AppleTable>
+            <AppleTableHeader>
+              <AppleTableRow>
+                <AppleTableHead className="w-12">
+                  <Checkbox
+                    checked={isAllCurrentPageSelected}
+                    ref={(el) => {
+                      if (el) {
+                        el.indeterminate = isPartialSelection;
+                      }
+                    }}
+                    onCheckedChange={handleSelectAll}
+                  />
+                </AppleTableHead>
+                <AppleTableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('firstName')}
+                >
+                  <div className="flex items-center gap-2">
+                    Name
+                    {sortField === 'firstName' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </AppleTableHead>
+                <AppleTableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('company')}
+                >
+                  <div className="flex items-center gap-2">
+                    Company
+                    {sortField === 'company' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </AppleTableHead>
+                <AppleTableHead>Contact</AppleTableHead>
+                <AppleTableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center gap-2">
+                    Status
+                    {sortField === 'status' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </AppleTableHead>
+                <AppleTableHead>Category</AppleTableHead>
+                <AppleTableHead>Details</AppleTableHead>
+                <AppleTableHead 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center gap-2">
+                    Created
+                    {sortField === 'createdAt' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </AppleTableHead>
+                <AppleTableHead className="w-12">Actions</AppleTableHead>
+              </AppleTableRow>
+            </AppleTableHeader>
+            <AppleTableBody>
+              {paginatedLeads.map((lead) => {
+                const category = getCategoryInfo(lead.categoryId);
+                const isExpanded = expandedLead === lead.id;
+                
+                return (
+                  <React.Fragment key={lead.id}>
+                    <AppleTableRow className="group hover:bg-muted/50">
+                      <AppleTableCell>
+                        <Checkbox
+                          checked={selectedLeads.has(lead.id)}
+                          onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+                        />
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+                            <AvatarFallback>
+                              {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
                           <div>
                             <div className="font-medium">
                               {lead.firstName} {lead.lastName}
                             </div>
+                            <div className="text-sm text-muted-foreground">
+                              {lead.title}
+                            </div>
                           </div>
-                        </Button>
-                      </div>
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openLeadPanel(lead)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <QuickRemarkEditor
-                          lead={lead}
-                          onUpdateRemarks={handleUpdateRemarks}
-                        />
-                        <EmailDialog
-                          lead={lead}
-                          templates={templates}
-                          branding={branding}
-                          onEmailSent={onSendEmail}
-                        />
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={() => copyToClipboard(lead.email, 'Email copied')}>
-                              <Mail className="mr-2 h-4 w-4" />
-                              Copy email
-                            </DropdownMenuItem>
-                            {lead.phone && (
-                              <DropdownMenuItem onClick={() => copyToClipboard(lead.phone, 'Phone copied')}>
-                                <Phone className="mr-2 h-4 w-4" />
-                                Copy phone
+                        </div>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div>
+                          <div className="font-medium">{lead.company}</div>
+                          <div className="flex gap-1 mt-1">
+                            <Badge variant="outline" className={getSizeColor(lead.companySize)}>
+                              {lead.companySize.replace(/\s*\([^)]*\)/, '')}
+                            </Badge>
+                          </div>
+                        </div>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="h-3 w-3" />
+                            <span className="truncate max-w-[200px]">{lead.email}</span>
+                          </div>
+                          {lead.phone && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="h-3 w-3" />
+                              <span>{lead.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <Badge className={getStatusColor(lead.status)}>
+                          {lead.status}
+                        </Badge>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: category.color }}
+                          />
+                          <span className="text-sm">{category.name}</span>
+                        </div>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div className="flex gap-1">
+                          <Badge variant="outline" className={getSeniorityColor(lead.seniority)}>
+                            {lead.seniority}
+                          </Badge>
+                          {lead.industry && (
+                            <Badge variant="outline">
+                              {lead.industry}
+                            </Badge>
+                          )}
+                        </div>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div className="text-sm text-muted-foreground">
+                          {format(lead.createdAt, 'MMM dd, yyyy')}
+                        </div>
+                      </AppleTableCell>
+                      
+                      <AppleTableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setExpandedLead(isExpanded ? null : lead.id)}
+                          >
+                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </Button>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedLeadForEmail(lead);
+                                  setShowEmailDialog(true);
+                                }}
+                              >
+                                <Mail className="h-4 w-4 mr-2" />
+                                Send Email
                               </DropdownMenuItem>
-                            )}
-                            {lead.linkedin && (
-                              <DropdownMenuItem onClick={() => window.open(lead.linkedin, '_blank')}>
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                                LinkedIn
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setSelectedLeadForRemarks(lead);
+                                  setShowRemarksDialog(true);
+                                }}
+                              >
+                                <MessageSquare className="h-4 w-4 mr-2" />
+                                Add Remarks
                               </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <LeadRemarksDialog
-                              lead={lead}
-                              onUpdateRemarks={handleUpdateRemarks}
-                            >
-                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Edit remarks
-                              </DropdownMenuItem>
-                            </LeadRemarksDialog>
-                            <DropdownMenuSeparator />
-                            {onDeleteLead && (
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => onDeleteLead(lead.id)}
-                                className="text-destructive"
+                                className="text-red-600"
                               >
-                                <Trash2 className="mr-2 h-4 w-4" />
+                                <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                               </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <Select
-                        value={lead.status}
-                        onValueChange={(newStatus: LeadStatus) => handleStatusChange(lead.id, newStatus)}
-                      >
-                        <SelectTrigger className="w-36">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="New">
-                            <Badge className={getStatusBadgeColor('New')}>New</Badge>
-                          </SelectItem>
-                          <SelectItem value="Contacted">
-                            <Badge className={getStatusBadgeColor('Contacted')}>Contacted</Badge>
-                          </SelectItem>
-                          <SelectItem value="Opened">
-                            <Badge className={getStatusBadgeColor('Opened')}>Opened</Badge>
-                          </SelectItem>
-                          <SelectItem value="Clicked">
-                            <Badge className={getStatusBadgeColor('Clicked')}>Clicked</Badge>
-                          </SelectItem>
-                          <SelectItem value="Replied">
-                            <Badge className={getStatusBadgeColor('Replied')}>Replied</Badge>
-                          </SelectItem>
-                          <SelectItem value="Qualified">
-                            <Badge className={getStatusBadgeColor('Qualified')}>Qualified</Badge>
-                          </SelectItem>
-                          <SelectItem value="Unqualified">
-                            <Badge className={getStatusBadgeColor('Unqualified')}>Unqualified</Badge>
-                          </SelectItem>
-                          <SelectItem value="Call Back">
-                            <Badge className={getStatusBadgeColor('Call Back')}>Call Back</Badge>
-                          </SelectItem>
-                          <SelectItem value="Unresponsive">
-                            <Badge className={getStatusBadgeColor('Unresponsive')}>Unresponsive</Badge>
-                          </SelectItem>
-                          <SelectItem value="Not Interested">
-                            <Badge className={getStatusBadgeColor('Not Interested')}>Not Interested</Badge>
-                          </SelectItem>
-                          <SelectItem value="Interested">
-                            <Badge className={getStatusBadgeColor('Interested')}>Interested</Badge>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="font-medium">{lead.company}</div>
-                      {lead.industry && (
-                        <div className="text-sm text-muted-foreground">{lead.industry}</div>
-                      )}
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="font-medium">{lead.title}</div>
-                      {lead.department && (
-                        <div className="text-sm text-muted-foreground">{lead.department}</div>
-                      )}
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="font-medium">{lead.email}</div>
-                      {lead.phone && (
-                        <div className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {lead.phone}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                      )}
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      {getCategoryName(lead.categoryId)}
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      <div className="max-w-xs">
-                        {lead.remarks ? (
-                          <div className="text-sm text-muted-foreground truncate" title={lead.remarks}>
-                            {lead.remarks}
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">No remarks</span>
-                        )}
-                      </div>
-                    </AppleTableCell>
-                    <AppleTableCell>
-                      {format(new Date(lead.createdAt), 'MMM dd, yyyy')}
-                    </AppleTableCell>
-                  </AppleTableRow>
-                ))}
-              </AppleTableBody>
-            </AppleTable>
-          )}
+                      </AppleTableCell>
+                    </AppleTableRow>
+                    
+                    {/* Expanded Details Row */}
+                    {isExpanded && (
+                      <AppleTableRow>
+                        <AppleTableCell colSpan={9} className="bg-muted/30">
+                          <div className="p-4 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                              {/* Contact Information */}
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-sm flex items-center gap-2">
+                                  <Phone className="h-4 w-4" />
+                                  Contact Information
+                                </h4>
+                                <div className="space-y-2 text-sm">
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Email:</label>
+                                    {renderEditableField(lead, 'email', lead.email)}
+                                  </div>
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Phone:</label>
+                                    {renderEditableField(lead, 'phone', lead.phone)}
+                                  </div>
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Personal Email:</label>
+                                    {renderEditableField(lead, 'personalEmail', lead.personalEmail)}
+                                  </div>
+                                  {lead.linkedin && (
+                                    <div className="flex items-center gap-2">
+                                      <Linkedin className="h-3 w-3" />
+                                      <a 
+                                        href={lead.linkedin} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline"
+                                      >
+                                        LinkedIn Profile
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Company Information */}
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-sm flex items-center gap-2">
+                                  <Building className="h-4 w-4" />
+                                  Company Information
+                                </h4>
+                                <div className="space-y-2 text-sm">
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Industry:</label>
+                                    {renderEditableField(lead, 'industry', lead.industry)}
+                                  </div>
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Location:</label>
+                                    {renderEditableField(lead, 'location', lead.location)}
+                                  </div>
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Department:</label>
+                                    {renderEditableField(lead, 'department', lead.department)}
+                                  </div>
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Company Size:</label>
+                                    {renderEditableField(lead, 'companySize', lead.companySize, 'select', [
+                                      'Small (1-50)', 'Medium (51-200)', 'Large (201-1000)', 'Enterprise (1000+)'
+                                    ])}
+                                  </div>
+                                  {lead.organizationWebsite && (
+                                    <div className="flex items-center gap-2">
+                                      <Globe className="h-3 w-3" />
+                                      <a 
+                                        href={lead.organizationWebsite} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:underline"
+                                      >
+                                        Company Website
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              
+                              {/* Lead Management */}
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-sm flex items-center gap-2">
+                                  <Target className="h-4 w-4" />
+                                  Lead Management
+                                </h4>
+                                <div className="space-y-2 text-sm">
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Status:</label>
+                                    {renderEditableField(lead, 'status', lead.status, 'select', [
+                                      'New', 'Contacted', 'Qualified', 'Unqualified'
+                                    ])}
+                                  </div>
+                                  <div className="group">
+                                    <label className="text-muted-foreground">Seniority:</label>
+                                    {renderEditableField(lead, 'seniority', lead.seniority, 'select', [
+                                      'Entry-level', 'Mid-level', 'Senior', 'Executive', 'C-level'
+                                    ])}
+                                  </div>
+                                  <div>
+                                    <label className="text-muted-foreground">Category:</label>
+                                    <CategoryCombobox
+                                      categories={categories}
+                                      value={category.name}
+                                      onChange={(categoryName) => handleCategoryChange(lead.id, categoryName)}
+                                      placeholder="Select or create category"
+                                      className="mt-1"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-muted-foreground">Batch:</label>
+                                    <div className="text-sm">{getBatchName(lead.importBatchId)}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Remarks Section */}
+                            <div className="space-y-2">
+                              <h4 className="font-semibold text-sm flex items-center gap-2">
+                                <MessageSquare className="h-4 w-4" />
+                                Remarks
+                              </h4>
+                              <QuickRemarkEditor
+                                leadId={lead.id}
+                                currentRemarks={lead.remarks}
+                                onUpdateRemarks={(remarks) => onUpdateLead(lead.id, { remarks })}
+                              />
+                            </div>
 
-          {/* Enhanced Pagination */}
-          {sortedAndFilteredLeads.length > 0 && totalPages > 1 && (
-            <div className="flex justify-between items-center mt-6">
-              <div className="text-sm text-muted-foreground">
-                Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, totalItems)} of {totalItems} leads
-              </div>
-              
-              <Pagination>
-                <PaginationContent>
-                  <PaginationItem>
-                    <PaginationPrevious 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (page > 1) setPage(page - 1);
-                      }}
-                      className={page === 1 ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                  
-                  {generatePaginationItems().map((item, index) => (
-                    <PaginationItem key={index}>
-                      {item === '...' ? (
-                        <PaginationEllipsis />
-                      ) : (
-                        <PaginationLink
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setPage(item as number);
-                          }}
-                          isActive={page === item}
-                        >
-                          {item}
-                        </PaginationLink>
-                      )}
-                    </PaginationItem>
-                  ))}
-                  
-                  <PaginationItem>
-                    <PaginationNext 
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (page < totalPages) setPage(page + 1);
-                      }}
-                      className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
-                    />
-                  </PaginationItem>
-                </PaginationContent>
-              </Pagination>
+                            {/* Stats */}
+                            <div className="flex gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <Mail className="h-3 w-3" />
+                                {lead.emailsSent} emails sent
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                Last contact: {lead.lastContactDate ? format(lead.lastContactDate, 'MMM dd, yyyy') : 'Never'}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Target className="h-3 w-3" />
+                                Completeness: {lead.completenessScore}%
+                              </div>
+                            </div>
+                          </div>
+                        </AppleTableCell>
+                      </AppleTableRow>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </AppleTableBody>
+          </AppleTable>
+
+          {paginatedLeads.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No leads found</h3>
+              <p>Try adjusting your search criteria or filters.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Enhanced Lead Detail Panel */}
-      <Drawer open={isPanelOpen} onOpenChange={setIsPanelOpen}>
-        <DrawerContent className="h-[80vh]">
-          <DrawerHeader className="border-b">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  {selectedLeadForPanel?.photoUrl && (
-                    <AvatarImage src={selectedLeadForPanel.photoUrl} alt={`${selectedLeadForPanel.firstName} ${selectedLeadForPanel.lastName}`} />
-                  )}
-                  <AvatarFallback>
-                    {selectedLeadForPanel?.firstName?.[0]}{selectedLeadForPanel?.lastName?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <DrawerTitle>
-                    {selectedLeadForPanel && `${selectedLeadForPanel.firstName} ${selectedLeadForPanel.lastName}`}
-                  </DrawerTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedLeadForPanel?.title} at {selectedLeadForPanel?.company}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {selectedLeadForPanel && (
-                  <>
-                    <EmailDialog
-                      lead={selectedLeadForPanel}
-                      templates={templates}
-                      branding={branding}
-                      onEmailSent={handlePanelEmailSent}
-                    />
-                    <Select
-                      value={selectedLeadForPanel.status}
-                      onValueChange={handlePanelStatusChange}
-                    >
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="New">New</SelectItem>
-                        <SelectItem value="Contacted">Contacted</SelectItem>
-                        <SelectItem value="Opened">Opened</SelectItem>
-                        <SelectItem value="Clicked">Clicked</SelectItem>
-                        <SelectItem value="Replied">Replied</SelectItem>
-                        <SelectItem value="Qualified">Qualified</SelectItem>
-                        <SelectItem value="Unqualified">Unqualified</SelectItem>
-                        <SelectItem value="Call Back">Call Back</SelectItem>
-                        <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-                        <SelectItem value="Not Interested">Not Interested</SelectItem>
-                        <SelectItem value="Interested">Interested</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </>
-                )}
-                <DrawerClose>
-                  <Button variant="ghost" size="sm">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </DrawerClose>
-              </div>
-            </div>
-          </DrawerHeader>
-          
-          {selectedLeadForPanel && (
-            <div className="p-6 overflow-y-auto">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Personal Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Personal Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                      <p className="font-medium">{selectedLeadForPanel.firstName} {selectedLeadForPanel.lastName}</p>
-                    </div>
-                    
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Email</label>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{selectedLeadForPanel.email}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => copyToClipboard(selectedLeadForPanel.email, 'Email copied')}
-                        >
-                          <Mail className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+      {/* Dialogs */}
+      <LeadRemarksDialog
+        lead={selectedLeadForRemarks}
+        isOpen={showRemarksDialog}
+        onClose={() => {
+          setShowRemarksDialog(false);
+          setSelectedLeadForRemarks(null);
+        }}
+        onSave={(remarks) => {
+          if (selectedLeadForRemarks) {
+            onUpdateLead(selectedLeadForRemarks.id, { remarks });
+          }
+        }}
+      />
 
-                    {selectedLeadForPanel.personalEmail && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Personal Email</label>
-                        <p className="font-medium">{selectedLeadForPanel.personalEmail}</p>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.phone && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Phone</label>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{selectedLeadForPanel.phone}</p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(selectedLeadForPanel.phone, 'Phone copied')}
-                          >
-                            <Phone className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.location && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Location</label>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          <p className="font-medium">{selectedLeadForPanel.location}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.linkedin && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">LinkedIn</label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(selectedLeadForPanel.linkedin, '_blank')}
-                          className="flex items-center gap-2"
-                        >
-                          <Linkedin className="h-4 w-4" />
-                          View Profile
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Company Information */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building className="h-5 w-5" />
-                      Company Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Company</label>
-                      <p className="font-medium">{selectedLeadForPanel.company}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Title</label>
-                      <p className="font-medium">{selectedLeadForPanel.title}</p>
-                    </div>
-
-                    {selectedLeadForPanel.department && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Department</label>
-                        <p className="font-medium">{selectedLeadForPanel.department}</p>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.industry && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Industry</label>
-                        <p className="font-medium">{selectedLeadForPanel.industry}</p>
-                      </div>
-                    )}
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Company Size</label>
-                      <p className="font-medium">{selectedLeadForPanel.companySize}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Seniority</label>
-                      <p className="font-medium">{selectedLeadForPanel.seniority}</p>
-                    </div>
-
-                    {selectedLeadForPanel.organizationWebsite && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Website</label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewWebsite(selectedLeadForPanel.organizationWebsite)}
-                          className="flex items-center gap-2"
-                        >
-                          <Globe className="h-4 w-4" />
-                          Visit Website
-                        </Button>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Lead Status & Tracking */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Target className="h-5 w-5" />
-                      Lead Status & Tracking
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Status</label>
-                      <Badge className={getStatusBadgeColor(selectedLeadForPanel.status)}>
-                        {selectedLeadForPanel.status}
-                      </Badge>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Category</label>
-                      <p className="font-medium">{getCategoryName(selectedLeadForPanel.categoryId)}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Emails Sent</label>
-                      <p className="font-medium">{selectedLeadForPanel.emailsSent}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Completeness Score</label>
-                      <p className="font-medium">{selectedLeadForPanel.completenessScore}%</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Created</label>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">{format(new Date(selectedLeadForPanel.createdAt), 'MMM dd, yyyy HH:mm')}</p>
-                      </div>
-                    </div>
-
-                    {selectedLeadForPanel.lastContactDate && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Last Contact</label>
-                        <p className="font-medium">{format(new Date(selectedLeadForPanel.lastContactDate), 'MMM dd, yyyy')}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Remarks & Notes */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5" />
-                        Remarks & Notes
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingRemarks(!editingRemarks)}
-                      >
-                        <Edit className="h-4 w-4 mr-2" />
-                        {editingRemarks ? 'Cancel' : 'Edit'}
-                      </Button>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {editingRemarks ? (
-                      <div className="space-y-3">
-                        <Textarea
-                          value={remarksText}
-                          onChange={(e) => setRemarksText(e.target.value)}
-                          placeholder="Add your remarks about this lead..."
-                          className="min-h-[120px]"
-                        />
-                        <div className="flex gap-2">
-                          <Button onClick={handleSaveRemarks} size="sm">
-                            <Save className="h-4 w-4 mr-2" />
-                            Save
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setEditingRemarks(false);
-                              setRemarksText(selectedLeadForPanel.remarks || '');
-                            }}
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="bg-muted p-3 rounded-md min-h-[120px]">
-                        {selectedLeadForPanel.remarks ? (
-                          <p className="text-sm whitespace-pre-wrap">{selectedLeadForPanel.remarks}</p>
-                        ) : (
-                          <p className="text-sm text-muted-foreground italic">No remarks added yet</p>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.tags && selectedLeadForPanel.tags.length > 0 && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Tags</label>
-                        <div className="flex flex-wrap gap-2 mt-1">
-                          {selectedLeadForPanel.tags.map((tag, index) => (
-                            <Badge key={index} variant="outline">
-                              {tag}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.organizationFounded && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Company Founded</label>
-                        <p className="font-medium">{selectedLeadForPanel.organizationFounded}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          )}
-        </DrawerContent>
-      </Drawer>
+      <EmailDialog
+        lead={selectedLeadForEmail}
+        templates={templates}
+        branding={branding}
+        isOpen={showEmailDialog}
+        onClose={() => {
+          setShowEmailDialog(false);
+          setSelectedLeadForEmail(null);
+        }}
+        onSend={(leadId) => {
+          onSendEmail(leadId);
+          setShowEmailDialog(false);
+          setSelectedLeadForEmail(null);
+        }}
+      />
     </div>
   );
 };
