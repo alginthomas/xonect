@@ -853,5 +853,3 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 };
 
 export default LeadsDashboard;
-
-}
