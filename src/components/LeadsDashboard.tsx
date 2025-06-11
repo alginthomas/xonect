@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import {
   DropdownMenu,
@@ -30,6 +32,7 @@ import {
   ExternalLink,
   ChevronUp,
   ChevronDown,
+  ChevronRight,
   Globe,
   Linkedin,
   MapPin,
@@ -40,6 +43,8 @@ import {
   Tag,
   X,
   Eye,
+  Edit,
+  Save,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -88,6 +93,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [selectedLeadForPanel, setSelectedLeadForPanel] = useState<Lead | null>(null);
+  const [editingRemarks, setEditingRemarks] = useState(false);
+  const [remarksText, setRemarksText] = useState('');
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -102,12 +109,52 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   const openLeadPanel = (lead: Lead) => {
     setSelectedLeadForPanel(lead);
+    setRemarksText(lead.remarks || '');
+    setEditingRemarks(false);
     setIsPanelOpen(true);
   };
 
   const closeLeadPanel = () => {
     setIsPanelOpen(false);
     setSelectedLeadForPanel(null);
+    setEditingRemarks(false);
+    setRemarksText('');
+  };
+
+  const handlePanelStatusChange = (newStatus: LeadStatus) => {
+    if (selectedLeadForPanel) {
+      onUpdateLead(selectedLeadForPanel.id, { status: newStatus });
+      setSelectedLeadForPanel({ ...selectedLeadForPanel, status: newStatus });
+      toast({
+        title: "Status updated",
+        description: `Lead status updated to ${newStatus}`,
+      });
+    }
+  };
+
+  const handleSaveRemarks = () => {
+    if (selectedLeadForPanel) {
+      onUpdateLead(selectedLeadForPanel.id, { remarks: remarksText });
+      setSelectedLeadForPanel({ ...selectedLeadForPanel, remarks: remarksText });
+      setEditingRemarks(false);
+      toast({
+        title: "Remarks updated",
+        description: "Lead remarks updated successfully",
+      });
+    }
+  };
+
+  const handlePanelEmailSent = (leadId: string) => {
+    if (onSendEmail) {
+      onSendEmail(leadId);
+    }
+    if (selectedLeadForPanel && selectedLeadForPanel.id === leadId) {
+      setSelectedLeadForPanel({
+        ...selectedLeadForPanel,
+        emailsSent: selectedLeadForPanel.emailsSent + 1,
+        lastContactDate: new Date()
+      });
+    }
   };
 
   const getCategoryName = (categoryId?: string) => {
@@ -701,19 +748,67 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Lead Detail Panel */}
+      {/* Enhanced Lead Detail Panel */}
       <Drawer open={isPanelOpen} onOpenChange={setIsPanelOpen}>
         <DrawerContent className="h-[80vh]">
           <DrawerHeader className="border-b">
             <div className="flex items-center justify-between">
-              <DrawerTitle>
-                {selectedLeadForPanel && `${selectedLeadForPanel.firstName} ${selectedLeadForPanel.lastName}`}
-              </DrawerTitle>
-              <DrawerClose>
-                <Button variant="ghost" size="sm">
-                  <X className="h-4 w-4" />
-                </Button>
-              </DrawerClose>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12">
+                  {selectedLeadForPanel?.photoUrl && (
+                    <AvatarImage src={selectedLeadForPanel.photoUrl} alt={`${selectedLeadForPanel.firstName} ${selectedLeadForPanel.lastName}`} />
+                  )}
+                  <AvatarFallback>
+                    {selectedLeadForPanel?.firstName?.[0]}{selectedLeadForPanel?.lastName?.[0]}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <DrawerTitle>
+                    {selectedLeadForPanel && `${selectedLeadForPanel.firstName} ${selectedLeadForPanel.lastName}`}
+                  </DrawerTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedLeadForPanel?.title} at {selectedLeadForPanel?.company}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedLeadForPanel && (
+                  <>
+                    <EmailDialog
+                      lead={selectedLeadForPanel}
+                      templates={templates}
+                      branding={branding}
+                      onEmailSent={handlePanelEmailSent}
+                    />
+                    <Select
+                      value={selectedLeadForPanel.status}
+                      onValueChange={handlePanelStatusChange}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New">New</SelectItem>
+                        <SelectItem value="Contacted">Contacted</SelectItem>
+                        <SelectItem value="Opened">Opened</SelectItem>
+                        <SelectItem value="Clicked">Clicked</SelectItem>
+                        <SelectItem value="Replied">Replied</SelectItem>
+                        <SelectItem value="Qualified">Qualified</SelectItem>
+                        <SelectItem value="Unqualified">Unqualified</SelectItem>
+                        <SelectItem value="Call Back">Call Back</SelectItem>
+                        <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                        <SelectItem value="Not Interested">Not Interested</SelectItem>
+                        <SelectItem value="Interested">Interested</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+                <DrawerClose>
+                  <Button variant="ghost" size="sm">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </DrawerClose>
+              </div>
             </div>
           </DrawerHeader>
           
@@ -915,15 +1010,60 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   </CardContent>
                 </Card>
 
-                {/* Additional Information */}
+                {/* Remarks & Notes */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Tag className="h-5 w-5" />
-                      Additional Information
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        Remarks & Notes
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingRemarks(!editingRemarks)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        {editingRemarks ? 'Cancel' : 'Edit'}
+                      </Button>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
+                    {editingRemarks ? (
+                      <div className="space-y-3">
+                        <Textarea
+                          value={remarksText}
+                          onChange={(e) => setRemarksText(e.target.value)}
+                          placeholder="Add your remarks about this lead..."
+                          className="min-h-[120px]"
+                        />
+                        <div className="flex gap-2">
+                          <Button onClick={handleSaveRemarks} size="sm">
+                            <Save className="h-4 w-4 mr-2" />
+                            Save
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setEditingRemarks(false);
+                              setRemarksText(selectedLeadForPanel.remarks || '');
+                            }}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-muted p-3 rounded-md min-h-[120px]">
+                        {selectedLeadForPanel.remarks ? (
+                          <p className="text-sm whitespace-pre-wrap">{selectedLeadForPanel.remarks}</p>
+                        ) : (
+                          <p className="text-sm text-muted-foreground italic">No remarks added yet</p>
+                        )}
+                      </div>
+                    )}
+
                     {selectedLeadForPanel.headline && (
                       <div>
                         <label className="text-sm font-medium text-muted-foreground">Headline</label>
@@ -947,15 +1087,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                               {tag}
                             </Badge>
                           ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.remarks && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Remarks</label>
-                        <div className="bg-muted p-3 rounded-md">
-                          <p className="text-sm">{selectedLeadForPanel.remarks}</p>
                         </div>
                       </div>
                     )}
