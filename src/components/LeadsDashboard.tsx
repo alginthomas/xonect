@@ -628,7 +628,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
-                    <TableHead className="w-16">#</TableHead>
                     <TableHead 
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('firstName')}
@@ -689,16 +688,13 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedLeadsWithNumbers.map((lead) => (
+                  {paginatedLeads.map((lead) => (
                     <TableRow key={lead.id}>
                       <TableCell className="font-medium">
                         <Checkbox
                           checked={selectedLeads.includes(lead.id)}
                           onCheckedChange={() => handleSelectLead(lead.id)}
                         />
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {lead.displayNumber}
                       </TableCell>
                       <TableCell className="font-medium">
                         <div 
@@ -857,3 +853,5 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 };
 
 export default LeadsDashboard;
+
+}
