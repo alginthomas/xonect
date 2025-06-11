@@ -10,7 +10,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
-import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -185,33 +184,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     onUpdateLead(leadId, { status: newStatus });
   };
 
-  const handleUpdateRemarks = async (leadId: string, remarks: string) => {
-    try {
-      // Optimistic update
-      onUpdateLead(leadId, { remarks });
-      
-      // Update in database
-      const { error } = await supabase
-        .from('leads')
-        .update({ remarks, updated_at: new Date().toISOString() })
-        .eq('id', leadId);
-
-      if (error) {
-        throw error;
-      }
-    } catch (error) {
-      console.error('Error updating remarks:', error);
-      toast({
-        title: "Error updating remarks",
-        description: "Failed to save the remark. Please try again.",
-        variant: "destructive",
-      });
-      // Revert optimistic update on error
-      const originalLead = leads.find(l => l.id === leadId);
-      if (originalLead) {
-        onUpdateLead(leadId, { remarks: originalLead.remarks });
-      }
-    }
+  const handleUpdateRemarks = (leadId: string, remarks: string) => {
+    onUpdateLead(leadId, { remarks });
   };
 
   const leadQualityData = useMemo(() => {
@@ -329,7 +303,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <AppleTableHead>Title</AppleTableHead>
           <AppleTableHead>Status</AppleTableHead>
           <AppleTableHead>Quality</AppleTableHead>
-          <AppleTableHead>Remarks</AppleTableHead>
           <AppleTableHead>Industry</AppleTableHead>
           <AppleTableHead>Location</AppleTableHead>
           <AppleTableHead>Department</AppleTableHead>
@@ -340,7 +313,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       </AppleTableHeader>
       <AppleTableBody>
         {filteredData.slice(indexOfFirstLead, indexOfLastLead).map((lead) => (
-          <AppleTableRow key={lead.id} className="group hover:bg-muted/30">
+          <AppleTableRow key={lead.id}>
             <AppleTableCell className="font-medium">
               <div className="flex flex-col">
                 <span className="font-semibold">{lead.firstName} {lead.lastName}</span>
@@ -384,13 +357,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <span className="text-xs text-muted-foreground font-medium">{lead.completenessScore}%</span>
               </div>
             </AppleTableCell>
-            <AppleTableCell className="w-48">
-              <QuickRemarkEditor
-                lead={lead}
-                onUpdateRemarks={handleUpdateRemarks}
-                isInline={true}
-              />
-            </AppleTableCell>
             <AppleTableCell className="text-muted-foreground">
               {lead.industry || 'N/A'}
             </AppleTableCell>
@@ -424,11 +390,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     <Eye className="h-4 w-4" />
                   </Button>
                 </LeadDetailPopover>
-                <QuickRemarkEditor
+                <LeadRemarksDialog
                   lead={lead}
                   onUpdateRemarks={handleUpdateRemarks}
-                  isInline={false}
-                />
+                >
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className={`h-8 w-8 p-0 ${lead.remarks ? "text-primary" : ""}`}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                  </Button>
+                </LeadRemarksDialog>
                 <EmailDialog 
                   lead={lead} 
                   templates={templates}
@@ -789,5 +762,3 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 };
 
 export default LeadsDashboard;
-
-}
