@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,6 @@ import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { EmailDialog } from '@/components/EmailDialog';
-import { InputWithCopyButton } from '@/components/InputWithCopyButton';
 import {
   Search,
   Download,
@@ -35,29 +35,42 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
-import type { Lead, EmailTemplate, Branding } from '@/types/lead';
-import type { Category } from '@/types/category';
+import type { Lead, EmailTemplate } from '@/types/lead';
+import type { Category, ImportBatch } from '@/types/category';
 
 type LeadStatus = "New" | "Contacted" | "Qualified" | "Unqualified";
+
+interface BrandingData {
+  companyName: string;
+  companyLogo: string;
+  companyWebsite: string;
+  companyAddress: string;
+  senderName: string;
+  senderEmail: string;
+}
 
 interface LeadsDashboardProps {
   leads: Lead[];
   categories: Category[];
   templates: EmailTemplate[];
-  branding: Branding;
+  importBatches: ImportBatch[];
+  branding: BrandingData;
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
-  onDeleteLead: (leadId: string) => void;
-  onBulkUpdateStatus: (leadIds: string[], status: LeadStatus) => void;
-  onBulkDelete: (leadIds: string[]) => void;
-  onSendEmail: (leadId: string) => void;
+  selectedBatchId?: string | null;
+  onDeleteLead?: (leadId: string) => void;
+  onBulkUpdateStatus?: (leadIds: string[], status: LeadStatus) => void;
+  onBulkDelete?: (leadIds: string[]) => void;
+  onSendEmail?: (leadId: string) => void;
 }
 
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   leads = [],
   categories = [],
   templates = [],
+  importBatches = [],
   branding,
   onUpdateLead,
+  selectedBatchId,
   onDeleteLead,
   onBulkUpdateStatus,
   onBulkDelete,
@@ -171,12 +184,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       return;
     }
 
-    onBulkUpdateStatus(selectedLeads, status);
-    setSelectedLeads([]);
-    toast({
-      title: "Leads status updated",
-      description: `Updated status of ${selectedLeads.length} leads to ${status}`,
-    });
+    if (onBulkUpdateStatus) {
+      onBulkUpdateStatus(selectedLeads, status);
+      setSelectedLeads([]);
+      toast({
+        title: "Leads status updated",
+        description: `Updated status of ${selectedLeads.length} leads to ${status}`,
+      });
+    }
   };
 
   const handleBulkDelete = () => {
@@ -189,12 +204,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       return;
     }
 
-    onBulkDelete(selectedLeads);
-    setSelectedLeads([]);
-    toast({
-      title: "Leads deleted",
-      description: `Deleted ${selectedLeads.length} leads`,
-    });
+    if (onBulkDelete) {
+      onBulkDelete(selectedLeads);
+      setSelectedLeads([]);
+      toast({
+        title: "Leads deleted",
+        description: `Deleted ${selectedLeads.length} leads`,
+      });
+    }
   };
 
   const copyToClipboard = (text: string, message: string) => {
@@ -307,11 +324,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <AppleTableHead>
                     <Button
                       variant="ghost"
-                      onClick={() => handleSort('name')}
+                      onClick={() => handleSort('firstName')}
                       className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
                     >
                       Name
-                      {sortField === 'name' && (
+                      {sortField === 'firstName' && (
                         sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
                       )}
                     </Button>
@@ -391,18 +408,21 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     </AppleTableCell>
                     <AppleTableCell>
                       <div className="flex items-center gap-3">
-                        <LeadDetailPopover lead={lead} categories={categories} />
-                        <div>
-                          <div className="font-medium">
-                            {lead.firstName} {lead.lastName}
-                          </div>
-                          {lead.phone && (
-                            <div className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Phone className="h-3 w-3" />
-                              {lead.phone}
+                        <LeadDetailPopover lead={lead} categories={categories}>
+                          <Button variant="ghost" className="h-auto p-0 text-left">
+                            <div>
+                              <div className="font-medium">
+                                {lead.firstName} {lead.lastName}
+                              </div>
+                              {lead.phone && (
+                                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                  <Phone className="h-3 w-3" />
+                                  {lead.phone}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
+                          </Button>
+                        </LeadDetailPopover>
                       </div>
                     </AppleTableCell>
                     <AppleTableCell>
@@ -452,13 +472,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                               </DropdownMenuItem>
                             </LeadRemarksDialog>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => onDeleteLead(lead.id)}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
+                            {onDeleteLead && (
+                              <DropdownMenuItem
+                                onClick={() => onDeleteLead(lead.id)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>

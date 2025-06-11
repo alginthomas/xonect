@@ -302,6 +302,89 @@ const Index = () => {
     }
   };
 
+  const handleDeleteLead = async (leadId: string) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
+      toast({
+        title: 'Lead deleted',
+        description: 'Lead has been successfully deleted.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting lead',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkUpdateStatus = async (leadIds: string[], status: 'New' | 'Contacted' | 'Qualified' | 'Unqualified') => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .update({ status })
+        .in('id', leadIds);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setLeads(prevLeads =>
+        prevLeads.map(lead =>
+          leadIds.includes(lead.id) ? { ...lead, status } : lead
+        )
+      );
+    } catch (error: any) {
+      toast({
+        title: 'Error updating leads',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleBulkDelete = async (leadIds: string[]) => {
+    try {
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .in('id', leadIds);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      setLeads(prevLeads => prevLeads.filter(lead => !leadIds.includes(lead.id)));
+    } catch (error: any) {
+      toast({
+        title: 'Error deleting leads',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleSendEmail = async (leadId: string) => {
+    // Update the lead to track email sent
+    const lead = leads.find(l => l.id === leadId);
+    if (lead) {
+      handleUpdateLead(leadId, { 
+        emailsSent: lead.emailsSent + 1,
+        lastContactDate: new Date(),
+        status: 'Contacted'
+      });
+    }
+  };
+
   const handleImportComplete = () => {
     fetchLeads();
     fetchImportBatches();
@@ -493,6 +576,10 @@ const Index = () => {
               importBatches={importBatches}
               branding={branding}
               onUpdateLead={handleUpdateLead}
+              onDeleteLead={handleDeleteLead}
+              onBulkUpdateStatus={handleBulkUpdateStatus}
+              onBulkDelete={handleBulkDelete}
+              onSendEmail={handleSendEmail}
               selectedBatchId={selectedBatchId}
             />
           </TabsContent>
@@ -513,6 +600,10 @@ const Index = () => {
                   importBatches={importBatches}
                   branding={branding}
                   onUpdateLead={handleUpdateLead}
+                  onDeleteLead={handleDeleteLead}
+                  onBulkUpdateStatus={handleBulkUpdateStatus}
+                  onBulkDelete={handleBulkDelete}
+                  onSendEmail={handleSendEmail}
                   selectedBatchId={selectedBatchId}
                 />
               </CardContent>
