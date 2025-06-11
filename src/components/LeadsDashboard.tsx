@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -121,7 +120,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
         } else {
-          // For non-string comparisons (e.g., dates)
           if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
           if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
           return 0;
