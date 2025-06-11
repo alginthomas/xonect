@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -388,8 +389,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const allCurrentPageSelected = paginatedLeads.length > 0 && paginatedLeads.every(lead => selectedLeads.includes(lead.id));
   const someCurrentPageSelected = paginatedLeads.some(lead => selectedLeads.includes(lead.id)) && !allCurrentPageSelected;
 
-  // Create a ref for the checkbox to handle indeterminate state
-  const selectAllCheckboxRef = useRef<HTMLButtonElement>(null);
+  // Create a ref for the checkbox to handle indeterminate state - Fixed type
+  const selectAllCheckboxRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (selectAllCheckboxRef.current) {

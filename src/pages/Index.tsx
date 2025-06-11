@@ -373,15 +373,23 @@ const Index = () => {
     }
   };
 
-  const handleSendEmail = async (leadId: string) => {
-    // Update the lead to track email sent
-    const lead = leads.find(l => l.id === leadId);
-    if (lead) {
-      handleUpdateLead(leadId, { 
-        emailsSent: lead.emailsSent + 1,
-        lastContactDate: new Date(),
-        status: 'Contacted'
+  const handleSendEmail = async (leadIds: string[], templateId: string) => {
+    try {
+      await sendEmailToLeads(leadIds, templateId, leads, templates);
+      
+      // Update the leads to track email sent
+      leadIds.forEach(leadId => {
+        const lead = leads.find(l => l.id === leadId);
+        if (lead) {
+          handleUpdateLead(leadId, { 
+            emailsSent: lead.emailsSent + 1,
+            lastContactDate: new Date(),
+            status: 'Contacted'
+          });
+        }
       });
+    } catch (error: any) {
+      throw error; // Re-throw to let LeadsDashboard handle the error display
     }
   };
 
@@ -689,3 +697,11 @@ const Index = () => {
 };
 
 export default Index;
+
+// Function to send email to leads
+const sendEmailToLeads = async (leadIds: string[], templateId: string, leads: Lead[], templates: EmailTemplate[]) => {
+  // Implement your email sending logic here
+  // For example, you can use a third-party email service or a custom email sending function
+  // This function should return a promise that resolves when the email is sent
+  // If the email sending fails, you can throw an error to let LeadsDashboard handle the error display
+};
