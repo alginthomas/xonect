@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,15 @@ import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableHead, AppleTabl
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { EmailDialog } from '@/components/EmailDialog';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 import {
   Search,
   Download,
@@ -45,6 +55,9 @@ import {
   Eye,
   Edit,
   Save,
+  Filter,
+  ChevronLeft,
+  ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -63,7 +76,9 @@ const CACHE_KEYS = {
   SELECTED_LEADS: 'leadsDashboard_selectedLeads',
   EXPANDED_ROWS: 'leadsDashboard_expandedRows',
   SELECTED_LEAD_PANEL: 'leadsDashboard_selectedLeadPanel',
-  IS_PANEL_OPEN: 'leadsDashboard_isPanelOpen'
+  IS_PANEL_OPEN: 'leadsDashboard_isPanelOpen',
+  HAS_PHONE_FILTER: 'leadsDashboard_hasPhoneFilter',
+  HAS_EMAIL_FILTER: 'leadsDashboard_hasEmailFilter',
 };
 
 // Helper functions for localStorage
@@ -141,6 +156,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 10));
   const [sortField, setSortField] = useState<keyof Lead | null>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
+  const [hasPhoneFilter, setHasPhoneFilter] = useState(() => loadFromCache(CACHE_KEYS.HAS_PHONE_FILTER, false));
+  const [hasEmailFilter, setHasEmailFilter] = useState(() => loadFromCache(CACHE_KEYS.HAS_EMAIL_FILTER, false));
   const { toast } = useToast();
 
   // Auto-save states to cache whenever they change
@@ -183,6 +200,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   useEffect(() => {
     saveToCache(CACHE_KEYS.SORT_DIRECTION, sortDirection);
   }, [sortDirection]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.HAS_PHONE_FILTER, hasPhoneFilter);
+  }, [hasPhoneFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.HAS_EMAIL_FILTER, hasEmailFilter);
+  }, [hasEmailFilter]);
 
   // Update selectedLeadForPanel when leads change (after data refresh)
   useEffect(() => {
@@ -333,8 +358,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
       const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
       const matchesCategory = categoryFilter === 'all' || lead.categoryId === categoryFilter;
+      
+      // Add phone and email filters
+      const matchesPhone = !hasPhoneFilter || (lead.phone && lead.phone.trim() !== '');
+      const matchesEmail = !hasEmailFilter || (lead.email && lead.email.trim() !== '');
 
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch && matchesStatus && matchesCategory && matchesPhone && matchesEmail;
     });
 
     if (sortField) {
@@ -353,7 +382,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
 
     return filteredLeads;
-  }, [leads, searchQuery, statusFilter, categoryFilter, sortField, sortDirection]);
+  }, [leads, searchQuery, statusFilter, categoryFilter, sortField, sortDirection, hasPhoneFilter, hasEmailFilter]);
 
   const totalItems = sortedAndFilteredLeads.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -464,16 +493,58 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setItemsPerPage(10);
     setSortField('createdAt');
     setSortDirection('desc');
+    setHasPhoneFilter(false);
+    setHasEmailFilter(false);
     toast({
       title: "Cache cleared",
       description: "All filters and selections have been reset",
     });
   };
 
+  // Check if all current page leads are selected
+  const allCurrentPageSelected = currentPageLeads.length > 0 && currentPageLeads.every(lead => selectedLeads.includes(lead.id));
+  const someCurrentPageSelected = currentPageLeads.some(lead => selectedLeads.includes(lead.id));
+
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    const items = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        items.push(i);
+      }
+    } else {
+      if (page <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          items.push(i);
+        }
+        items.push('...');
+        items.push(totalPages);
+      } else if (page >= totalPages - 2) {
+        items.push(1);
+        items.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          items.push(i);
+        }
+      } else {
+        items.push(1);
+        items.push('...');
+        for (let i = page - 1; i <= page + 1; i++) {
+          items.push(i);
+        }
+        items.push('...');
+        items.push(totalPages);
+      }
+    }
+    
+    return items;
+  };
+
   return (
     <div className="space-y-6">
       {/* Search and Filter Controls */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Input
           type="search"
           placeholder="Search leads..."
@@ -512,37 +583,93 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             ))}
           </SelectContent>
         </Select>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="justify-between">
+              <Filter className="h-4 w-4 mr-2" />
+              Data Filters
+              {(hasPhoneFilter || hasEmailFilter) && (
+                <Badge variant="secondary" className="ml-2">
+                  {[hasPhoneFilter && 'Phone', hasEmailFilter && 'Email'].filter(Boolean).length}
+                </Badge>
+              )}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel>Data Availability</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setHasPhoneFilter(!hasPhoneFilter)}>
+              <div className="flex items-center space-x-2">
+                <Checkbox checked={hasPhoneFilter} />
+                <Phone className="h-4 w-4" />
+                <span>Has Phone Number</span>
+              </div>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setHasEmailFilter(!hasEmailFilter)}>
+              <div className="flex items-center space-x-2">
+                <Checkbox checked={hasEmailFilter} />
+                <Mail className="h-4 w-4" />
+                <span>Has Email Address</span>
+              </div>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Bulk Actions */}
-      {selectedLeads.length > 0 && (
+      {/* Bulk Actions and Controls */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Select onValueChange={(value: LeadStatus) => handleBulkStatusUpdate(value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Update Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="New">New</SelectItem>
-              <SelectItem value="Contacted">Contacted</SelectItem>
-              <SelectItem value="Opened">Opened</SelectItem>
-              <SelectItem value="Clicked">Clicked</SelectItem>
-              <SelectItem value="Replied">Replied</SelectItem>
-              <SelectItem value="Qualified">Qualified</SelectItem>
-              <SelectItem value="Unqualified">Unqualified</SelectItem>
-              <SelectItem value="Call Back">Call Back</SelectItem>
-              <SelectItem value="Unresponsive">Unresponsive</SelectItem>
-              <SelectItem value="Not Interested">Not Interested</SelectItem>
-              <SelectItem value="Interested">Interested</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
-            Delete ({selectedLeads.length})
-          </Button>
-          <Button variant="outline" size="sm" onClick={clearCache} className="ml-auto">
+          {selectedLeads.length > 0 && (
+            <>
+              <Select onValueChange={(value: LeadStatus) => handleBulkStatusUpdate(value)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Update Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="New">New</SelectItem>
+                  <SelectItem value="Contacted">Contacted</SelectItem>
+                  <SelectItem value="Opened">Opened</SelectItem>
+                  <SelectItem value="Clicked">Clicked</SelectItem>
+                  <SelectItem value="Replied">Replied</SelectItem>
+                  <SelectItem value="Qualified">Qualified</SelectItem>
+                  <SelectItem value="Unqualified">Unqualified</SelectItem>
+                  <SelectItem value="Call Back">Call Back</SelectItem>
+                  <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                  <SelectItem value="Not Interested">Not Interested</SelectItem>
+                  <SelectItem value="Interested">Interested</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
+                Delete ({selectedLeads.length})
+              </Button>
+            </>
+          )}
+          <Button variant="outline" size="sm" onClick={clearCache}>
             Clear Filters
           </Button>
         </div>
-      )}
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Items per page:</span>
+          <Select value={itemsPerPage.toString()} onValueChange={(value) => {
+            setItemsPerPage(parseInt(value));
+            setPage(1); // Reset to first page when changing items per page
+          }}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="25">25</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+              <SelectItem value="500">500</SelectItem>
+              <SelectItem value={totalItems.toString()}>All ({totalItems})</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       <Card>
         <CardHeader>
@@ -574,7 +701,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No leads found</h3>
               <p>
-                {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all'
+                {searchQuery || statusFilter !== 'all' || categoryFilter !== 'all' || hasPhoneFilter || hasEmailFilter
                   ? 'Try adjusting your filters to see more results.'
                   : 'Import some leads to get started.'}
               </p>
@@ -585,7 +712,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <AppleTableRow>
                   <AppleTableHead className="w-12">
                     <Checkbox
-                      checked={selectedLeads.length === sortedAndFilteredLeads.length && sortedAndFilteredLeads.length > 0}
+                      checked={allCurrentPageSelected}
+                      indeterminate={someCurrentPageSelected && !allCurrentPageSelected}
                       onCheckedChange={handleSelectAll}
                     />
                   </AppleTableHead>
@@ -644,7 +772,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       onClick={() => handleSort('email')}
                       className="h-auto p-0 font-semibold text-xs uppercase tracking-wider"
                     >
-                      Email
+                      Contact
                       {sortField === 'email' && (
                         sortDirection === 'asc' ? <ChevronUp className="ml-1 h-3 w-3" /> : <ChevronDown className="ml-1 h-3 w-3" />
                       )}
@@ -686,12 +814,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                             <div className="font-medium">
                               {lead.firstName} {lead.lastName}
                             </div>
-                            {lead.phone && (
-                              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                                <Phone className="h-3 w-3" />
-                                {lead.phone}
-                              </div>
-                            )}
                           </div>
                         </Button>
                       </div>
@@ -823,8 +945,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     </AppleTableCell>
                     <AppleTableCell>
                       <div className="font-medium">{lead.email}</div>
-                      {lead.personalEmail && (
-                        <div className="text-sm text-muted-foreground">{lead.personalEmail}</div>
+                      {lead.phone && (
+                        <div className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          {lead.phone}
+                        </div>
                       )}
                     </AppleTableCell>
                     <AppleTableCell>
@@ -850,30 +975,57 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             </AppleTable>
           )}
 
-          {/* Pagination */}
-          {sortedAndFilteredLeads.length > 0 && (
-            <div className="flex justify-between items-center mt-4">
+          {/* Enhanced Pagination */}
+          {sortedAndFilteredLeads.length > 0 && totalPages > 1 && (
+            <div className="flex justify-between items-center mt-6">
               <div className="text-sm text-muted-foreground">
-                Showing {currentPageLeads.length} of {totalItems} leads
+                Showing {((page - 1) * itemsPerPage) + 1} to {Math.min(page * itemsPerPage, totalItems)} of {totalItems} leads
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === 1}
-                  onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page === totalPages}
-                  onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
-                >
-                  Next
-                </Button>
-              </div>
+              
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (page > 1) setPage(page - 1);
+                      }}
+                      className={page === 1 ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                  
+                  {generatePaginationItems().map((item, index) => (
+                    <PaginationItem key={index}>
+                      {item === '...' ? (
+                        <PaginationEllipsis />
+                      ) : (
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(item as number);
+                          }}
+                          isActive={page === item}
+                        >
+                          {item}
+                        </PaginationLink>
+                      )}
+                    </PaginationItem>
+                  ))}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (page < totalPages) setPage(page + 1);
+                      }}
+                      className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </CardContent>
@@ -1081,13 +1233,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         </Button>
                       </div>
                     )}
-
-                    {selectedLeadForPanel.organizationAddress && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Address</label>
-                        <p className="font-medium">{selectedLeadForPanel.organizationAddress}</p>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
 
@@ -1190,20 +1335,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         ) : (
                           <p className="text-sm text-muted-foreground italic">No remarks added yet</p>
                         )}
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.headline && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Headline</label>
-                        <p className="font-medium">{selectedLeadForPanel.headline}</p>
-                      </div>
-                    )}
-
-                    {selectedLeadForPanel.keywords && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Keywords</label>
-                        <p className="font-medium">{selectedLeadForPanel.keywords}</p>
                       </div>
                     )}
 
