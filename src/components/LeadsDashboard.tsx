@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +52,39 @@ import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
+// Cache keys for localStorage
+const CACHE_KEYS = {
+  SEARCH_QUERY: 'leadsDashboard_searchQuery',
+  STATUS_FILTER: 'leadsDashboard_statusFilter',
+  CATEGORY_FILTER: 'leadsDashboard_categoryFilter',
+  ITEMS_PER_PAGE: 'leadsDashboard_itemsPerPage',
+  SORT_FIELD: 'leadsDashboard_sortField',
+  SORT_DIRECTION: 'leadsDashboard_sortDirection',
+  SELECTED_LEADS: 'leadsDashboard_selectedLeads',
+  EXPANDED_ROWS: 'leadsDashboard_expandedRows',
+  SELECTED_LEAD_PANEL: 'leadsDashboard_selectedLeadPanel',
+  IS_PANEL_OPEN: 'leadsDashboard_isPanelOpen'
+};
+
+// Helper functions for localStorage
+const saveToCache = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn('Failed to save to cache:', error);
+  }
+};
+
+const loadFromCache = (key: string, defaultValue: any) => {
+  try {
+    const cached = localStorage.getItem(key);
+    return cached ? JSON.parse(cached) : defaultValue;
+  } catch (error) {
+    console.warn('Failed to load from cache:', error);
+    return defaultValue;
+  }
+};
+
 interface BrandingData {
   companyName: string;
   companyLogo: string;
@@ -88,23 +121,90 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   onBulkDelete,
   onSendEmail,
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
-  const [selectedLeadForPanel, setSelectedLeadForPanel] = useState<Lead | null>(null);
+  // Initialize state with cached values
+  const [searchQuery, setSearchQuery] = useState(() => loadFromCache(CACHE_KEYS.SEARCH_QUERY, ''));
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>(() => loadFromCache(CACHE_KEYS.STATUS_FILTER, 'all'));
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.CATEGORY_FILTER, 'all'));
+  const [selectedLeads, setSelectedLeads] = useState<string[]>(() => loadFromCache(CACHE_KEYS.SELECTED_LEADS, []));
+  const [expandedRows, setExpandedRows] = useState<string[]>(() => loadFromCache(CACHE_KEYS.EXPANDED_ROWS, []));
+  const [selectedLeadForPanel, setSelectedLeadForPanel] = useState<Lead | null>(() => {
+    const cachedLeadId = loadFromCache(CACHE_KEYS.SELECTED_LEAD_PANEL, null);
+    if (cachedLeadId && leads.length > 0) {
+      return leads.find(lead => lead.id === cachedLeadId) || null;
+    }
+    return null;
+  });
   const [editingRemarks, setEditingRemarks] = useState(false);
   const [remarksText, setRemarksText] = useState('');
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(() => loadFromCache(CACHE_KEYS.IS_PANEL_OPEN, false));
   const [page, setPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [sortField, setSortField] = useState<keyof Lead | null>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 10));
+  const [sortField, setSortField] = useState<keyof Lead | null>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
   const { toast } = useToast();
+
+  // Auto-save states to cache whenever they change
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SEARCH_QUERY, searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.STATUS_FILTER, statusFilter);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.CATEGORY_FILTER, categoryFilter);
+  }, [categoryFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SELECTED_LEADS, selectedLeads);
+  }, [selectedLeads]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.EXPANDED_ROWS, expandedRows);
+  }, [expandedRows]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SELECTED_LEAD_PANEL, selectedLeadForPanel?.id || null);
+  }, [selectedLeadForPanel]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.IS_PANEL_OPEN, isPanelOpen);
+  }, [isPanelOpen]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.ITEMS_PER_PAGE, itemsPerPage);
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SORT_FIELD, sortField);
+  }, [sortField]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SORT_DIRECTION, sortDirection);
+  }, [sortDirection]);
+
+  // Update selectedLeadForPanel when leads change (after data refresh)
+  useEffect(() => {
+    if (selectedLeadForPanel && leads.length > 0) {
+      const updatedLead = leads.find(lead => lead.id === selectedLeadForPanel.id);
+      if (updatedLead) {
+        setSelectedLeadForPanel(updatedLead);
+      }
+    }
+  }, [leads, selectedLeadForPanel?.id]);
 
   const handleSort = (field: keyof Lead) => {
     setSortField(field);
     setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+  };
+
+  const toggleRowExpansion = (leadId: string) => {
+    setExpandedRows(prev => 
+      prev.includes(leadId) 
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    );
   };
 
   const openLeadPanel = (lead: Lead) => {
@@ -342,6 +442,34 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     toast({ description: message });
   };
 
+  const handleViewWebsite = (website: string) => {
+    const url = website.startsWith('http') ? website : `https://${website}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Clear cache function (optional - can be called when needed)
+  const clearCache = () => {
+    Object.values(CACHE_KEYS).forEach(key => {
+      localStorage.removeItem(key);
+    });
+    // Reset states to defaults
+    setSearchQuery('');
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setSelectedLeads([]);
+    setExpandedRows([]);
+    setSelectedLeadForPanel(null);
+    setIsPanelOpen(false);
+    setPage(1);
+    setItemsPerPage(10);
+    setSortField('createdAt');
+    setSortDirection('desc');
+    toast({
+      title: "Cache cleared",
+      description: "All filters and selections have been reset",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Search and Filter Controls */}
@@ -409,6 +537,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           </Select>
           <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
             Delete ({selectedLeads.length})
+          </Button>
+          <Button variant="outline" size="sm" onClick={clearCache} className="ml-auto">
+            Clear Filters
           </Button>
         </div>
       )}
@@ -942,9 +1073,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => window.open(selectedLeadForPanel.organizationWebsite?.startsWith('http') 
-                            ? selectedLeadForPanel.organizationWebsite 
-                            : `https://${selectedLeadForPanel.organizationWebsite}`, '_blank')}
+                          onClick={() => handleViewWebsite(selectedLeadForPanel.organizationWebsite)}
                           className="flex items-center gap-2"
                         >
                           <Globe className="h-4 w-4" />
