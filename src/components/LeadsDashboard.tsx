@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,7 +60,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DateRange } from "react-day-picker"
 import { sendEmailToLeads } from '@/utils/emailSender';
-import { LeadDetailPopover } from '@/components/LeadDetailPopover';
+import { LeadDetailSheet } from '@/components/LeadDetailSheet';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
 import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { BulkStatusUpdater } from '@/components/BulkStatusUpdater';
@@ -156,6 +154,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(() => {
     return localStorage.getItem('leadsDashboard_isBulkStatusOpen') === 'true';
   });
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [isLeadSheetOpen, setIsLeadSheetOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(() => {
@@ -305,6 +305,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     return sortedLeads.slice(startIndex, endIndex);
   }, [sortedLeads, currentPage, itemsPerPage]);
 
+  // Add numbering to leads based on current pagination
+  const paginatedLeadsWithNumbers = useMemo(() => {
+    return paginatedLeads.map((lead, index) => ({
+      ...lead,
+      displayNumber: (currentPage - 1) * itemsPerPage + index + 1
+    }));
+  }, [paginatedLeads, currentPage, itemsPerPage]);
+
   const handleSelectAll = () => {
     const currentPageLeadIds = paginatedLeads.map(lead => lead.id);
     const allCurrentPageSelected = currentPageLeadIds.every(id => selectedLeads.includes(id));
@@ -401,6 +409,16 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       title: 'Leads deleted',
       description: `Selected leads have been deleted.`,
     });
+  };
+
+  const handleLeadClick = (lead: Lead) => {
+    setSelectedLead(lead);
+    setIsLeadSheetOpen(true);
+  };
+
+  const handleCloseLeadSheet = () => {
+    setIsLeadSheetOpen(false);
+    setSelectedLead(null);
   };
 
   const getCategoryName = (categoryId?: string) => {
@@ -610,6 +628,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         onCheckedChange={handleSelectAll}
                       />
                     </TableHead>
+                    <TableHead className="w-16">#</TableHead>
                     <TableHead 
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('firstName')}
@@ -632,6 +651,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         )}
                       </div>
                     </TableHead>
+                    <TableHead>Phone</TableHead>
                     <TableHead 
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleSort('company')}
@@ -669,7 +689,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginatedLeads.map((lead) => (
+                  {paginatedLeadsWithNumbers.map((lead) => (
                     <TableRow key={lead.id}>
                       <TableCell className="font-medium">
                         <Checkbox
@@ -677,17 +697,22 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           onCheckedChange={() => handleSelectLead(lead.id)}
                         />
                       </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {lead.displayNumber}
+                      </TableCell>
                       <TableCell className="font-medium">
-                        <LeadDetailPopover lead={lead} categories={categories}>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            {lead.firstName} {lead.lastName}
-                          </div>
-                        </LeadDetailPopover>
+                        <div 
+                          className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded p-1 -m-1"
+                          onClick={() => handleLeadClick(lead)}
+                        >
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback>{lead.firstName.charAt(0)}{lead.lastName.charAt(0)}</AvatarFallback>
+                          </Avatar>
+                          {lead.firstName} {lead.lastName}
+                        </div>
                       </TableCell>
                       <TableCell>{lead.email}</TableCell>
+                      <TableCell>{lead.phone || '-'}</TableCell>
                       <TableCell>{lead.company}</TableCell>
                       <TableCell>{lead.title}</TableCell>
                       <TableCell>
@@ -819,9 +844,16 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         leadIds={selectedLeads}
         onUpdateStatus={onBulkUpdateStatus}
       />
+
+      {/* Lead Detail Sheet */}
+      <LeadDetailSheet
+        lead={selectedLead}
+        categories={categories}
+        isOpen={isLeadSheetOpen}
+        onClose={handleCloseLeadSheet}
+      />
     </div>
   );
 };
 
 export default LeadsDashboard;
-
