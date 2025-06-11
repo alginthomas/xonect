@@ -144,18 +144,12 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
 
   // Check if there's a website URL and ensure it's properly formatted
   const hasWebsite = lead.organizationWebsite && lead.organizationWebsite.trim() !== '';
-  console.log('Lead website check:', {
-    leadName: `${lead.firstName} ${lead.lastName}`,
-    organizationWebsite: lead.organizationWebsite,
-    hasWebsite: hasWebsite
-  });
 
   const handleViewWebsite = () => {
     if (hasWebsite) {
       const url = lead.organizationWebsite!.startsWith('http') 
         ? lead.organizationWebsite 
         : `https://${lead.organizationWebsite}`;
-      console.log('Opening website URL:', url);
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
@@ -181,19 +175,18 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
       </PopoverTrigger>
       <PopoverContent 
         className={`
-          ${isMobile ? 'w-[95vw] max-w-[95vw]' : 'w-[450px] max-w-[450px]'}
+          ${isMobile ? 'w-[100vw] max-w-[100vw] h-[90vh] mx-0' : 'w-[500px] max-w-[500px] max-h-[90vh]'}
           p-0 
-          max-h-[85vh] 
           overflow-hidden
         `}
         align={isMobile ? "center" : "start"}
         side={isMobile ? "top" : "bottom"}
-        sideOffset={5}
+        sideOffset={isMobile ? 0 : 5}
         avoidCollisions={true}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <ScrollArea className="h-full max-h-[85vh]">
-          <div className={`${isMobile ? 'p-4' : 'p-6'} space-y-4`}>
+        <ScrollArea className="h-full">
+          <div className={`${isMobile ? 'p-3' : 'p-6'} space-y-${isMobile ? '3' : '4'}`}>
             {/* Header with Avatar and Basic Info */}
             <div className="flex items-start gap-3">
               <Avatar className={`${isMobile ? 'h-10 w-10' : 'h-12 w-12'} shrink-0`}>
@@ -204,10 +197,10 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               </Avatar>
               <div className="flex-1 space-y-2 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'} leading-tight`}>
+                  <h3 className={`font-semibold ${isMobile ? 'text-sm' : 'text-lg'} leading-tight break-words`}>
                     {lead.firstName} {lead.lastName}
                   </h3>
-                  <div className={`${isMobile ? 'w-6' : 'w-8'} h-2 bg-muted rounded-full overflow-hidden shrink-0`}>
+                  <div className={`${isMobile ? 'w-5' : 'w-8'} h-2 bg-muted rounded-full overflow-hidden shrink-0`}>
                     <div 
                       className="h-full bg-primary transition-all"
                       style={{ width: `${lead.completenessScore}%` }}
@@ -220,7 +213,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   <span className="truncate">{lead.title}</span>
                 </div>
                 
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   <Badge className={`${getStatusColor(lead.status)} text-xs`}>
                     {lead.status}
                   </Badge>
@@ -234,13 +227,13 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
             <Separator />
 
             {/* Contact Information */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                 <User className="h-4 w-4" />
                 Contact Details
               </h4>
               
-              <div className={`grid grid-cols-1 gap-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+              <div className={`space-y-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
                   <span className="truncate break-all">{lead.email}</span>
@@ -269,7 +262,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               </div>
 
               {/* Social Links */}
-              <div className="flex gap-2">
+              <div className="flex gap-2 pt-1">
                 {lead.linkedin && (
                   <a 
                     href={lead.linkedin} 
@@ -306,7 +299,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
             <Separator />
 
             {/* Company Information with Website Button */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                   <Building className="h-4 w-4" />
@@ -317,7 +310,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                     size="sm"
                     variant="outline"
                     onClick={handleViewWebsite}
-                    className={`flex items-center gap-1 ${isMobile ? 'text-xs px-2 py-1' : 'text-sm px-3 py-2'} h-auto shrink-0`}
+                    className={`flex items-center gap-1 ${isMobile ? 'text-xs px-2 py-1 h-6' : 'text-sm px-3 py-2 h-8'} shrink-0`}
                   >
                     <Globe className="h-3 w-3" />
                     <span>{isMobile ? 'Visit' : 'Visit Website'}</span>
@@ -325,9 +318,9 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 )}
               </div>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-medium truncate">{lead.company}</span>
+                  <span className={`font-medium truncate ${isMobile ? 'text-sm' : 'text-base'}`}>{lead.company}</span>
                   {hasWebsite && (
                     <a 
                       href={lead.organizationWebsite!.startsWith('http') 
@@ -342,7 +335,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   )}
                 </div>
                 
-                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                <div className={`grid ${isMobile ? 'grid-cols-1 gap-1' : 'grid-cols-2 gap-2'} ${isMobile ? 'text-xs' : 'text-sm'}`}>
                   <div className="flex items-center gap-1">
                     <Users className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span className="text-xs truncate">{lead.companySize}</span>
@@ -379,13 +372,13 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
             <Separator />
 
             {/* Purchase Likelihood & Suggestions */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <h4 className={`font-medium flex items-center gap-2 ${isMobile ? 'text-sm' : 'text-base'}`}>
                 <Target className="h-4 w-4" />
                 Sales Intelligence
               </h4>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className={isMobile ? 'text-xs' : 'text-sm'}>Purchase Likelihood</span>
                   <span className={`font-semibold text-sm ${getLikelihoodColor(purchaseLikelihood)}`}>
@@ -405,7 +398,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <span className={`${isMobile ? 'text-xs' : 'text-sm'} font-medium`}>Suggested Products:</span>
                 <div className="flex flex-wrap gap-1">
                   {suggestedProducts.map((product, index) => (
@@ -420,9 +413,9 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
             <Separator />
 
             {/* Engagement History & Category */}
-            <div className="space-y-3">
-              <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-4 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                <div className="space-y-2">
+            <div className="space-y-2">
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-2' : 'grid-cols-2 gap-4'} ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span>Emails Sent: {lead.emailsSent}</span>
@@ -435,7 +428,7 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
                   )}
                 </div>
                 
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full shrink-0" 
@@ -450,20 +443,20 @@ export const LeadDetailPopover: React.FC<LeadDetailPopoverProps> = ({
               </div>
               
               {lead.tags && lead.tags.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-1">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Tag className="h-3 w-3 shrink-0" />
                     <span>Tags:</span>
                   </div>
                   <div className="flex flex-wrap gap-1">
-                    {lead.tags.slice(0, isMobile ? 3 : 4).map(tag => (
+                    {lead.tags.slice(0, isMobile ? 2 : 4).map(tag => (
                       <Badge key={tag} variant="outline" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
-                    {lead.tags.length > (isMobile ? 3 : 4) && (
+                    {lead.tags.length > (isMobile ? 2 : 4) && (
                       <Badge variant="outline" className="text-xs">
-                        +{lead.tags.length - (isMobile ? 3 : 4)} more
+                        +{lead.tags.length - (isMobile ? 2 : 4)} more
                       </Badge>
                     )}
                   </div>
