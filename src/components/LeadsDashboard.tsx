@@ -34,10 +34,8 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
-import type { Lead, EmailTemplate } from '@/types/lead';
+import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
-
-type LeadStatus = "New" | "Contacted" | "Qualified" | "Unqualified";
 
 interface BrandingData {
   companyName: string;
@@ -94,6 +92,64 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     if (!categoryId || !categories || !Array.isArray(categories)) return 'Uncategorized';
     const category = categories.find(cat => cat.id === categoryId);
     return category?.name || 'Unknown Category';
+  };
+
+  const getStatusBadgeVariant = (status: LeadStatus) => {
+    switch (status) {
+      case 'New':
+        return 'secondary';
+      case 'Contacted':
+        return 'default';
+      case 'Opened':
+        return 'outline';
+      case 'Clicked':
+        return 'outline';
+      case 'Replied':
+        return 'default';
+      case 'Qualified':
+        return 'default';
+      case 'Unqualified':
+        return 'destructive';
+      case 'Call Back':
+        return 'outline';
+      case 'Unresponsive':
+        return 'secondary';
+      case 'Not Interested':
+        return 'destructive';
+      case 'Interested':
+        return 'default';
+      default:
+        return 'secondary';
+    }
+  };
+
+  const getStatusBadgeColor = (status: LeadStatus) => {
+    switch (status) {
+      case 'New':
+        return 'bg-blue-100 text-blue-800';
+      case 'Contacted':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Opened':
+        return 'bg-green-100 text-green-800';
+      case 'Clicked':
+        return 'bg-purple-100 text-purple-800';
+      case 'Replied':
+        return 'bg-emerald-100 text-emerald-800';
+      case 'Qualified':
+        return 'bg-green-500 text-white';
+      case 'Unqualified':
+        return 'bg-red-500 text-white';
+      case 'Call Back':
+        return 'bg-orange-100 text-orange-800';
+      case 'Unresponsive':
+        return 'bg-gray-100 text-gray-800';
+      case 'Not Interested':
+        return 'bg-red-100 text-red-800';
+      case 'Interested':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   const sortedAndFilteredLeads = useMemo(() => {
@@ -236,8 +292,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="New">New</SelectItem>
             <SelectItem value="Contacted">Contacted</SelectItem>
+            <SelectItem value="Opened">Opened</SelectItem>
+            <SelectItem value="Clicked">Clicked</SelectItem>
+            <SelectItem value="Replied">Replied</SelectItem>
             <SelectItem value="Qualified">Qualified</SelectItem>
             <SelectItem value="Unqualified">Unqualified</SelectItem>
+            <SelectItem value="Call Back">Call Back</SelectItem>
+            <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+            <SelectItem value="Not Interested">Not Interested</SelectItem>
+            <SelectItem value="Interested">Interested</SelectItem>
           </SelectContent>
         </Select>
 
@@ -264,8 +327,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <SelectContent>
               <SelectItem value="New">New</SelectItem>
               <SelectItem value="Contacted">Contacted</SelectItem>
+              <SelectItem value="Opened">Opened</SelectItem>
+              <SelectItem value="Clicked">Clicked</SelectItem>
+              <SelectItem value="Replied">Replied</SelectItem>
               <SelectItem value="Qualified">Qualified</SelectItem>
               <SelectItem value="Unqualified">Unqualified</SelectItem>
+              <SelectItem value="Call Back">Call Back</SelectItem>
+              <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+              <SelectItem value="Not Interested">Not Interested</SelectItem>
+              <SelectItem value="Interested">Interested</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="destructive" size="sm" onClick={handleBulkDelete}>
@@ -381,6 +451,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     </Button>
                   </AppleTableHead>
                   <AppleTableHead>Category</AppleTableHead>
+                  <AppleTableHead>Remarks</AppleTableHead>
                   <AppleTableHead>
                     <Button
                       variant="ghost"
@@ -506,27 +577,59 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         value={lead.status}
                         onValueChange={(newStatus: LeadStatus) => handleStatusChange(lead.id, newStatus)}
                       >
-                        <SelectTrigger className="w-32">
+                        <SelectTrigger className="w-36">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="New">
-                            <Badge variant="secondary">New</Badge>
+                            <Badge className={getStatusBadgeColor('New')}>New</Badge>
                           </SelectItem>
                           <SelectItem value="Contacted">
-                            <Badge variant="default">Contacted</Badge>
+                            <Badge className={getStatusBadgeColor('Contacted')}>Contacted</Badge>
+                          </SelectItem>
+                          <SelectItem value="Opened">
+                            <Badge className={getStatusBadgeColor('Opened')}>Opened</Badge>
+                          </SelectItem>
+                          <SelectItem value="Clicked">
+                            <Badge className={getStatusBadgeColor('Clicked')}>Clicked</Badge>
+                          </SelectItem>
+                          <SelectItem value="Replied">
+                            <Badge className={getStatusBadgeColor('Replied')}>Replied</Badge>
                           </SelectItem>
                           <SelectItem value="Qualified">
-                            <Badge variant="default" className="bg-blue-500">Qualified</Badge>
+                            <Badge className={getStatusBadgeColor('Qualified')}>Qualified</Badge>
                           </SelectItem>
                           <SelectItem value="Unqualified">
-                            <Badge variant="destructive">Unqualified</Badge>
+                            <Badge className={getStatusBadgeColor('Unqualified')}>Unqualified</Badge>
+                          </SelectItem>
+                          <SelectItem value="Call Back">
+                            <Badge className={getStatusBadgeColor('Call Back')}>Call Back</Badge>
+                          </SelectItem>
+                          <SelectItem value="Unresponsive">
+                            <Badge className={getStatusBadgeColor('Unresponsive')}>Unresponsive</Badge>
+                          </SelectItem>
+                          <SelectItem value="Not Interested">
+                            <Badge className={getStatusBadgeColor('Not Interested')}>Not Interested</Badge>
+                          </SelectItem>
+                          <SelectItem value="Interested">
+                            <Badge className={getStatusBadgeColor('Interested')}>Interested</Badge>
                           </SelectItem>
                         </SelectContent>
                       </Select>
                     </AppleTableCell>
                     <AppleTableCell>
                       {getCategoryName(lead.categoryId)}
+                    </AppleTableCell>
+                    <AppleTableCell>
+                      <div className="max-w-xs">
+                        {lead.remarks ? (
+                          <div className="text-sm text-muted-foreground truncate" title={lead.remarks}>
+                            {lead.remarks}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">No remarks</span>
+                        )}
+                      </div>
                     </AppleTableCell>
                     <AppleTableCell>
                       {format(new Date(lead.createdAt), 'MMM dd, yyyy')}
