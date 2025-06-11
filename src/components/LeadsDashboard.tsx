@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EmailDialog } from '@/components/EmailDialog';
 import { LeadDetailPopover } from '@/components/LeadDetailPopover';
 import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
+import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Search, Filter, Mail, Users, TrendingUp, Award, Eye, UserMinus, Download, MessageSquare, Package } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -308,6 +310,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <AppleTableHead>Department</AppleTableHead>
           <AppleTableHead>LinkedIn</AppleTableHead>
           <AppleTableHead>Organization Website</AppleTableHead>
+          <AppleTableHead>Remarks</AppleTableHead>
           <AppleTableHead>Actions</AppleTableHead>
         </AppleTableRow>
       </AppleTableHeader>
@@ -381,6 +384,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               ) : 'N/A'}
             </AppleTableCell>
             <AppleTableCell>
+              <div className="flex items-center gap-2 max-w-48">
+                {lead.remarks ? (
+                  <div className="text-xs text-muted-foreground truncate" title={lead.remarks}>
+                    {lead.remarks.length > 30 ? `${lead.remarks.substring(0, 30)}...` : lead.remarks}
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground/50">No remarks</span>
+                )}
+              </div>
+            </AppleTableCell>
+            <AppleTableCell>
               <div className="flex gap-1 justify-end">
                 <LeadDetailPopover 
                   lead={lead} 
@@ -390,6 +404,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     <Eye className="h-4 w-4" />
                   </Button>
                 </LeadDetailPopover>
+                <QuickRemarkEditor
+                  lead={lead}
+                  onUpdateRemarks={handleUpdateRemarks}
+                />
                 <LeadRemarksDialog
                   lead={lead}
                   onUpdateRemarks={handleUpdateRemarks}
