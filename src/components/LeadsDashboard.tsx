@@ -55,7 +55,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { format } from 'date-fns';
-import { CalendarIcon, ChevronDown, ChevronUp, Copy, Edit, Email, FileText, MoreVertical, Plus, Search, Trash2, Users } from 'lucide-react';
+import { CalendarIcon, ChevronDown, ChevronUp, Copy, Edit, Mail, FileText, MoreVertical, Plus, Search, Trash2, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DateRange } from "react-day-picker"
@@ -91,31 +91,110 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   isLoading = false
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<Lead['status'] | 'All'>('All');
-  const [selectedCategory, setSelectedCategory] = useState<string | 'All'>('All');
+  
+  // Load saved state from localStorage
+  const [searchQuery, setSearchQuery] = useState(() => {
+    return localStorage.getItem('leadsDashboard_searchQuery') || '';
+  });
+  const [selectedStatus, setSelectedStatus] = useState<Lead['status'] | 'All'>(() => {
+    return (localStorage.getItem('leadsDashboard_selectedStatus') as Lead['status'] | 'All') || 'All';
+  });
+  const [selectedCategory, setSelectedCategory] = useState<string | 'All'>(() => {
+    return localStorage.getItem('leadsDashboard_selectedCategory') || 'All';
+  });
   const [selectedLeads, setSelectedLeads] = useState<string[]>(() => {
     const storedLeads = localStorage.getItem('leadsDashboard_selectedLeads');
     return storedLeads ? JSON.parse(storedLeads) : [];
   });
-  const [sortField, setSortField] = useState<'firstName' | 'email' | 'company' | 'title' | 'status'>('firstName');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
-  const [isEmailDrawerOpen, setIsEmailDrawerOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [date, setDate] = useState<DateRange | undefined>(undefined);
-  const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(false);
+  const [sortField, setSortField] = useState<'firstName' | 'email' | 'company' | 'title' | 'status'>(() => {
+    return (localStorage.getItem('leadsDashboard_sortField') as 'firstName' | 'email' | 'company' | 'title' | 'status') || 'firstName';
+  });
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => {
+    return (localStorage.getItem('leadsDashboard_sortDirection') as 'asc' | 'desc') || 'asc';
+  });
+  const [currentPage, setCurrentPage] = useState(() => {
+    return parseInt(localStorage.getItem('leadsDashboard_currentPage') || '1');
+  });
+  const [itemsPerPage, setItemsPerPage] = useState(() => {
+    return parseInt(localStorage.getItem('leadsDashboard_itemsPerPage') || '25');
+  });
+  const [isEmailDrawerOpen, setIsEmailDrawerOpen] = useState(() => {
+    return localStorage.getItem('leadsDashboard_isEmailDrawerOpen') === 'true';
+  });
+  const [selectedTemplate, setSelectedTemplate] = useState(() => {
+    return localStorage.getItem('leadsDashboard_selectedTemplate') || '';
+  });
+  const [date, setDate] = useState<DateRange | undefined>(() => {
+    const storedDate = localStorage.getItem('leadsDashboard_dateRange');
+    return storedDate ? JSON.parse(storedDate) : undefined;
+  });
+  const [isBulkStatusOpen, setIsBulkStatusOpen] = useState(() => {
+    return localStorage.getItem('leadsDashboard_isBulkStatusOpen') === 'true';
+  });
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(() => {
+    return localStorage.getItem('leadsDashboard_isFilterOpen') === 'true';
+  });
+
+  // Save state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_searchQuery', searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_selectedStatus', selectedStatus);
+  }, [selectedStatus]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_selectedCategory', selectedCategory);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_sortField', sortField);
+  }, [sortField]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_sortDirection', sortDirection);
+  }, [sortDirection]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_currentPage', currentPage.toString());
+  }, [currentPage]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_itemsPerPage', itemsPerPage.toString());
+  }, [itemsPerPage]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_isEmailDrawerOpen', isEmailDrawerOpen.toString());
+  }, [isEmailDrawerOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_selectedTemplate', selectedTemplate);
+  }, [selectedTemplate]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_dateRange', JSON.stringify(date));
+  }, [date]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_isBulkStatusOpen', isBulkStatusOpen.toString());
+  }, [isBulkStatusOpen]);
+
+  useEffect(() => {
+    localStorage.setItem('leadsDashboard_isFilterOpen', isFilterOpen.toString());
+  }, [isFilterOpen]);
 
   useEffect(() => {
     const batchId = searchParams.get('batch');
     if (batchId) {
       setSelectedCategory(batchId);
     } else {
-      setSelectedCategory('All');
+      // Only reset if no batch param and current category is not 'All'
+      if (selectedCategory !== 'All') {
+        setSelectedCategory('All');
+      }
     }
   }, [searchParams]);
 
@@ -125,6 +204,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setSelectedCategory('All');
     setDate(undefined);
     setSearchParams({});
+    
+    // Clear from localStorage
+    localStorage.removeItem('leadsDashboard_searchQuery');
+    localStorage.removeItem('leadsDashboard_selectedStatus');
+    localStorage.removeItem('leadsDashboard_selectedCategory');
+    localStorage.removeItem('leadsDashboard_dateRange');
   };
 
   const filteredLeads = useMemo(() => {
@@ -199,17 +284,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const currentPageLeadIds = paginatedLeads.map(lead => lead.id);
     const allCurrentPageSelected = currentPageLeadIds.every(id => selectedLeads.includes(id));
     
+    let newSelectedLeads;
     if (allCurrentPageSelected) {
       // If all current page leads are selected, deselect them
-      const newSelectedLeads = selectedLeads.filter(id => !currentPageLeadIds.includes(id));
-      setSelectedLeads(newSelectedLeads);
-      localStorage.setItem('leadsDashboard_selectedLeads', JSON.stringify(newSelectedLeads));
+      newSelectedLeads = selectedLeads.filter(id => !currentPageLeadIds.includes(id));
     } else {
       // If not all are selected, select all current page leads
-      const newSelectedLeads = [...new Set([...selectedLeads, ...currentPageLeadIds])];
-      setSelectedLeads(newSelectedLeads);
-      localStorage.setItem('leadsDashboard_selectedLeads', JSON.stringify(newSelectedLeads));
+      newSelectedLeads = [...new Set([...selectedLeads, ...currentPageLeadIds])];
     }
+    
+    setSelectedLeads(newSelectedLeads);
+    localStorage.setItem('leadsDashboard_selectedLeads', JSON.stringify(newSelectedLeads));
   };
 
   const handleSelectLead = (leadId: string) => {
@@ -302,6 +387,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   // Update the checkbox state calculation
   const allCurrentPageSelected = paginatedLeads.length > 0 && paginatedLeads.every(lead => selectedLeads.includes(lead.id));
   const someCurrentPageSelected = paginatedLeads.some(lead => selectedLeads.includes(lead.id)) && !allCurrentPageSelected;
+
+  // Create a ref for the checkbox to handle indeterminate state
+  const selectAllCheckboxRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (selectAllCheckboxRef.current) {
+      selectAllCheckboxRef.current.indeterminate = someCurrentPageSelected;
+    }
+  }, [someCurrentPageSelected]);
 
   return (
     <div className="space-y-6">
@@ -424,7 +518,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setIsEmailDrawerOpen(true)}>
-              <Email className="h-4 w-4 mr-2" />
+              <Mail className="h-4 w-4 mr-2" />
               Send Email
             </Button>
             <Button variant="outline" size="sm" onClick={() => setIsBulkStatusOpen(true)}>
@@ -496,13 +590,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <TableRow>
                     <TableHead className="w-12">
                       <Checkbox
+                        ref={selectAllCheckboxRef}
                         checked={allCurrentPageSelected}
                         onCheckedChange={handleSelectAll}
-                        ref={ref => {
-                          if (ref) {
-                            ref.indeterminate = someCurrentPageSelected;
-                          }
-                        }}
                       />
                     </TableHead>
                     <TableHead 
@@ -713,3 +803,5 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     </div>
   );
 };
+
+export default LeadsDashboard;
