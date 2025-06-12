@@ -2,6 +2,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { 
   Menu, 
   Building2, 
@@ -9,7 +12,8 @@ import {
   Download, 
   MessageSquare, 
   Mail, 
-  Settings 
+  Settings,
+  LogOut
 } from 'lucide-react';
 
 interface MobileNavigationProps {
@@ -22,6 +26,8 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   onTabChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
 
   const navigationItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Building2 },
@@ -35,6 +41,27 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const handleNavigation = (tabId: string) => {
     onTabChange(tabId);
     setIsOpen(false);
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      setIsOpen(false);
+      toast({
+        title: 'Signed out',
+        description: 'You have been signed out successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to sign out. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getInitials = (email: string) => {
+    return email.charAt(0).toUpperCase();
   };
 
   return (
@@ -51,9 +78,26 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
         </SheetTrigger>
         <SheetContent side="left" className="w-72 p-0">
           <div className="flex flex-col h-full">
+            {/* User Info Section */}
             <div className="p-6 border-b">
-              <h2 className="text-lg font-semibold">Navigation</h2>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                  <span className="text-sm font-bold text-primary-foreground">
+                    {user?.email ? getInitials(user.email) : 'U'}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate">
+                    {user?.user_metadata?.full_name || 'User'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
             </div>
+
+            {/* Navigation Section */}
             <nav className="flex-1 p-4">
               <div className="space-y-2">
                 {navigationItems.map((item) => {
@@ -78,6 +122,18 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
                 })}
               </div>
             </nav>
+
+            {/* Logout Section */}
+            <div className="p-4 border-t">
+              <Button
+                variant="ghost"
+                className="w-full justify-start h-12 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-5 w-5 mr-3" />
+                Sign out
+              </Button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>

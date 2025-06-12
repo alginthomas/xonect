@@ -1,18 +1,5 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { LogOut } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MobileNavigation } from '@/components/MobileNavigation';
 
@@ -22,29 +9,6 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
-  const { user, signOut } = useAuth();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      toast({
-        title: 'Signed out',
-        description: 'You have been signed out successfully.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to sign out. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const getInitials = (email: string) => {
-    return email.charAt(0).toUpperCase();
-  };
-
   const getPageTitle = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -106,46 +70,9 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
             </h1>
           </div>
 
-          {/* Right Zone: User Menu */}
-          <div className="flex-shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  className="relative h-8 w-8 lg:h-10 lg:w-10 rounded-full hover:bg-accent transition-colors duration-200"
-                >
-                  <Avatar className="h-8 w-8 lg:h-10 lg:w-10">
-                    <AvatarFallback className="bg-primary/10 text-primary font-semibold text-xs lg:text-sm">
-                      {user?.email ? getInitials(user.email) : 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                className="w-56 lg:w-64 apple-shadow-lg border-border" 
-                align="end" 
-                forceMount
-              >
-                <DropdownMenuLabel className="font-normal p-3 lg:p-4">
-                  <div className="flex flex-col space-y-1 lg:space-y-2">
-                    <p className="text-sm font-semibold leading-none">
-                      {user?.user_metadata?.full_name || 'User'}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {user?.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={handleSignOut} 
-                  className="cursor-pointer p-3 lg:p-4 hover:bg-destructive/10 text-destructive focus:bg-destructive/10 focus:text-destructive"
-                >
-                  <LogOut className="mr-2 lg:mr-3 h-4 w-4" />
-                  <span className="font-medium">Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          {/* Right Zone: Empty for now - cleaner look */}
+          <div className="flex-shrink-0 w-8">
+            {/* This space is intentionally left empty for a cleaner design */}
           </div>
         </div>
       </div>
