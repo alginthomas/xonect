@@ -588,7 +588,7 @@ export default function Index() {
   const renderContent = () => {
     return (
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
-        <TabsContent value="dashboard" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="dashboard" className={isMobile ? "h-full px-4 pt-4" : "space-y-6 lg:space-y-8"}>
           <AnalyticsDashboard
             leads={leads}
             templates={templates}
@@ -641,14 +641,14 @@ export default function Index() {
 
         <TabsContent value="import" className={isMobile ? "h-full" : "space-y-8 lg:space-y-10"}>
           {isMobile ? (
-            // Mobile-optimized import page
+            // Mobile-optimized import page with proper padding
             <div className="h-full flex flex-col bg-background">
-              <div className="flex-1 overflow-y-auto">
-                <div className="p-4 space-y-6">
-                  <div className="text-center py-4">
+              <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+                <div className="space-y-6">
+                  <div className="text-center py-6">
                     <Upload className="h-12 w-12 mx-auto mb-3 text-primary" />
                     <h1 className="text-xl font-semibold mb-2">Import Leads</h1>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground px-4">
                       Upload CSV files to import your leads
                     </p>
                   </div>
@@ -693,16 +693,16 @@ export default function Index() {
           )}
         </TabsContent>
 
-        <TabsContent value="categories" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="categories" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
           {isMobile ? (
-            // Mobile-optimized categories page
+            // Mobile-optimized categories page with proper padding
             <div className="h-full flex flex-col bg-background">
-              <div className="flex-1 overflow-y-auto">
-                <div className="space-y-4">
-                  <div className="text-center py-4">
+              <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+                <div className="space-y-6">
+                  <div className="text-center py-6">
                     <FolderOpen className="h-12 w-12 mx-auto mb-3 text-primary" />
                     <h1 className="text-xl font-semibold mb-2">Lead Categories</h1>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground px-4">
                       Organize your leads with custom categories
                     </p>
                   </div>
@@ -737,7 +737,7 @@ export default function Index() {
           )}
         </TabsContent>
 
-        <TabsContent value="templates" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="templates" className={isMobile ? "h-full px-4 pt-4 pb-6" : "space-y-6 lg:space-y-8"}>
           <Card className="apple-card">
             <CardHeader>
               <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
@@ -754,7 +754,7 @@ export default function Index() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="settings" className={isMobile ? "h-full px-4 pt-4 pb-6" : "space-y-6 lg:space-y-8"}>
           <Card className="apple-card">
             <CardHeader>
               <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>
@@ -788,7 +788,7 @@ export default function Index() {
         </div>
       )}
 
-      {/* Mobile content - more streamlined */}
+      {/* Mobile content - with proper padding */}
       {isMobile && (
         <div className="flex flex-col h-full bg-background">
           {activeTab === 'leads' ? (
