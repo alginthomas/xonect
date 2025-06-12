@@ -1,704 +1,324 @@
+
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { useSearchParams } from 'react-router-dom';
+import { AppleLayout } from '@/layouts/AppleLayout';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { CSVImport } from '@/components/CSVImport';
+import { ImportHistory } from '@/components/ImportHistory';
 import { CategoryManager } from '@/components/CategoryManager';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { BrandingSettings } from '@/components/BrandingSettings';
-import { ImportHistory } from '@/components/ImportHistory';
-import AppleLayout from '@/layouts/AppleLayout';
-import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
-import type { Lead, EmailTemplate } from '@/types/lead';
-import type { Category, ImportBatch } from '@/types/category';
+import { 
+  Upload, 
+  Users, 
+  Tag, 
+  Mail, 
+  Settings, 
+  FileSpreadsheet,
+  TrendingUp,
+  Target,
+  Calendar,
+  Building
+} from 'lucide-react';
 
-interface BrandingData {
-  companyName: string;
-  companyLogo: string;
-  companyWebsite: string;
-  companyAddress: string;
-  senderName: string;
-  senderEmail: string;
-}
+// Mock data - replace with actual data fetching
+const mockLeads = [];
+const mockTemplates = [];
+const mockCategories = [];
+const mockImportBatches = [];
 
-// Helper function to safely convert date strings to Date objects
-const safeDate = (dateString: string | null | undefined): Date => {
-  if (!dateString) return new Date();
-  const date = new Date(dateString);
-  return isNaN(date.getTime()) ? new Date() : date;
+const mockBranding = {
+  companyName: 'Your Company',
+  companyLogo: '',
+  companyWebsite: 'https://yourcompany.com',
+  companyAddress: '123 Business St, City, State 12345',
+  senderName: 'Your Name',
+  senderEmail: 'you@yourcompany.com'
 };
 
 const Index = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [importBatches, setImportBatches] = useState<ImportBatch[]>([]);
-  const [branding, setBranding] = useState<BrandingData>({
-    companyName: '',
-    companyLogo: '',
-    companyWebsite: '',
-    companyAddress: '',
-    senderName: '',
-    senderEmail: '',
-  });
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState('dashboard');
   const { toast } = useToast();
-  const { deleteBatch, loading } = useImportBatchOperations();
 
-  // Determine which tab should be active based on the current route
-  const getActiveTab = () => {
-    const searchParams = new URLSearchParams(location.search);
-    const tab = searchParams.get('tab');
-    const batch = searchParams.get('batch');
-    
-    // If there's a batch parameter, set it as selected and go to dashboard
-    if (batch) {
-      setSelectedBatchId(batch);
-      return 'dashboard';
-    }
-    
-    if (tab) return tab;
-    
-    switch (location.pathname) {
-      case '/':
-        return 'dashboard';
-      case '/leads':
-        return 'leads';
-      case '/import':
-        return 'import';
-      case '/categories':
-        return 'categories';
-      case '/templates':
-        return 'templates';
-      case '/settings':
-        return 'settings';
-      default:
-        return 'dashboard';
-    }
-  };
+  // Get the current tab from URL params, default to 'dashboard'
+  const currentTab = searchParams.get('tab') || 'dashboard';
 
-  // Handle tab changes and update URL
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    // Clear selected batch when changing tabs
-    if (value !== 'dashboard') {
+  // Handle batch filter from URL
+  useEffect(() => {
+    const batchParam = searchParams.get('batch');
+    if (batchParam) {
+      setSelectedBatchId(batchParam);
+      // If we have a batch filter and we're not on the leads tab, switch to it
+      if (currentTab !== 'leads') {
+        setSearchParams({ tab: 'leads', batch: batchParam });
+      }
+    } else {
       setSelectedBatchId(null);
     }
-    navigate(`/?tab=${value}`, { replace: true });
-  };
+  }, [searchParams, currentTab, setSearchParams]);
 
-  useEffect(() => {
-    setActiveTab(getActiveTab());
-  }, [location]);
-
-  useEffect(() => {
-    fetchLeads();
-    fetchTemplates();
-    fetchCategories();
-    fetchImportBatches();
-  }, []);
-
-  const fetchLeads = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data) {
-        // Transform snake_case to camelCase and convert dates safely
-        const transformedLeads: Lead[] = data.map(lead => ({
-          id: lead.id,
-          firstName: lead.first_name,
-          lastName: lead.last_name,
-          email: lead.email,
-          company: lead.company,
-          title: lead.title,
-          phone: lead.phone || '',
-          linkedin: lead.linkedin || '',
-          status: lead.status,
-          createdAt: safeDate(lead.created_at),
-          categoryId: lead.category_id,
-          companySize: lead.company_size,
-          seniority: lead.seniority,
-          emailsSent: lead.emails_sent || 0,
-          lastContactDate: lead.last_contact_date ? safeDate(lead.last_contact_date) : undefined,
-          completenessScore: lead.completeness_score || 0,
-          industry: lead.industry || '',
-          location: lead.location || '',
-          department: lead.department || '',
-          personalEmail: lead.personal_email || '',
-          photoUrl: lead.photo_url || '',
-          twitterUrl: lead.twitter_url || '',
-          facebookUrl: lead.facebook_url || '',
-          organizationWebsite: lead.organization_website || '',
-          organizationFounded: lead.organization_founded,
-          remarks: lead.remarks || '',
-          tags: lead.tags || []
-        }));
-        setLeads(transformedLeads);
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching leads',
-        description: error.message,
-        variant: 'destructive',
-      });
+  const handleTabChange = (value: string) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', value);
+    
+    // If switching away from leads tab, clear batch filter
+    if (value !== 'leads') {
+      newParams.delete('batch');
+      setSelectedBatchId(null);
     }
-  };
-
-  const fetchTemplates = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data) {
-        // Transform snake_case to camelCase and convert dates safely
-        const transformedTemplates: EmailTemplate[] = data.map(template => ({
-          id: template.id,
-          name: template.name,
-          subject: template.subject,
-          content: template.content,
-          variables: template.variables || [],
-          createdAt: safeDate(template.created_at),
-          lastUsed: template.last_used ? safeDate(template.last_used) : undefined
-        }));
-        setTemplates(transformedTemplates);
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching email templates',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const fetchCategories = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data) {
-        // Transform snake_case to camelCase and convert dates safely
-        const transformedCategories: Category[] = data.map(category => ({
-          id: category.id,
-          name: category.name,
-          description: category.description || '',
-          color: category.color || '#3B82F6',
-          criteria: (typeof category.criteria === 'object' && category.criteria !== null) 
-            ? category.criteria as Record<string, any> 
-            : {},
-          createdAt: safeDate(category.created_at),
-          updatedAt: safeDate(category.updated_at)
-        }));
-        setCategories(transformedCategories);
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching categories',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const fetchImportBatches = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('import_batches')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data) {
-        // Transform snake_case to camelCase and convert dates safely
-        const transformedBatches: ImportBatch[] = data.map(batch => ({
-          id: batch.id,
-          name: batch.name,
-          categoryId: batch.category_id,
-          totalLeads: batch.total_leads || 0,
-          successfulImports: batch.successful_imports || 0,
-          failedImports: batch.failed_imports || 0,
-          createdAt: safeDate(batch.created_at),
-          sourceFile: batch.source_file || '',
-          metadata: (typeof batch.metadata === 'object' && batch.metadata !== null) 
-            ? batch.metadata as Record<string, any> 
-            : {}
-        }));
-        setImportBatches(transformedBatches);
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error fetching import batches',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
-    try {
-      // Transform camelCase to snake_case for Supabase
-      const supabaseUpdates: any = {};
-      Object.keys(updates).forEach(key => {
-        const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
-        let value = updates[key as keyof Lead];
-        
-        // Convert Date objects to ISO strings for Supabase
-        if (value instanceof Date) {
-          value = value.toISOString();
-        }
-        
-        supabaseUpdates[snakeKey] = value;
-      });
-
-      const { error } = await supabase
-        .from('leads')
-        .update(supabaseUpdates)
-        .eq('id', leadId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setLeads(prevLeads =>
-        prevLeads.map(lead =>
-          lead.id === leadId ? { ...lead, ...updates } : lead
-        )
-      );
-    } catch (error: any) {
-      toast({
-        title: 'Error updating lead',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleDeleteLead = async (leadId: string) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .eq('id', leadId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
-      toast({
-        title: 'Lead deleted',
-        description: 'Lead has been successfully deleted.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Error deleting lead',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleBulkUpdateStatus = async (leadIds: string[], status: 'New' | 'Contacted' | 'Qualified' | 'Unqualified') => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .update({ status })
-        .in('id', leadIds);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setLeads(prevLeads =>
-        prevLeads.map(lead =>
-          leadIds.includes(lead.id) ? { ...lead, status } : lead
-        )
-      );
-    } catch (error: any) {
-      toast({
-        title: 'Error updating leads',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleBulkDelete = async (leadIds: string[]) => {
-    try {
-      const { error } = await supabase
-        .from('leads')
-        .delete()
-        .in('id', leadIds);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setLeads(prevLeads => prevLeads.filter(lead => !leadIds.includes(lead.id)));
-    } catch (error: any) {
-      toast({
-        title: 'Error deleting leads',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const handleSendEmail = async (leadId: string) => {
-    // Update the lead to track email sent
-    const lead = leads.find(l => l.id === leadId);
-    if (lead) {
-      handleUpdateLead(leadId, { 
-        emailsSent: lead.emailsSent + 1,
-        lastContactDate: new Date(),
-        status: 'Contacted'
-      });
-    }
-  };
-
-  const handleImportComplete = () => {
-    fetchLeads();
-    fetchImportBatches();
-  };
-
-  const handleBatchSelect = (batchId: string | null) => {
-    setSelectedBatchId(batchId);
-  };
-
-  const handleDeleteBatch = async (batchId: string) => {
-    const success = await deleteBatch(batchId);
-    if (success) {
-      setImportBatches(prev => prev.filter(batch => batch.id !== batchId));
-      fetchLeads(); // Refresh leads as they might be affected
-    }
+    
+    setSearchParams(newParams);
   };
 
   const handleViewBatchLeads = (batchId: string) => {
+    console.log('Switching to leads view for batch:', batchId);
     setSelectedBatchId(batchId);
+    setSearchParams({ tab: 'leads', batch: batchId });
   };
 
-  const handleCreateCategory = async (categoryData: Partial<Category>) => {
-    try {
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        toast({
-          title: 'Authentication required',
-          description: 'You must be logged in to create categories.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([{
-          name: categoryData.name,
-          description: categoryData.description || '',
-          color: categoryData.color || '#3B82F6',
-          criteria: categoryData.criteria || {},
-          user_id: user.id // Add the user_id field
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data) {
-        const transformedCategory: Category = {
-          id: data.id,
-          name: data.name,
-          description: data.description || '',
-          color: data.color || '#3B82F6',
-          criteria: (typeof data.criteria === 'object' && data.criteria !== null) 
-            ? data.criteria as Record<string, any> 
-            : {},
-          createdAt: safeDate(data.created_at),
-          updatedAt: safeDate(data.updated_at)
-        };
-        setCategories(prev => [transformedCategory, ...prev]);
-        
-        toast({
-          title: 'Category created',
-          description: `Category "${data.name}" has been created successfully.`,
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error creating category',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+  // Mock handlers - replace with actual implementations
+  const handleUpdateLead = async (leadId: string, updates: any) => {
+    console.log('Update lead:', leadId, updates);
   };
 
-  const handleUpdateCategory = async (categoryId: string, updates: Partial<Category>) => {
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .update({
-          name: updates.name,
-          description: updates.description,
-          color: updates.color,
-          criteria: updates.criteria
-        })
-        .eq('id', categoryId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setCategories(prev =>
-        prev.map(cat =>
-          cat.id === categoryId ? { ...cat, ...updates } : cat
-        )
-      );
-    } catch (error: any) {
-      toast({
-        title: 'Error updating category',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+  const handleDeleteLead = async (leadId: string) => {
+    console.log('Delete lead:', leadId);
   };
 
-  const handleDeleteCategory = async (categoryId: string) => {
-    try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', categoryId);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      setCategories(prev => prev.filter(cat => cat.id !== categoryId));
-    } catch (error: any) {
-      toast({
-        title: 'Error deleting category',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+  const handleBulkUpdateStatus = async (leadIds: string[], status: any) => {
+    console.log('Bulk update status:', leadIds, status);
   };
 
-  const handleSaveTemplate = async (templateData: Partial<EmailTemplate>) => {
-    try {
-      const { data, error } = await supabase
-        .from('email_templates')
-        .insert([{
-          name: templateData.name,
-          subject: templateData.subject,
-          content: templateData.content,
-          variables: templateData.variables || []
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data) {
-        const transformedTemplate: EmailTemplate = {
-          id: data.id,
-          name: data.name,
-          subject: data.subject,
-          content: data.content,
-          variables: data.variables || [],
-          createdAt: safeDate(data.created_at),
-          lastUsed: data.last_used ? safeDate(data.last_used) : undefined
-        };
-        setTemplates(prev => [transformedTemplate, ...prev]);
-      }
-    } catch (error: any) {
-      toast({
-        title: 'Error saving template',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
+  const handleBulkDelete = async (leadIds: string[]) => {
+    console.log('Bulk delete:', leadIds);
   };
 
-  const handleSaveBranding = async (brandingData: BrandingData) => {
-    setBranding(brandingData);
-    toast({
-      title: 'Branding saved',
-      description: 'Your branding settings have been updated.',
-    });
+  const handleSendEmail = async (leadId: string) => {
+    console.log('Send email to lead:', leadId);
+  };
+
+  const handleDeleteBatch = async (batchId: string) => {
+    console.log('Delete batch:', batchId);
+  };
+
+  const handleCreateCategory = async (categoryData: any) => {
+    console.log('Create category:', categoryData);
+  };
+
+  // Calculate some basic stats for the overview
+  const stats = {
+    totalLeads: mockLeads.length,
+    newLeads: mockLeads.filter(lead => lead.status === 'New').length,
+    contactedLeads: mockLeads.filter(lead => lead.status === 'Contacted').length,
+    qualifiedLeads: mockLeads.filter(lead => lead.status === 'Qualified').length,
+    totalBatches: mockImportBatches.length,
+    totalCategories: mockCategories.length,
+    totalTemplates: mockTemplates.length
   };
 
   return (
     <AppleLayout>
-      <div className="space-y-8">
-        {/* Page Header */}
+      <div className="container mx-auto p-6 space-y-6">
         <div className="flex flex-col gap-2">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
-            <p className="text-muted-foreground">
-              Manage your leads, track engagement, and grow your business.
-            </p>
-          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
+          <p className="text-muted-foreground">
+            Manage your leads, import data, and track your outreach campaigns
+            {selectedBatchId && (
+              <Badge variant="secondary" className="ml-2">
+                Filtered by batch
+              </Badge>
+            )}
+          </p>
         </div>
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <TabsList className="grid w-full sm:w-auto grid-cols-6 lg:grid-cols-6 bg-muted rounded-xl p-1">
-              <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
-              <TabsTrigger value="leads" className="rounded-lg font-medium">Leads</TabsTrigger>
-              <TabsTrigger value="import" className="rounded-lg font-medium">Import</TabsTrigger>
-              <TabsTrigger value="categories" className="rounded-lg font-medium">Categories</TabsTrigger>
-              <TabsTrigger value="templates" className="rounded-lg font-medium">Templates</TabsTrigger>
-              <TabsTrigger value="settings" className="rounded-lg font-medium">Settings</TabsTrigger>
-            </TabsList>
-          </div>
+        <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="leads" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Leads
+              {selectedBatchId && <Badge variant="secondary" className="ml-1">Filtered</Badge>}
+            </TabsTrigger>
+            <TabsTrigger value="import" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              Import
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              Categories
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
+            {/* Overview Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.totalLeads}</div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Users className="h-3 w-3" />
+                    All contacts
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">New Leads</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.newLeads}</div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Target className="h-3 w-3" />
+                    Ready to contact
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Contacted</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.contactedLeads}</div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Mail className="h-3 w-3" />
+                    Outreach sent
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Qualified</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{stats.qualifiedLeads}</div>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <TrendingUp className="h-3 w-3" />
+                    Hot prospects
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Import Leads
+                  </CardTitle>
+                  <CardDescription>
+                    Upload CSV files to add new leads to your database
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={() => handleTabChange('import')} 
+                    className="w-full"
+                  >
+                    Import New Leads
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    Import History
+                  </CardTitle>
+                  <CardDescription>
+                    View and manage your previous imports ({stats.totalBatches} batches)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ImportHistory
+                    leads={mockLeads}
+                    importBatches={mockImportBatches}
+                    categories={mockCategories}
+                    onDeleteBatch={handleDeleteBatch}
+                    onViewBatchLeads={handleViewBatchLeads}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Building className="h-5 w-5" />
+                    Categories
+                  </CardTitle>
+                  <CardDescription>
+                    Organize your leads with custom categories ({stats.totalCategories} active)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => handleTabChange('categories')} 
+                    className="w-full"
+                  >
+                    Manage Categories
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="leads">
             <LeadsDashboard
-              leads={leads}
-              templates={templates}
-              categories={categories}
-              importBatches={importBatches}
-              branding={branding}
+              leads={mockLeads}
+              templates={mockTemplates}
+              categories={mockCategories}
+              importBatches={mockImportBatches}
+              branding={mockBranding}
               onUpdateLead={handleUpdateLead}
               onDeleteLead={handleDeleteLead}
               onBulkUpdateStatus={handleBulkUpdateStatus}
               onBulkDelete={handleBulkDelete}
               onSendEmail={handleSendEmail}
               selectedBatchId={selectedBatchId}
+              onCreateCategory={handleCreateCategory}
             />
           </TabsContent>
 
-          <TabsContent value="leads" className="space-y-6">
-            <Card className="apple-card">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl">All Leads</CardTitle>
-                <CardDescription>
-                  View and manage all your leads in one place.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <LeadsDashboard
-                  leads={leads}
-                  templates={templates}
-                  categories={categories}
-                  importBatches={importBatches}
-                  branding={branding}
-                  onUpdateLead={handleUpdateLead}
-                  onDeleteLead={handleDeleteLead}
-                  onBulkUpdateStatus={handleBulkUpdateStatus}
-                  onBulkDelete={handleBulkDelete}
-                  onSendEmail={handleSendEmail}
-                  selectedBatchId={selectedBatchId}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="import">
+            <CSVImport />
           </TabsContent>
 
-          <TabsContent value="import" className="space-y-8">
-            <div className="max-w-6xl mx-auto">
-              <CSVImport 
-                categories={categories} 
-                onImportComplete={handleImportComplete}
-                onCreateCategory={handleCreateCategory}
-              />
-              
-              <div className="mt-12">
-                <ImportHistory 
-                  leads={leads}
-                  importBatches={importBatches}
-                  categories={categories}
-                  onDeleteBatch={handleDeleteBatch}
-                  onViewBatchLeads={handleViewBatchLeads}
-                />
-              </div>
-            </div>
+          <TabsContent value="categories">
+            <CategoryManager />
           </TabsContent>
 
-          <TabsContent value="categories" className="space-y-6">
-            <Card className="apple-card">
-              <CardHeader>
-                <CardTitle className="text-xl">Lead Categories</CardTitle>
-                <CardDescription>
-                  Organize your leads with custom categories.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CategoryManager 
-                  categories={categories}
-                  onCreateCategory={handleCreateCategory}
-                  onUpdateCategory={handleUpdateCategory}
-                  onDeleteCategory={handleDeleteCategory}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="templates">
+            <EmailTemplateBuilder />
           </TabsContent>
 
-          <TabsContent value="templates" className="space-y-6">
-            <Card className="apple-card">
-              <CardHeader>
-                <CardTitle className="text-xl">Email Templates</CardTitle>
-                <CardDescription>
-                  Create and manage email templates for your campaigns.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <EmailTemplateBuilder 
-                  onSaveTemplate={handleSaveTemplate}
-                  templates={templates}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="apple-card">
-              <CardHeader>
-                <CardTitle className="text-xl">Brand Settings</CardTitle>
-                <CardDescription>
-                  Customize your company branding for email communications.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <BrandingSettings 
-                  branding={branding}
-                  onSave={handleSaveBranding}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="settings">
+            <BrandingSettings />
           </TabsContent>
         </Tabs>
       </div>
