@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { CompactLeadCard } from './compact-lead-card';
 import { MobileSearchFilters } from './mobile-search-filters';
@@ -37,6 +36,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [selectedCompanySize, setSelectedCompanySize] = useState<CompanySize | 'all'>('all');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [selectedDataFilter, setSelectedDataFilter] = useState('all');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>('date');
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,7 +82,37 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
       const matchesLocation = !selectedLocation || lead.location === selectedLocation;
       const matchesIndustry = !selectedIndustry || lead.industry === selectedIndustry;
 
-      return matchesSearch && matchesStatus && matchesCategory && matchesSeniority && matchesCompanySize && matchesLocation && matchesIndustry;
+      // Data availability filter logic
+      let matchesDataFilter = true;
+      if (selectedDataFilter !== 'all') {
+        const hasPhone = lead.phone && lead.phone.trim() !== '';
+        const hasEmail = lead.email && lead.email.trim() !== '';
+        
+        switch (selectedDataFilter) {
+          case 'has-phone':
+            matchesDataFilter = hasPhone;
+            break;
+          case 'has-email':
+            matchesDataFilter = hasEmail;
+            break;
+          case 'has-both':
+            matchesDataFilter = hasPhone && hasEmail;
+            break;
+          case 'missing-phone':
+            matchesDataFilter = !hasPhone;
+            break;
+          case 'missing-email':
+            matchesDataFilter = !hasEmail;
+            break;
+          case 'incomplete':
+            matchesDataFilter = !hasPhone || !hasEmail;
+            break;
+          default:
+            matchesDataFilter = true;
+        }
+      }
+
+      return matchesSearch && matchesStatus && matchesCategory && matchesSeniority && matchesCompanySize && matchesLocation && matchesIndustry && matchesDataFilter;
     });
 
     // Sort leads
@@ -99,7 +129,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     });
 
     return filtered;
-  }, [leads, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, sortBy]);
+  }, [leads, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedLeads.length / leadsPerPage);
@@ -109,7 +139,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, sortBy]);
+  }, [searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, sortBy]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
@@ -119,8 +149,9 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     if (selectedCompanySize !== 'all') count++;
     if (selectedLocation) count++;
     if (selectedIndustry) count++;
+    if (selectedDataFilter !== 'all') count++;
     return count;
-  }, [selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry]);
+  }, [selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter]);
 
   const handleClearFilters = () => {
     setSelectedStatus('all');
@@ -129,6 +160,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     setSelectedCompanySize('all');
     setSelectedLocation('');
     setSelectedIndustry('');
+    setSelectedDataFilter('all');
     setSearchQuery('');
   };
 
@@ -192,6 +224,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
           onIndustryChange={setSelectedIndustry}
           availableLocations={availableLocations}
           availableIndustries={availableIndustries}
+          selectedDataFilter={selectedDataFilter}
+          onDataFilterChange={setSelectedDataFilter}
         />
       )}
 
