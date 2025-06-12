@@ -122,17 +122,17 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-md mx-auto h-[90vh] max-h-[700px] p-0 gap-0 rounded-2xl border-0 shadow-2xl bg-background/95 backdrop-blur-xl">
-        {/* Header */}
+      <DialogContent className="w-[95vw] max-w-md mx-auto h-[90vh] max-h-[700px] p-0 gap-0 rounded-3xl border-0 shadow-2xl bg-background/95 backdrop-blur-xl overflow-hidden">
+        {/* Header - contained within card bounds */}
         <div className="relative px-6 pt-8 pb-6 border-b border-border/10">
           <button
             onClick={handleClose}
-            className="absolute right-4 top-4 p-2 rounded-full hover:bg-accent/50 transition-colors"
+            className="absolute right-6 top-6 p-2 rounded-full hover:bg-accent/50 transition-colors z-10"
             disabled={loading}
           >
             <X className="h-5 w-5 text-muted-foreground" />
           </button>
-          <DialogHeader className="space-y-3 text-left">
+          <DialogHeader className="space-y-3 text-left pr-12">
             <DialogTitle className="text-2xl font-semibold text-foreground">
               Add New Lead
             </DialogTitle>
@@ -142,13 +142,13 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
           </DialogHeader>
         </div>
         
-        {/* Scrollable Content */}
-        <ScrollArea className="flex-1">
+        {/* Scrollable Content - properly contained */}
+        <ScrollArea className="flex-1 overflow-hidden">
           <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
             {/* Contact Information */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10">
+                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                   <User className="h-4 w-4 text-primary" />
                 </div>
                 <h3 className="text-lg font-medium text-foreground">Contact Information</h3>
@@ -164,7 +164,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
                     placeholder="Enter first name"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                     required
                   />
                 </div>
@@ -178,7 +178,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
                     placeholder="Enter last name"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                     required
                   />
                 </div>
@@ -194,7 +194,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
                     placeholder="name@company.com"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                     required
                   />
                 </div>
@@ -209,7 +209,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.phone}
                     onChange={(e) => handleInputChange('phone', e.target.value)}
                     placeholder="+1 (555) 123-4567"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                   />
                 </div>
               </div>
@@ -218,7 +218,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
             {/* Professional Information */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10">
+                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                   <Building className="h-4 w-4 text-primary" />
                 </div>
                 <h3 className="text-lg font-medium text-foreground">Professional Details</h3>
@@ -235,7 +235,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.company}
                     onChange={(e) => handleInputChange('company', e.target.value)}
                     placeholder="Company name"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                   />
                 </div>
                 
@@ -249,7 +249,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     placeholder="Job title or role"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                   />
                 </div>
                 
@@ -263,7 +263,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     value={formData.linkedin}
                     onChange={(e) => handleInputChange('linkedin', e.target.value)}
                     placeholder="linkedin.com/in/username"
-                    className="h-12 text-base"
+                    className="h-12 text-base rounded-xl border-border/20"
                   />
                 </div>
                 
@@ -273,15 +273,15 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                     Category
                   </Label>
                   <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
-                    <SelectTrigger className="h-12 text-base">
+                    <SelectTrigger className="h-12 text-base rounded-xl border-border/20">
                       <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background border border-border shadow-lg">
+                    <SelectContent className="bg-background border border-border shadow-lg rounded-xl">
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id} className="py-3">
+                        <SelectItem key={category.id} value={category.id} className="py-3 rounded-lg">
                           <div className="flex items-center gap-3">
                             <div 
-                              className="w-3 h-3 rounded-full" 
+                              className="w-3 h-3 rounded-full shrink-0" 
                               style={{ backgroundColor: category.color }}
                             />
                             <span className="text-base">{category.name}</span>
@@ -297,7 +297,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
             {/* Additional Notes */}
             <div className="space-y-6">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10">
+                <div className="p-2 rounded-lg bg-primary/10 shrink-0">
                   <MessageSquare className="h-4 w-4 text-primary" />
                 </div>
                 <h3 className="text-lg font-medium text-foreground">Additional Information</h3>
@@ -313,21 +313,24 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
                   onChange={(e) => handleInputChange('remarks', e.target.value)}
                   placeholder="Add any additional notes about this lead..."
                   rows={4}
-                  className="resize-none text-base"
+                  className="resize-none text-base rounded-xl border-border/20"
                 />
               </div>
             </div>
+            
+            {/* Bottom padding for scroll */}
+            <div className="h-6" />
           </form>
         </ScrollArea>
 
-        {/* Footer */}
-        <div className="border-t border-border/10 bg-background/80 backdrop-blur-sm p-6">
+        {/* Footer - contained within card bounds */}
+        <div className="border-t border-border/10 bg-background/80 backdrop-blur-sm px-6 py-6 rounded-b-3xl">
           <div className="flex gap-3">
             <Button 
               type="button" 
               variant="outline" 
               onClick={handleClose}
-              className="flex-1 h-12 text-base font-medium"
+              className="flex-1 h-12 text-base font-medium rounded-xl"
               disabled={loading}
             >
               Cancel
@@ -336,7 +339,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
               type="submit" 
               onClick={handleSubmit}
               disabled={loading}
-              className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90"
+              className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90 rounded-xl"
             >
               {loading ? 'Adding...' : 'Add Lead'}
             </Button>
