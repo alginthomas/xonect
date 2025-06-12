@@ -580,10 +580,15 @@ const Index = () => {
   };
 
   return (
-    <AppleLayout activeTab={activeTab} onTabChange={handleTabChange}>
-      <div className="space-y-4 lg:space-y-8">
+    <AppleLayout 
+      activeTab={activeTab} 
+      onTabChange={handleTabChange}
+      categories={categories}
+      onLeadAdded={handleImportComplete}
+    >
+      <div className="space-y-6 lg:space-y-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
+          <TabsContent value="dashboard" className="space-y-6 lg:space-y-8">
             <AnalyticsDashboard
               leads={leads}
               templates={templates}
@@ -593,15 +598,15 @@ const Index = () => {
             />
           </TabsContent>
 
-          <TabsContent value="leads" className="space-y-4 lg:space-y-6">
+          <TabsContent value="leads" className="space-y-6 lg:space-y-8">
             <Card className="apple-card">
-              <CardHeader className="pb-3 lg:pb-4">
+              <CardHeader className="pb-4 lg:pb-6">
                 <CardTitle className="text-lg lg:text-xl">All Leads</CardTitle>
                 <CardDescription className="text-sm lg:text-base">
                   View and manage all your leads in one place.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-3 lg:px-6">
                 <LeadsDashboard
                   leads={leads}
                   templates={templates}
@@ -619,7 +624,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="import" className="space-y-6 lg:space-y-8">
+          <TabsContent value="import" className="space-y-8 lg:space-y-10">
             <div className="max-w-full">
               <CSVImport 
                 categories={categories} 
@@ -627,7 +632,7 @@ const Index = () => {
                 onCreateCategory={handleCreateCategory}
               />
               
-              <div className="mt-8 lg:mt-12">
+              <div className="mt-10 lg:mt-12">
                 <ImportHistory 
                   leads={leads}
                   importBatches={importBatches}
@@ -639,7 +644,7 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="categories" className="space-y-4 lg:space-y-6">
+          <TabsContent value="categories" className="space-y-6 lg:space-y-8">
             <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Lead Categories</CardTitle>
@@ -658,7 +663,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="templates" className="space-y-4 lg:space-y-6">
+          <TabsContent value="templates" className="space-y-6 lg:space-y-8">
             <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
@@ -675,7 +680,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4 lg:space-y-6">
+          <TabsContent value="settings" className="space-y-6 lg:space-y-8">
             <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>

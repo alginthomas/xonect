@@ -2,6 +2,7 @@
 import React from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MobileNavigation } from '@/components/MobileNavigation';
+import { UserDropdown } from '@/components/UserDropdown';
 
 interface HeaderProps {
   activeTab: string;
@@ -70,9 +71,11 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
             </h1>
           </div>
 
-          {/* Right Zone: Empty for now - cleaner look */}
-          <div className="flex-shrink-0 w-8">
-            {/* This space is intentionally left empty for a cleaner design */}
+          {/* Right Zone: User Dropdown */}
+          <div className="flex-shrink-0">
+            <div className="hidden lg:block">
+              <UserDropdown />
+            </div>
           </div>
         </div>
       </div>
