@@ -8,6 +8,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -67,86 +68,93 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent side="bottom" className="max-h-[80vh] overflow-auto">
-        <SheetHeader>
-          <SheetTitle className="flex items-center justify-between">
-            Filter Leads
-            {activeFilterCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClearFilters}
-                className="text-muted-foreground"
-              >
-                <X className="h-4 w-4 mr-1" />
-                Clear All
-              </Button>
-            )}
-          </SheetTitle>
-          <SheetDescription>
-            Filter your leads by status, category, and data availability
-          </SheetDescription>
-        </SheetHeader>
-        
-        <div className="space-y-6 py-6">
-          {/* Status Filter */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Status</label>
-            <Select value={statusFilter} onValueChange={onStatusChange}>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="All Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {allStatuses.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Category Filter */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Category</label>
-            <Select value={categoryFilter} onValueChange={onCategoryChange}>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="All Categories" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      {category.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Data Availability Filter */}
-          <div className="space-y-3">
-            <label className="text-sm font-medium">Data Availability</label>
-            <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
-              <SelectTrigger className="h-12">
-                <SelectValue placeholder="All Leads" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Leads</SelectItem>
-                <SelectItem value="has-phone">Has Phone</SelectItem>
-                <SelectItem value="has-email">Has Email</SelectItem>
-                <SelectItem value="has-both">Has Both</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      <SheetContent side="bottom" className="max-h-[85vh] p-0">
+        <div className="p-6 border-b">
+          <SheetHeader>
+            <SheetTitle className="flex items-center justify-between">
+              Filter Leads
+              {activeFilterCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClearFilters}
+                  className="text-muted-foreground"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Clear All
+                </Button>
+              )}
+            </SheetTitle>
+            <SheetDescription>
+              Filter your leads by status, category, and data availability
+            </SheetDescription>
+          </SheetHeader>
         </div>
+        
+        <ScrollArea className="flex-1 px-6">
+          <div className="space-y-6 py-6">
+            {/* Status Filter */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Status</label>
+              <Select value={statusFilter} onValueChange={onStatusChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  {allStatuses.map((status) => (
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Category Filter */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Category</label>
+              <Select value={categoryFilter} onValueChange={onCategoryChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data Availability Filter */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Data Availability</label>
+              <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="All Leads" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Leads</SelectItem>
+                  <SelectItem value="has-phone">Has Phone</SelectItem>
+                  <SelectItem value="has-email">Has Email</SelectItem>
+                  <SelectItem value="has-both">Has Both</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Add some bottom padding for better scrolling */}
+            <div className="pb-6" />
+          </div>
+        </ScrollArea>
       </SheetContent>
     </Sheet>
   );
