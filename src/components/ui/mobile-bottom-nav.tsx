@@ -30,7 +30,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     { id: 'leads', label: 'Leads', icon: Users },
     { id: 'add', label: 'Add', icon: Plus, isAction: true },
     { id: 'import', label: 'Import', icon: Upload },
-    { id: 'templates', label: 'Templates', icon: Mail },
+    { id: 'categories', label: 'Categories', icon: FolderOpen },
   ];
 
   return (
@@ -69,7 +69,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               <span className="text-xs font-medium truncate leading-none">
                 {item.label}
               </span>
-              {item.id === 'templates' && unreadCount > 0 && (
+              {item.id === 'categories' && unreadCount > 0 && (
                 <Badge 
                   variant="destructive" 
                   className="absolute -top-1 -right-1 h-5 w-5 text-xs p-0 flex items-center justify-center rounded-full"

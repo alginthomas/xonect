@@ -638,43 +638,102 @@ export default function Index() {
           )}
         </TabsContent>
 
-        <TabsContent value="import" className={isMobile ? "h-full p-4" : "space-y-8 lg:space-y-10"}>
-          <div className="max-w-full">
-            <CSVImport 
-              categories={categories} 
-              onImportComplete={handleImportComplete}
-              onCreateCategory={handleCreateCategory}
-            />
-            
-            <div className="mt-10 lg:mt-12">
-              <ImportHistory 
-                leads={leads}
-                importBatches={importBatches}
-                categories={categories}
-                onDeleteBatch={handleDeleteBatch}
-                onViewBatchLeads={handleViewBatchLeads}
-              />
+        <TabsContent value="import" className={isMobile ? "h-full" : "space-y-8 lg:space-y-10"}>
+          {isMobile ? (
+            // Mobile-optimized import page
+            <div className="h-full flex flex-col bg-background">
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4 space-y-6">
+                  <div className="text-center py-4">
+                    <Upload className="h-12 w-12 mx-auto mb-3 text-primary" />
+                    <h1 className="text-xl font-semibold mb-2">Import Leads</h1>
+                    <p className="text-sm text-muted-foreground">
+                      Upload CSV files to import your leads
+                    </p>
+                  </div>
+                  
+                  <CSVImport 
+                    categories={categories} 
+                    onImportComplete={handleImportComplete}
+                    onCreateCategory={handleCreateCategory}
+                  />
+                  
+                  <div className="pt-6">
+                    <ImportHistory 
+                      leads={leads}
+                      importBatches={importBatches}
+                      categories={categories}
+                      onDeleteBatch={handleDeleteBatch}
+                      onViewBatchLeads={handleViewBatchLeads}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          ) : (
+            // Desktop import page
+            <div className="max-w-full">
+              <CSVImport 
+                categories={categories} 
+                onImportComplete={handleImportComplete}
+                onCreateCategory={handleCreateCategory}
+              />
+              
+              <div className="mt-10 lg:mt-12">
+                <ImportHistory 
+                  leads={leads}
+                  importBatches={importBatches}
+                  categories={categories}
+                  onDeleteBatch={handleDeleteBatch}
+                  onViewBatchLeads={handleViewBatchLeads}
+                />
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="categories" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
-          <Card className="apple-card">
-            <CardHeader>
-              <CardTitle className="text-lg lg:text-xl">Lead Categories</CardTitle>
-              <CardDescription className="text-sm lg:text-base">
-                Organize your leads with custom categories.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CategoryManager 
-                categories={categories}
-                onCreateCategory={handleCreateCategory}
-                onUpdateCategory={handleUpdateCategory}
-                onDeleteCategory={handleDeleteCategory}
-              />
-            </CardContent>
-          </Card>
+          {isMobile ? (
+            // Mobile-optimized categories page
+            <div className="h-full flex flex-col bg-background">
+              <div className="flex-1 overflow-y-auto">
+                <div className="space-y-4">
+                  <div className="text-center py-4">
+                    <FolderOpen className="h-12 w-12 mx-auto mb-3 text-primary" />
+                    <h1 className="text-xl font-semibold mb-2">Lead Categories</h1>
+                    <p className="text-sm text-muted-foreground">
+                      Organize your leads with custom categories
+                    </p>
+                  </div>
+                  
+                  <CategoryManager 
+                    categories={categories}
+                    onCreateCategory={handleCreateCategory}
+                    onUpdateCategory={handleUpdateCategory}
+                    onDeleteCategory={handleDeleteCategory}
+                  />
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Desktop categories page
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-lg lg:text-xl">Lead Categories</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
+                  Organize your leads with custom categories.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CategoryManager 
+                  categories={categories}
+                  onCreateCategory={handleCreateCategory}
+                  onUpdateCategory={handleUpdateCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="templates" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
@@ -743,9 +802,7 @@ export default function Index() {
               onBulkDelete={handleBulkDelete}
             />
           ) : (
-            <div className="flex-1 p-4">
-              {renderContent()}
-            </div>
+            renderContent()
           )}
         </div>
       )}
