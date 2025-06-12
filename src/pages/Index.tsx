@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import { CategoryManager } from '@/components/CategoryManager';
 import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { BrandingSettings } from '@/components/BrandingSettings';
 import { ImportHistory } from '@/components/ImportHistory';
+import { MobileNavigation } from '@/components/MobileNavigation';
 import AppleLayout from '@/layouts/AppleLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -151,7 +151,7 @@ const Index = () => {
           organizationFounded: lead.organization_founded,
           remarks: lead.remarks || '',
           tags: lead.tags || [],
-          importBatchId: lead.import_batch_id || undefined, // Add this field mapping
+          importBatchId: lead.import_batch_id || undefined,
         }));
         
         console.log('Fetched leads with import batch IDs:', transformedLeads.filter(l => l.importBatchId).length);
@@ -572,86 +572,33 @@ const Index = () => {
   return (
     <AppleLayout>
       <div className="space-y-4 lg:space-y-8">
-        {/* Page Header - Mobile Optimized */}
-        <div className="flex flex-col gap-2">
-          <div>
-            <h1 className="text-xl lg:text-3xl font-bold tracking-tight">Lead Management</h1>
-            <p className="text-muted-foreground text-sm lg:text-base">
+        {/* Mobile-First Header with Navigation */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl lg:text-3xl font-bold tracking-tight truncate">Lead Management</h1>
+            <p className="text-muted-foreground text-sm lg:text-base hidden sm:block">
               Manage your leads, track engagement, and grow your business.
             </p>
           </div>
+          
+          {/* Mobile Navigation */}
+          <MobileNavigation 
+            activeTab={activeTab} 
+            onTabChange={handleTabChange} 
+          />
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="flex flex-col gap-3 mb-4 lg:mb-6">
-            {/* Mobile-optimized Tab Navigation */}
-            <div className="overflow-x-auto -mx-3 px-3 lg:mx-0 lg:px-0">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3' : 'grid-cols-6'} lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit gap-1`}>
-                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? (
-                    <div className="flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      <span>Dashboard</span>
-                    </div>
-                  ) : (
-                    'Dashboard'
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? (
-                    <div className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      <span>Leads</span>
-                    </div>
-                  ) : (
-                    'Leads'
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? (
-                    <div className="flex items-center gap-1">
-                      <Download className="h-3 w-3" />
-                      <span>Import</span>
-                    </div>
-                  ) : (
-                    'Import'
-                  )}
-                </TabsTrigger>
-                {!isMobile && (
-                  <>
-                    <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Categories</TabsTrigger>
-                    <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Templates</TabsTrigger>
-                    <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Settings</TabsTrigger>
-                  </>
-                )}
-              </TabsList>
-            </div>
-
-            {/* Mobile Secondary Navigation */}
-            {isMobile && !['dashboard', 'leads', 'import'].includes(activeTab) && (
-              <div className="overflow-x-auto -mx-3 px-3">
-                <TabsList className="grid w-full grid-cols-3 bg-muted/50 rounded-xl p-1 min-w-fit gap-1">
-                  <TabsTrigger value="categories" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="h-3 w-3" />
-                      <span>Categories</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="templates" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      <span>Templates</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      <span>Settings</span>
-                    </div>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            )}
+          {/* Desktop Navigation - Hidden on Mobile */}
+          <div className="hidden lg:block mb-6">
+            <TabsList className="grid w-auto grid-cols-6 bg-muted rounded-xl p-1 gap-1">
+              <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
+              <TabsTrigger value="leads" className="rounded-lg font-medium">Leads</TabsTrigger>
+              <TabsTrigger value="import" className="rounded-lg font-medium">Import</TabsTrigger>
+              <TabsTrigger value="categories" className="rounded-lg font-medium">Categories</TabsTrigger>
+              <TabsTrigger value="templates" className="rounded-lg font-medium">Templates</TabsTrigger>
+              <TabsTrigger value="settings" className="rounded-lg font-medium">Settings</TabsTrigger>
+            </TabsList>
           </div>
 
           <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
@@ -697,7 +644,7 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="import" className="space-y-6 lg:space-y-8">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-full">
               <CSVImport 
                 categories={categories} 
                 onImportComplete={handleImportComplete}

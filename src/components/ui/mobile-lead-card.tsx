@@ -109,12 +109,36 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
 
   const callLead = () => {
     if (lead.phone) {
-      window.open(`tel:${lead.phone}`, '_self');
+      window.open(`tel:${lead.phone}`, '_blank');
+    } else {
+      toast({
+        title: 'No phone number',
+        description: 'This lead does not have a phone number.',
+        variant: 'destructive',
+      });
     }
   };
 
   const emailLead = () => {
-    window.open(`mailto:${lead.email}`, '_self');
+    try {
+      const subject = encodeURIComponent(`Following up on your interest`);
+      const body = encodeURIComponent(`Hi ${lead.firstName},\n\nI hope this email finds you well.\n\nBest regards`);
+      window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
+      
+      // Call the onEmailClick to track the email
+      onEmailClick();
+      
+      toast({
+        title: 'Email opened',
+        description: 'Default email client has been opened.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Email failed',
+        description: 'Failed to open email client.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const openLinkedIn = () => {
@@ -149,7 +173,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           <Checkbox
             checked={isSelected}
             onCheckedChange={onSelect}
-            className="mt-0.5 h-4 w-4 rounded-full data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+            className="mt-0.5 h-4 w-4 rounded-full aspect-square data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           />
           
           <Avatar className="h-10 w-10 flex-shrink-0">
@@ -198,16 +222,17 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
 
         {/* Primary Actions - Better Spaced */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 hover:bg-primary/10"
+                  className="h-8 px-3 hover:bg-primary/10 text-xs"
                   onClick={emailLead}
                 >
-                  <Mail className="h-4 w-4" />
+                  <Mail className="h-3 w-3 mr-1" />
+                  Email
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -221,50 +246,15 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 w-8 p-0 hover:bg-green-50"
+                    className="h-8 px-3 hover:bg-green-50 text-xs"
                     onClick={callLead}
                   >
-                    <Phone className="h-4 w-4" />
+                    <Phone className="h-3 w-3 mr-1" />
+                    Call
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Call Lead</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            {lead.linkedin && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-blue-50"
-                    onClick={openLinkedIn}
-                  >
-                    <Linkedin className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Open LinkedIn</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            {lead.organizationWebsite && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 hover:bg-gray-50"
-                    onClick={openWebsite}
-                  >
-                    <Globe className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Visit Website</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -274,10 +264,11 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 w-8 p-0 hover:bg-blue-50"
+                  className="h-8 px-3 hover:bg-blue-50 text-xs"
                   onClick={onViewDetails}
                 >
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-3 w-3 mr-1" />
+                  View
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -287,19 +278,6 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Remarks Toggle - Only show if has remarks or when editing */}
-            {(lead.remarks || isEditingRemarks) && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs"
-                onClick={() => setIsEditingRemarks(!isEditingRemarks)}
-              >
-                <MessageSquare className="h-3 w-3 mr-1" />
-                {isEditingRemarks ? 'Cancel' : 'Edit'}
-              </Button>
-            )}
-
             {/* Expand/Collapse */}
             <Button
               variant="ghost"
@@ -468,6 +446,19 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Edit Remarks Button */}
+            {!isEditingRemarks && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditingRemarks(true)}
+                className="w-full h-8 text-xs"
+              >
+                <Edit3 className="h-3 w-3 mr-1" />
+                {lead.remarks ? 'Edit Remarks' : 'Add Remarks'}
+              </Button>
+            )}
           </CollapsibleContent>
         </Collapsible>
       </CardContent>

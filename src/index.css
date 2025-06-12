@@ -142,6 +142,41 @@
       min-height: 44px;
       min-width: 44px;
     }
+
+    /* Mobile form improvements */
+    .mobile-form-container {
+      padding: 1rem;
+      max-width: 100%;
+    }
+
+    .mobile-form-container input,
+    .mobile-form-container textarea,
+    .mobile-form-container select {
+      font-size: 16px; /* Prevent zoom on iOS */
+    }
+
+    /* Mobile file upload area */
+    .mobile-file-upload {
+      min-height: 120px;
+      padding: 1.5rem 1rem;
+      border: 2px dashed hsl(var(--border));
+      border-radius: 12px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .mobile-file-upload:hover {
+      border-color: hsl(var(--primary));
+      background-color: hsl(var(--muted)/50);
+    }
+
+    /* Mobile checkbox fix */
+    input[type="checkbox"] {
+      width: 18px !important;
+      height: 18px !important;
+      border-radius: 50% !important;
+      aspect-ratio: 1/1 !important;
+    }
   }
 
   /* Enhanced accessibility */
@@ -232,5 +267,79 @@
 
   .mobile-header-hierarchy {
     @apply text-lg lg:text-xl;
+  }
+
+  /* Round checkbox styling */
+  .round-checkbox {
+    border-radius: 50% !important;
+    aspect-ratio: 1/1 !important;
+  }
+
+  /* Import page responsive improvements */
+  .import-container {
+    @apply max-w-full px-3 lg:px-6;
+  }
+
+  .import-file-area {
+    @apply border-2 border-dashed border-border rounded-xl p-6 lg:p-8 text-center min-h-[160px] lg:min-h-[200px] flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-muted/30 transition-all duration-200;
+  }
+
+  .import-form-grid {
+    @apply grid gap-4 lg:gap-6 grid-cols-1 lg:grid-cols-2;
+  }
+
+  .import-preview-table {
+    @apply overflow-x-auto rounded-lg border border-border;
+  }
+
+  .import-preview-table table {
+    @apply min-w-full text-sm;
+  }
+
+  .import-preview-table th,
+  .import-preview-table td {
+    @apply px-3 py-2 lg:px-4 lg:py-3 text-left border-b border-border;
+  }
+
+  .import-preview-table th {
+    @apply bg-muted/50 font-medium;
+  }
+
+  /* Mobile navigation improvements */
+  .mobile-nav-sheet {
+    @apply w-72 p-0;
+  }
+
+  .mobile-nav-header {
+    @apply p-6 border-b border-border;
+  }
+
+  .mobile-nav-content {
+    @apply flex-1 p-4;
+  }
+
+  .mobile-nav-item {
+    @apply w-full justify-start h-12 rounded-lg transition-colors duration-200;
+  }
+
+  .mobile-nav-item.active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .mobile-nav-item:not(.active) {
+    @apply hover:bg-muted/50;
+  }
+
+  /* Responsive breakpoint utilities */
+  .xs\:inline {
+    @media (min-width: 475px) {
+      display: inline;
+    }
+  }
+
+  .xs\:hidden {
+    @media (min-width: 475px) {
+      display: none;
+    }
   }
 }

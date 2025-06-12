@@ -114,12 +114,36 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 
   const callLead = () => {
     if (lead.phone) {
-      window.open(`tel:${lead.phone}`, '_self');
+      window.open(`tel:${lead.phone}`, '_blank');
+    } else {
+      toast({
+        title: 'No phone number',
+        description: 'This lead does not have a phone number.',
+        variant: 'destructive',
+      });
     }
   };
 
   const emailLead = () => {
-    window.open(`mailto:${lead.email}`, '_self');
+    try {
+      const subject = encodeURIComponent(`Following up on your interest`);
+      const body = encodeURIComponent(`Hi ${lead.firstName},\n\nI hope this email finds you well.\n\nBest regards`);
+      window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
+      
+      // Call the onEmailClick to track the email
+      onEmailClick();
+      
+      toast({
+        title: 'Email opened',
+        description: 'Default email client has been opened.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Email failed',
+        description: 'Failed to open email client.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const openLinkedIn = () => {
@@ -164,7 +188,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               checked={isSelected}
               onCheckedChange={onSelect}
               onClick={(e) => e.stopPropagation()}
-              className="h-4 w-4 flex-shrink-0 rounded-full data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              className="h-4 w-4 flex-shrink-0 rounded-full aspect-square data-[state=checked]:bg-primary data-[state=checked]:border-primary"
             />
             
             {/* Avatar */}
