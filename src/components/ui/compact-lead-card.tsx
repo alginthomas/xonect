@@ -103,6 +103,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
         title: 'Email copied',
         description: `${lead.email} has been copied to clipboard.`,
       });
+      onEmailClick(); // Track the email action
     } catch (error) {
       toast({
         title: 'Copy failed',
@@ -188,7 +189,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               checked={isSelected}
               onCheckedChange={onSelect}
               onClick={(e) => e.stopPropagation()}
-              className="h-4 w-4 flex-shrink-0 rounded-full aspect-square data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+              className="h-4 w-4 flex-shrink-0"
             />
             
             {/* Avatar */}
@@ -224,11 +225,11 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                     className="h-7 px-2 hover:bg-primary/10 text-xs flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      emailLead();
+                      copyEmail();
                     }}
                   >
                     <Mail className="h-3 w-3" />
-                    <span className="hidden xs:inline">Email</span>
+                    <span className="hidden xs:inline">Copy</span>
                   </Button>
 
                   {lead.phone && (
@@ -454,11 +455,11 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             {/* Action Buttons - Responsive */}
             <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button 
-                onClick={emailLead} 
+                onClick={copyEmail} 
                 className="flex-1"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                Send Email
+                Copy Email
               </Button>
               {lead.phone && (
                 <Button 

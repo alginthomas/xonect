@@ -40,6 +40,23 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     }
   };
 
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(lead.email);
+      toast({
+        title: 'Email copied',
+        description: `${lead.email} has been copied to clipboard.`,
+      });
+      onEmailClick(); // Track the email action
+    } catch (error) {
+      toast({
+        title: 'Copy failed',
+        description: 'Failed to copy email to clipboard.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const emailLead = async () => {
     // Copy email to clipboard first
     try {
@@ -72,31 +89,15 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     }
   };
 
-  const copyEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(lead.email);
-      toast({
-        title: 'Email copied',
-        description: `${lead.email} has been copied to clipboard.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Copy failed',
-        description: 'Failed to copy email to clipboard.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {/* Quick Email Button */}
+      {/* Quick Copy Email Button */}
       <Button
         size="sm"
         variant="ghost"
         className="h-7 w-7 p-0"
-        onClick={(e) => handleClick(e, emailLead)}
-        title="Send Email"
+        onClick={(e) => handleClick(e, copyEmail)}
+        title="Copy Email"
       >
         <Mail className="h-3 w-3" />
       </Button>

@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import Header from '@/components/Header';
-import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { AddLeadDialog } from '@/components/AddLeadDialog';
 import type { Category } from '@/types/category';
 
@@ -38,14 +37,6 @@ const AppleLayout: React.FC<AppleLayoutProps> = ({
           {children}
         </div>
       </main>
-      
-      {/* Floating Action Button - Only show on leads tab for mobile */}
-      {activeTab === 'leads' && (
-        <FloatingActionButton
-          onClick={handleAddLead}
-          label="Add Lead"
-        />
-      )}
 
       <AddLeadDialog
         isOpen={isAddLeadDialogOpen}
