@@ -47,11 +47,9 @@ const AppleLayout: React.FC<AppleLayoutProps> = ({
             {children}
           </div>
         ) : (
-          // Desktop Layout - Minimal padding for edge spacing only
-          <div className="p-2 lg:p-4">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
+          // Desktop Layout - No padding, full width
+          <div className="w-full h-full">
+            {children}
           </div>
         )}
       </main>
