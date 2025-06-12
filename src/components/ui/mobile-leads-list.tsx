@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { CompactLeadCard } from './compact-lead-card';
 import { MobileSearchFilters } from './mobile-search-filters';
@@ -271,7 +270,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
       )}
 
       {/* Leads List */}
-      <div className="flex-1 overflow-y-auto px-3 pb-20">
+      <div className="flex-1 overflow-y-auto px-4 pb-20">
         {paginatedLeads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <MessageSquare className="h-10 w-10 text-muted-foreground mb-3" />
@@ -289,7 +288,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
             )}
           </div>
         ) : (
-          <div className="space-y-0 pt-3">
+          <div className="space-y-4 pt-4">
             {paginatedLeads.map((lead) => (
               <CompactLeadCard
                 key={lead.id}
