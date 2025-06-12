@@ -128,12 +128,12 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             </AvatarFallback>
           </Avatar>
           
-          {/* Lead info */}
+          {/* Lead info - left aligned */}
           <div className="flex-1 min-w-0 pr-2">
-            <h3 className="font-semibold text-base leading-tight mb-2">
+            <h3 className="font-semibold text-base leading-tight mb-2 text-left">
               {lead.firstName} {lead.lastName}
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-1 text-left">
               <p className="text-sm text-muted-foreground">
                 {lead.company} • {lead.title}
               </p>
@@ -171,7 +171,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 
         {/* Status section */}
         <div className="pt-3 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-muted-foreground">Status:</span>
             <QuickStatusEditor
               status={lead.status}
@@ -185,7 +185,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 hover:bg-primary/10 flex-1"
+              className="h-8 px-3 hover:bg-primary/10 flex-1 justify-start"
               onClick={handlePrimaryAction}
             >
               {lead.phone ? (
@@ -206,7 +206,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-3 hover:bg-blue-50 flex-1"
+                className="h-8 px-3 hover:bg-blue-50 flex-1 justify-start"
                 onClick={handleSecondaryAction}
               >
                 <Mail className="h-4 w-4 mr-2 text-blue-600" />

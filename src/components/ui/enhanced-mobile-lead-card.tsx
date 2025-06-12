@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -163,13 +162,13 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-base leading-tight mb-1 text-foreground">
+                <h3 className="font-semibold text-base leading-tight mb-1 text-foreground text-left">
                   {lead.firstName} {lead.lastName}
                 </h3>
-                <p className="text-sm text-muted-foreground leading-tight mb-1">
+                <p className="text-sm text-muted-foreground leading-tight mb-1 text-left">
                   {lead.title}
                 </p>
-                <p className="text-sm text-muted-foreground leading-tight">
+                <p className="text-sm text-muted-foreground leading-tight text-left">
                   {lead.company}
                 </p>
               </div>
@@ -181,7 +180,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </div>
         </div>
 
-        {/* Contact Info Row - Better Spaced */}
+        {/* Contact Info Row - Left aligned */}
         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <Mail className="h-4 w-4 flex-shrink-0" />
@@ -195,12 +194,12 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           )}
         </div>
 
-        {/* Primary Actions - Improved Touch Targets */}
+        {/* Primary Actions - Left justified */}
         <div className="flex items-center gap-3 mb-4">
           <Button
             variant="default"
             size="sm"
-            className="flex-1 h-10 font-medium"
+            className="flex-1 h-10 font-medium justify-start"
             onClick={copyEmail}
           >
             <Mail className="h-4 w-4 mr-2" />
@@ -211,7 +210,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 h-10 font-medium"
+              className="flex-1 h-10 font-medium justify-start"
               onClick={callLead}
             >
               <Phone className="h-4 w-4 mr-2" />
@@ -260,7 +259,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </DropdownMenu>
         </div>
 
-        {/* Status Editor */}
+        {/* Status Editor - Left aligned */}
         <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
           <span className="text-sm font-medium text-foreground">Status:</span>
           <QuickStatusEditor
@@ -269,21 +268,21 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           />
         </div>
 
-        {/* Remarks Section */}
+        {/* Remarks Section - Left aligned */}
         {isEditingRemarks && (
           <div className="mb-4 space-y-3">
             <Textarea
               value={remarksText}
               onChange={(e) => setRemarksText(e.target.value)}
               placeholder="Add remarks about this lead..."
-              className="min-h-[80px] text-sm"
+              className="min-h-[80px] text-sm text-left"
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={saveRemarks} className="flex-1">
+              <Button size="sm" onClick={saveRemarks} className="flex-1 justify-center">
                 <Check className="h-3 w-3 mr-1" />
                 Save
               </Button>
-              <Button size="sm" variant="outline" onClick={cancelRemarksEdit} className="flex-1">
+              <Button size="sm" variant="outline" onClick={cancelRemarksEdit} className="flex-1 justify-center">
                 <X className="h-3 w-3 mr-1" />
                 Cancel
               </Button>
@@ -291,7 +290,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </div>
         )}
 
-        {/* Show existing remarks */}
+        {/* Show existing remarks - Left aligned */}
         {lead.remarks && !isEditingRemarks && (
           <div className="mb-4 p-3 bg-muted/30 rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -305,7 +304,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
                 <Edit3 className="h-3 w-3" />
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground">{lead.remarks}</p>
+            <p className="text-sm text-muted-foreground text-left">{lead.remarks}</p>
           </div>
         )}
 
@@ -321,7 +320,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-3 pt-3">
-            {/* Category */}
+            {/* Category - Left aligned */}
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
               <span className="text-sm font-medium">Category:</span>
               <div className="flex items-center gap-2">
@@ -333,10 +332,10 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
               </div>
             </div>
 
-            {/* Additional Details */}
+            {/* Additional Details - Left aligned */}
             {(lead.companySize || lead.seniority || lead.lastContactDate) && (
               <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                <h4 className="text-sm font-medium mb-2">Additional Information</h4>
+                <h4 className="text-sm font-medium mb-2 text-left">Additional Information</h4>
                 {lead.companySize && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Company Size:</span>
@@ -360,7 +359,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Meta Information */}
+        {/* Meta Information - Left aligned */}
         <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
           <span>Added {format(lead.createdAt, 'MMM dd, yyyy')}</span>
           {lead.emailsSent > 0 && (

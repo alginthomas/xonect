@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -193,10 +192,10 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm leading-tight mb-0.5 truncate">
+                <h3 className="font-semibold text-sm leading-tight mb-0.5 truncate text-left">
                   {lead.firstName} {lead.lastName}
                 </h3>
-                <p className="text-xs text-muted-foreground leading-tight truncate">
+                <p className="text-xs text-muted-foreground leading-tight truncate text-left">
                   {lead.title} • {lead.company}
                 </p>
               </div>
@@ -208,7 +207,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           </div>
         </div>
 
-        {/* Contact Info and Actions Row */}
+        {/* Contact Info and Actions Row - Left aligned */}
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-0 flex-1">
             <Mail className="h-3 w-3 flex-shrink-0" />
@@ -227,7 +226,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           </span>
         </div>
 
-        {/* Primary Actions - Better Spaced */}
+        {/* Primary Actions - Left justified */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Tooltip>
@@ -235,7 +234,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-3 hover:bg-primary/10 text-xs"
+                  className="h-8 px-3 hover:bg-primary/10 text-xs justify-start"
                   onClick={emailLead}
                 >
                   <Mail className="h-3 w-3 mr-1" />
@@ -253,7 +252,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-3 hover:bg-green-50 text-xs"
+                    className="h-8 px-3 hover:bg-green-50 text-xs justify-start"
                     onClick={callLead}
                   >
                     <Phone className="h-3 w-3 mr-1" />
@@ -271,7 +270,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-3 hover:bg-blue-50 text-xs"
+                  className="h-8 px-3 hover:bg-blue-50 text-xs justify-start"
                   onClick={onViewDetails}
                 >
                   <Eye className="h-3 w-3 mr-1" />
@@ -352,14 +351,14 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
               value={remarksText}
               onChange={(e) => setRemarksText(e.target.value)}
               placeholder="Add remarks..."
-              className="min-h-[60px] text-sm"
+              className="min-h-[60px] text-sm text-left"
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={saveRemarks} className="flex-1">
+              <Button size="sm" onClick={saveRemarks} className="flex-1 justify-center">
                 <Check className="h-3 w-3 mr-1" />
                 Save
               </Button>
-              <Button size="sm" variant="outline" onClick={cancelRemarksEdit} className="flex-1">
+              <Button size="sm" variant="outline" onClick={cancelRemarksEdit} className="flex-1 justify-center">
                 <X className="h-3 w-3 mr-1" />
                 Cancel
               </Button>
@@ -367,9 +366,9 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           </div>
         )}
 
-        {/* Show existing remarks if not editing */}
+        {/* Show existing remarks if not editing - Left aligned */}
         {lead.remarks && !isEditingRemarks && (
-          <div className="mt-2 p-2 bg-muted/30 rounded text-xs text-muted-foreground">
+          <div className="mt-2 p-2 bg-muted/30 rounded text-xs text-muted-foreground text-left">
             {lead.remarks}
           </div>
         )}
@@ -407,7 +406,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-xs"
+                      className="h-6 px-2 text-xs justify-start"
                       onClick={openLinkedIn}
                     >
                       <Linkedin className="h-3 w-3 mr-1" />
@@ -421,7 +420,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-xs"
+                      className="h-6 px-2 text-xs justify-start"
                       onClick={openWebsite}
                     >
                       <Globe className="h-3 w-3 mr-1" />
@@ -432,7 +431,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
               </div>
             )}
 
-            {/* Additional Details */}
+            {/* Additional Details - Left aligned */}
             <div className="space-y-1 text-xs text-muted-foreground">
               {lead.companySize && (
                 <div className="flex justify-between">
@@ -460,7 +459,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditingRemarks(true)}
-                className="w-full h-8 text-xs"
+                className="w-full h-8 text-xs justify-center"
               >
                 <Edit3 className="h-3 w-3 mr-1" />
                 {lead.remarks ? 'Edit Remarks' : 'Add Remarks'}
