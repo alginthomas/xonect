@@ -47,7 +47,6 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         title: 'Email copied',
         description: `${lead.email} has been copied to clipboard.`,
       });
-      // Don't call onEmailClick here - just copy the email
     } catch (error) {
       toast({
         title: 'Copy failed',
@@ -94,13 +93,13 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {/* Quick Copy Email Button */}
+      {/* Quick Email Button with mailto */}
       <Button
         size="sm"
         variant="ghost"
         className="h-7 w-7 p-0"
-        onClick={(e) => handleClick(e, copyEmail)}
-        title="Copy Email"
+        onClick={(e) => handleClick(e, emailLead)}
+        title="Send Email"
       >
         <Mail className="h-3 w-3" />
       </Button>
