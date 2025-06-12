@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users } from 'lucide-react';
 import type { LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { Category } from '@/types/category';
+
 interface MobileSearchFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -30,6 +32,7 @@ interface MobileSearchFiltersProps {
   availableLocations?: string[];
   availableIndustries?: string[];
 }
+
 export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   searchQuery,
   onSearchChange,
@@ -52,6 +55,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   availableIndustries = []
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+
   const handleClearAllFilters = () => {
     onClearFilters();
     if (onSeniorityChange) onSeniorityChange('all');
@@ -60,35 +64,54 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     if (onIndustryChange) onIndustryChange('');
     setIsFilterSheetOpen(false);
   };
+
   const handleLocationChange = (value: string) => {
     if (onLocationChange) {
       onLocationChange(value === 'all-locations' ? '' : value);
     }
   };
+
   const handleIndustryChange = (value: string) => {
     if (onIndustryChange) {
       onIndustryChange(value === 'all-industries' ? '' : value);
     }
   };
-  const totalActiveFilters = activeFiltersCount + (selectedSeniority !== 'all' ? 1 : 0) + (selectedCompanySize !== 'all' ? 1 : 0) + (selectedLocation ? 1 : 0) + (selectedIndustry ? 1 : 0);
-  return <div className="sticky top-0 z-40 bg-background border-b border-border/30 p-4 space-y-3 px-0 py-[6px]">
+
+  const totalActiveFilters = activeFiltersCount + 
+    (selectedSeniority !== 'all' ? 1 : 0) + 
+    (selectedCompanySize !== 'all' ? 1 : 0) + 
+    (selectedLocation ? 1 : 0) + 
+    (selectedIndustry ? 1 : 0);
+
+  return (
+    <div className="sticky top-0 z-40 bg-background border-b border-border/30 px-4 py-3 space-y-4">
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search leads..." value={searchQuery} onChange={e => onSearchChange(e.target.value)} className="pl-10 pr-4" />
-        {searchQuery && <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0" onClick={() => onSearchChange('')}>
+        <Input 
+          placeholder="Search leads..." 
+          value={searchQuery} 
+          onChange={(e) => onSearchChange(e.target.value)} 
+          className="pl-10 pr-10 h-11" 
+        />
+        {searchQuery && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0" 
+            onClick={() => onSearchChange('')}
+          >
             <X className="h-3 w-3" />
-          </Button>}
+          </Button>
+        )}
       </div>
 
       {/* Quick Filters Row - Horizontal Scrolling Container */}
       <div className="relative">
         <div className="overflow-x-auto scrollbar-hide">
-          <div style={{
-          minWidth: 'max-content'
-        }} className="flex items-center gap-2 pb-2 py-[4px] px-[6px]">
+          <div className="flex items-center gap-3 pb-2 min-w-max">
             <Select value={selectedStatus} onValueChange={onStatusChange}>
-              <SelectTrigger className="w-28 h-9 text-xs flex-shrink-0">
+              <SelectTrigger className="w-32 h-10 text-sm flex-shrink-0">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -103,30 +126,38 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
             </Select>
 
             <Select value={selectedCategory} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-28 h-9 text-xs flex-shrink-0">
+              <SelectTrigger className="w-32 h-10 text-sm flex-shrink-0">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => <SelectItem key={category.id} value={category.id}>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
                     {category.name}
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
             {/* Advanced Filters Sheet */}
             <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="h-9 px-3 text-xs relative flex-shrink-0 whitespace-nowrap">
-                  <SlidersHorizontal className="h-3 w-3 mr-1" />
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-10 px-4 text-sm relative flex-shrink-0 whitespace-nowrap"
+                >
+                  <SlidersHorizontal className="h-4 w-4 mr-2" />
                   More
-                  {totalActiveFilters > 0 && <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs flex items-center justify-center">
+                  {totalActiveFilters > 0 && (
+                    <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center">
                       {totalActiveFilters}
-                    </Badge>}
+                    </Badge>
+                  )}
                 </Button>
               </SheetTrigger>
               <SheetContent side="bottom" className="h-[90vh] max-h-[90vh] flex flex-col p-0">
-                <div className="flex-shrink-0 p-4 sm:p-6 border-b">
+                <div className="flex-shrink-0 p-6 border-b">
                   <SheetHeader className="text-left">
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
@@ -137,16 +168,16 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                 
                 <div className="flex-1 min-h-0 overflow-hidden">
                   <ScrollArea className="h-full">
-                    <div className="p-4 sm:p-6">
-                      <div className="space-y-6 pb-24">
-                        {/* Status & Category (repeated for convenience) */}
-                        <div className="space-y-3">
+                    <div className="p-6">
+                      <div className="space-y-8 pb-24">
+                        {/* Basic Filters */}
+                        <div className="space-y-4">
                           <h4 className="font-medium text-sm">Basic Filters</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-xs text-muted-foreground">Status</label>
                               <Select value={selectedStatus} onValueChange={onStatusChange}>
-                                <SelectTrigger className="h-10 w-full">
+                                <SelectTrigger className="h-11 w-full">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -161,17 +192,19 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                               </Select>
                             </div>
                             
-                            <div>
-                              <label className="text-xs text-muted-foreground mb-1 block">Category</label>
+                            <div className="space-y-2">
+                              <label className="text-xs text-muted-foreground">Category</label>
                               <Select value={selectedCategory} onValueChange={onCategoryChange}>
-                                <SelectTrigger className="h-10 w-full">
+                                <SelectTrigger className="h-11 w-full">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="all">All Categories</SelectItem>
-                                  {categories.map(category => <SelectItem key={category.id} value={category.id}>
+                                  {categories.map((category) => (
+                                    <SelectItem key={category.id} value={category.id}>
                                       {category.name}
-                                    </SelectItem>)}
+                                    </SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
@@ -179,16 +212,17 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                         </div>
 
                         {/* Professional Filters */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           <h4 className="font-medium text-sm flex items-center gap-2">
                             <Users className="h-4 w-4" />
                             Professional Details
                           </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {onSeniorityChange && <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Seniority</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {onSeniorityChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Seniority</label>
                                 <Select value={selectedSeniority} onValueChange={onSeniorityChange}>
-                                  <SelectTrigger className="h-10 w-full">
+                                  <SelectTrigger className="h-11 w-full">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -200,12 +234,14 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                                     <SelectItem value="C-level">C-level</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              </div>}
+                              </div>
+                            )}
                             
-                            {onCompanySizeChange && <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Company Size</label>
+                            {onCompanySizeChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Company Size</label>
                                 <Select value={selectedCompanySize} onValueChange={onCompanySizeChange}>
-                                  <SelectTrigger className="h-10 w-full">
+                                  <SelectTrigger className="h-11 w-full">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
@@ -216,46 +252,55 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                                     <SelectItem value="Enterprise (1000+)">Enterprise (1000+)</SelectItem>
                                   </SelectContent>
                                 </Select>
-                              </div>}
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         {/* Location & Industry Filters */}
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           <h4 className="font-medium text-sm flex items-center gap-2">
                             <Building2 className="h-4 w-4" />
                             Company Details
                           </h4>
-                          <div className="space-y-3">
-                            {onLocationChange && <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Location</label>
+                          <div className="space-y-4">
+                            {onLocationChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Location</label>
                                 <Select value={selectedLocation || 'all-locations'} onValueChange={handleLocationChange}>
-                                  <SelectTrigger className="h-10 w-full">
+                                  <SelectTrigger className="h-11 w-full">
                                     <SelectValue placeholder="All Locations" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="all-locations">All Locations</SelectItem>
-                                    {availableLocations.map(location => <SelectItem key={location} value={location}>
+                                    {availableLocations.map((location) => (
+                                      <SelectItem key={location} value={location}>
                                         {location}
-                                      </SelectItem>)}
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
-                              </div>}
+                              </div>
+                            )}
                             
-                            {onIndustryChange && <div>
-                                <label className="text-xs text-muted-foreground mb-1 block">Industry</label>
+                            {onIndustryChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Industry</label>
                                 <Select value={selectedIndustry || 'all-industries'} onValueChange={handleIndustryChange}>
-                                  <SelectTrigger className="h-10 w-full">
+                                  <SelectTrigger className="h-11 w-full">
                                     <SelectValue placeholder="All Industries" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="all-industries">All Industries</SelectItem>
-                                    {availableIndustries.map(industry => <SelectItem key={industry} value={industry}>
+                                    {availableIndustries.map((industry) => (
+                                      <SelectItem key={industry} value={industry}>
                                         {industry}
-                                      </SelectItem>)}
+                                      </SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
-                              </div>}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -264,12 +309,19 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                 </div>
 
                 {/* Fixed Action Buttons */}
-                <div className="flex-shrink-0 bg-background border-t p-4 safe-area-inset-bottom">
+                <div className="flex-shrink-0 bg-background border-t p-6">
                   <div className="flex flex-col sm:flex-row gap-3">
-                    <Button variant="outline" onClick={handleClearAllFilters} className="flex-1 h-11">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleClearAllFilters} 
+                      className="flex-1 h-11"
+                    >
                       Clear All
                     </Button>
-                    <Button onClick={() => setIsFilterSheetOpen(false)} className="flex-1 h-11">
+                    <Button 
+                      onClick={() => setIsFilterSheetOpen(false)} 
+                      className="flex-1 h-11"
+                    >
                       Apply Filters
                     </Button>
                   </div>
@@ -278,42 +330,62 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
             </Sheet>
 
             {/* Clear Filters Button */}
-            {totalActiveFilters > 0 && <Button variant="ghost" size="sm" onClick={handleClearAllFilters} className="h-9 px-2 text-xs flex-shrink-0 whitespace-nowrap">
-                <X className="h-3 w-3 mr-1" />
+            {totalActiveFilters > 0 && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleClearAllFilters} 
+                className="h-10 px-3 text-sm flex-shrink-0 whitespace-nowrap"
+              >
+                <X className="h-3 w-3 mr-2" />
                 Clear
-              </Button>}
+              </Button>
+            )}
           </div>
         </div>
         
         {/* Fade effect to indicate scrollable content */}
-        <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-background to-transparent pointer-events-none" />
       </div>
 
       {/* Active Filters Display */}
-      {totalActiveFilters > 0 && <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex items-center gap-2 pb-1" style={{
-        minWidth: 'max-content'
-      }}>
+      {totalActiveFilters > 0 && (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 min-w-max">
             <span className="text-xs text-muted-foreground flex-shrink-0">Active filters:</span>
-            {selectedStatus !== 'all' && <Badge variant="secondary" className="text-xs flex-shrink-0">
+            {selectedStatus !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Status: {selectedStatus}
-              </Badge>}
-            {selectedCategory !== 'all' && <Badge variant="secondary" className="text-xs flex-shrink-0">
-                Category: {categories.find(c => c.id === selectedCategory)?.name}
-              </Badge>}
-            {selectedSeniority !== 'all' && <Badge variant="secondary" className="text-xs flex-shrink-0">
+              </Badge>
+            )}
+            {selectedCategory !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Category: {categories.find((c) => c.id === selectedCategory)?.name}
+              </Badge>
+            )}
+            {selectedSeniority !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Seniority: {selectedSeniority}
-              </Badge>}
-            {selectedCompanySize !== 'all' && <Badge variant="secondary" className="text-xs flex-shrink-0">
+              </Badge>
+            )}
+            {selectedCompanySize !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Size: {selectedCompanySize}
-              </Badge>}
-            {selectedLocation && <Badge variant="secondary" className="text-xs flex-shrink-0">
+              </Badge>
+            )}
+            {selectedLocation && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Location: {selectedLocation}
-              </Badge>}
-            {selectedIndustry && <Badge variant="secondary" className="text-xs flex-shrink-0">
+              </Badge>
+            )}
+            {selectedIndustry && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Industry: {selectedIndustry}
-              </Badge>}
+              </Badge>
+            )}
           </div>
-        </div>}
-    </div>;
+        </div>
+      )}
+    </div>
+  );
 };
