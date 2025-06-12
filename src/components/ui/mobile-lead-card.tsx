@@ -18,6 +18,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { 
   Mail, 
   Phone, 
@@ -72,6 +78,18 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
     return category ? { name: category.name, color: category.color } : { name: 'Unknown', color: '#6B7280' };
   };
 
+  const getStatusColor = (status: LeadStatus) => {
+    switch (status) {
+      case 'New': return 'bg-blue-500 text-white';
+      case 'Contacted': return 'bg-green-500 text-white';
+      case 'Qualified': return 'bg-emerald-500 text-white';
+      case 'Interested': return 'bg-purple-500 text-white';
+      case 'Not Interested': return 'bg-red-500 text-white';
+      case 'Unresponsive': return 'bg-gray-500 text-white';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText(lead.email);
@@ -107,117 +125,175 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
   const category = getCategoryInfo(lead.categoryId);
 
   return (
-    <Card className="mb-3 shadow-sm border-border/50">
-      <CardContent className="p-4">
-        {/* Header Section */}
-        <div className="flex items-start gap-3 mb-3">
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={onSelect}
-            className="mt-1"
-          />
-          
-          <Avatar className="h-12 w-12 flex-shrink-0">
-            <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-            <AvatarFallback className="text-sm font-medium">
-              {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-base leading-tight mb-1">
-              {lead.firstName} {lead.lastName}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-tight mb-1 truncate">
-              {lead.title}
-            </p>
-            <p className="text-sm text-muted-foreground leading-tight truncate">
-              {lead.company}
-            </p>
+    <TooltipProvider>
+      <Card className="mb-2 shadow-sm border-border/50 bg-card hover:shadow-md transition-shadow duration-200">
+        <CardContent className="p-3">
+          {/* Compact Header Section */}
+          <div className="flex items-start gap-3 mb-2">
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onSelect}
+              className="mt-0.5 h-4 w-4"
+            />
+            
+            <Avatar className="h-10 w-10 flex-shrink-0">
+              <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+              <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+                {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-semibold text-sm leading-tight mb-0.5 truncate">
+                    {lead.firstName} {lead.lastName}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-tight truncate">
+                    {lead.title} • {lead.company}
+                  </p>
+                </div>
+                
+                <Badge className={`text-xs px-2 py-0.5 font-medium ${getStatusColor(lead.status)}`}>
+                  {lead.status}
+                </Badge>
+              </div>
+            </div>
           </div>
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={onEmailClick}>
-                <Mail className="h-4 w-4 mr-2" />
-                Send Email
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={copyEmail}>
-                <Copy className="h-4 w-4 mr-2" />
-                Copy Email
-              </DropdownMenuItem>
+
+          {/* Contact Info and Actions Row */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-0 flex-1">
+              <Mail className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{lead.email}</span>
               {lead.phone && (
-                <DropdownMenuItem onClick={callLead}>
-                  <Phone className="h-4 w-4 mr-2" />
-                  Call Lead
-                </DropdownMenuItem>
+                <>
+                  <span className="mx-1">•</span>
+                  <Phone className="h-3 w-3 flex-shrink-0" />
+                  <span className="flex-shrink-0">{lead.phone}</span>
+                </>
               )}
-              <DropdownMenuItem onClick={onViewDetails}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onDeleteLead} className="text-red-600">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Lead
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-
-        {/* Status and Quick Actions */}
-        <div className="flex items-center justify-between mb-3">
-          <QuickStatusEditor
-            status={lead.status}
-            onChange={onStatusChange}
-          />
-          
-          <div className="flex items-center gap-2">
-            {lead.email && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={onEmailClick}
-              >
-                <Mail className="h-4 w-4" />
-              </Button>
-            )}
-            {lead.phone && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={callLead}
-              >
-                <Phone className="h-4 w-4" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0"
-              onClick={onViewDetails}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
+            </div>
+            
+            <span className="text-xs text-muted-foreground flex-shrink-0">
+              {format(lead.createdAt, 'MMM dd')}
+            </span>
           </div>
-        </div>
 
-        {/* Remarks Section */}
-        <div className="mb-3">
-          {isEditingRemarks ? (
-            <div className="space-y-2">
+          {/* Primary Actions - Better Spaced */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-primary/10"
+                    onClick={onEmailClick}
+                  >
+                    <Mail className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Send Email</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {lead.phone && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 hover:bg-green-50"
+                      onClick={callLead}
+                    >
+                      <Phone className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Call Lead</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-blue-50"
+                    onClick={onViewDetails}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View Details</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Remarks Toggle - Only show if has remarks or when editing */}
+              {(lead.remarks || isEditingRemarks) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => setIsEditingRemarks(!isEditingRemarks)}
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  {isEditingRemarks ? 'Cancel' : 'Edit'}
+                </Button>
+              )}
+
+              {/* Expand/Collapse */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+
+              {/* More Actions */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={copyEmail}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Email
+                  </DropdownMenuItem>
+                  {!lead.remarks && !isEditingRemarks && (
+                    <DropdownMenuItem onClick={() => setIsEditingRemarks(true)}>
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Add Remarks
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onDeleteLead} className="text-red-600">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Lead
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Remarks Editor - Only when editing */}
+          {isEditingRemarks && (
+            <div className="mt-3 space-y-2">
               <Textarea
                 value={remarksText}
                 onChange={(e) => setRemarksText(e.target.value)}
                 placeholder="Add remarks..."
-                className="min-h-[80px] text-sm"
+                className="min-h-[60px] text-sm"
               />
               <div className="flex gap-2">
                 <Button size="sm" onClick={saveRemarks} className="flex-1">
@@ -230,86 +306,64 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 </Button>
               </div>
             </div>
-          ) : (
-            <Button
-              variant="ghost"
-              className="w-full h-auto p-3 text-left justify-start border border-dashed border-border hover:border-primary/50"
-              onClick={() => setIsEditingRemarks(true)}
-            >
-              <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
-              <span className="text-sm text-muted-foreground">
-                {lead.remarks || 'Add remarks...'}
-              </span>
-              <Edit3 className="h-3 w-3 ml-auto flex-shrink-0" />
-            </Button>
           )}
-        </div>
 
-        {/* Collapsible Details */}
-        <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full p-2 h-auto">
-              <div className="flex items-center justify-between w-full">
-                <span className="text-sm text-muted-foreground">
-                  {isExpanded ? 'Less details' : 'More details'}
-                </span>
-                {isExpanded ? (
-                  <ChevronUp className="h-4 w-4" />
-                ) : (
-                  <ChevronDown className="h-4 w-4" />
-                )}
+          {/* Show existing remarks if not editing */}
+          {lead.remarks && !isEditingRemarks && (
+            <div className="mt-2 p-2 bg-muted/30 rounded text-xs text-muted-foreground">
+              {lead.remarks}
+            </div>
+          )}
+
+          {/* Collapsible Details */}
+          <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+            <CollapsibleContent className="space-y-2 pt-2 border-t border-border/50 mt-2">
+              {/* Status Editor */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Status:</span>
+                <QuickStatusEditor
+                  status={lead.status}
+                  onChange={onStatusChange}
+                />
               </div>
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-3 pt-3">
-            {/* Contact Information */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Contact</h4>
-              <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-3 w-3 text-muted-foreground" />
-                  <span className="truncate">{lead.email}</span>
+
+              {/* Category */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">Category:</span>
+                <div className="flex items-center gap-1">
+                  <div 
+                    className="w-2 h-2 rounded-full" 
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <span className="text-xs">{category.name}</span>
                 </div>
-                {lead.phone && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-3 w-3 text-muted-foreground" />
-                    <span>{lead.phone}</span>
+              </div>
+
+              {/* Additional Details */}
+              <div className="space-y-1 text-xs text-muted-foreground">
+                {lead.companySize && (
+                  <div className="flex justify-between">
+                    <span>Company Size:</span>
+                    <span>{lead.companySize}</span>
+                  </div>
+                )}
+                {lead.seniority && (
+                  <div className="flex justify-between">
+                    <span>Seniority:</span>
+                    <span>{lead.seniority}</span>
+                  </div>
+                )}
+                {lead.lastContactDate && (
+                  <div className="flex justify-between">
+                    <span>Last Contact:</span>
+                    <span>{format(lead.lastContactDate, 'MMM dd, yyyy')}</span>
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Category */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Category</h4>
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
-                  style={{ backgroundColor: category.color }}
-                />
-                <span className="text-sm">{category.name}</span>
-              </div>
-            </div>
-
-            {/* Additional Info */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Details</h4>
-              <div className="space-y-1 text-sm text-muted-foreground">
-                {lead.companySize && (
-                  <div>Company Size: {lead.companySize}</div>
-                )}
-                {lead.seniority && (
-                  <div>Seniority: {lead.seniority}</div>
-                )}
-                <div>Added: {format(lead.createdAt, 'MMM dd, yyyy')}</div>
-                {lead.lastContactDate && (
-                  <div>Last Contact: {format(lead.lastContactDate, 'MMM dd, yyyy')}</div>
-                )}
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </CardContent>
-    </Card>
+            </CollapsibleContent>
+          </Collapsible>
+        </CardContent>
+      </Card>
+    </TooltipProvider>
   );
 };

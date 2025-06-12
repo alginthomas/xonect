@@ -541,15 +541,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   return (
     <div className="space-y-3 lg:space-y-6">
-      {/* Mobile-optimized Search and Filters */}
-      <div className="space-y-3">
+      {/* Sticky Mobile-optimized Search and Filters */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 pb-3 space-y-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search leads..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-12 lg:h-10"
+            className="pl-10 h-11 lg:h-10 bg-background border-border/50"
           />
         </div>
         
@@ -637,25 +637,25 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
       {/* Bulk Actions - Mobile Optimized */}
       {selectedLeads.size > 0 && (
-        <div className="flex flex-col gap-3 p-3 lg:p-4 bg-muted/50 rounded-lg border">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">
-              {selectedLeads.size} lead{selectedLeads.size > 1 ? 's' : ''} selected
+        <div className="sticky top-20 z-20 bg-primary/5 backdrop-blur-sm border border-primary/20 rounded-lg p-3 mx-1">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-primary">
+              {selectedLeads.size} selected
             </span>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSelectedLeads(new Set())}
-              className="h-8 w-8 p-0"
+              className="h-6 w-6 p-0 text-primary hover:bg-primary/10"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
           
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">
                   Update Status
                 </Button>
               </DropdownMenuTrigger>
@@ -672,47 +672,49 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               variant="outline" 
               size="sm" 
               onClick={() => handleBulkAction('delete')}
-              className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
+              className="text-red-600 hover:text-red-700 h-8 text-xs px-3"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <Trash2 className="h-3 w-3 mr-1" />
               Delete
             </Button>
           </div>
         </div>
       )}
 
-      {/* Results Overview */}
+      {/* Results Overview - Compact */}
       <Card className="apple-card">
-        <CardHeader className="pb-3 lg:pb-4">
+        <CardHeader className="pb-2 lg:pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
-              <CardTitle className="flex items-center gap-2 text-lg lg:text-xl">
-                <Users className="h-5 w-5" />
-                Leads Overview
+              <CardTitle className="flex items-center gap-2 text-base lg:text-xl">
+                <Users className="h-4 w-4 lg:h-5 lg:w-5" />
+                {filteredLeads.length} Lead{filteredLeads.length !== 1 ? 's' : ''}
+                {selectedLeads.size > 0 && (
+                  <Badge variant="secondary" className="ml-2 text-xs">
+                    {selectedLeads.size} selected
+                  </Badge>
+                )}
               </CardTitle>
-              <CardDescription className="mt-1">
-                {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} found
-                {selectedLeads.size > 0 && ` (${selectedLeads.size} selected)`}
-              </CardDescription>
+              {selectedBatchId && (
+                <CardDescription className="mt-1 flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    Batch: {getBatchName(selectedBatchId)}
+                  </Badge>
+                </CardDescription>
+              )}
             </div>
-            
-            {selectedBatchId && (
-              <Badge variant="secondary" className="self-start sm:self-center">
-                Batch: {getBatchName(selectedBatchId)}
-              </Badge>
-            )}
           </div>
         </CardHeader>
         <CardContent className="pt-0">
           {paginatedLeads.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">No leads found</h3>
-              <p>Try adjusting your search criteria or filters.</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
+              <h3 className="text-sm font-medium mb-1">No leads found</h3>
+              <p className="text-xs">Try adjusting your search or filters.</p>
             </div>
           ) : isMobile ? (
-            // Mobile Card Layout
-            <div className="space-y-3">
+            // Mobile Card Layout - Improved
+            <div className="space-y-1">
               {paginatedLeads.map(lead => (
                 <MobileLeadCard
                   key={lead.id}
@@ -867,10 +869,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Floating Action Button for Mobile */}
+      {/* Floating Action Button for Mobile - Better positioned */}
       <FloatingActionButton
         onClick={() => {
-          // Handle add lead action - could open a dialog or navigate
           toast({
             title: 'Add Lead',
             description: 'Lead creation feature coming soon!',
@@ -878,6 +879,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         }}
         icon={<Plus className="h-5 w-5" />}
         label="Add Lead"
+        className="bottom-20 right-4 h-12 w-12 shadow-xl"
       />
 
       {/* Sidebar for Lead Details */}
