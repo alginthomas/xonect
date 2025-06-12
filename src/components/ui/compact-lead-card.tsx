@@ -115,7 +115,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     <>
       {/* Compact Card */}
       <Card 
-        className="mb-2 shadow-sm border-border/50 bg-card hover:shadow-md transition-all duration-200 cursor-pointer"
+        className="mb-2 shadow-sm border-border/50 bg-card hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden"
         onClick={() => setIsExpanded(true)}
       >
         <div className="p-3">
@@ -125,7 +125,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               checked={isSelected}
               onCheckedChange={onSelect}
               onClick={(e) => e.stopPropagation()}
-              className="h-4 w-4"
+              className="h-4 w-4 flex-shrink-0"
             />
             
             {/* Avatar */}
@@ -139,47 +139,47 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             {/* Lead Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between mb-1">
-                <h3 className="font-semibold text-sm leading-tight truncate">
+                <h3 className="font-semibold text-sm leading-tight truncate pr-2">
                   {lead.firstName} {lead.lastName}
                 </h3>
-                <Badge className={`text-xs px-2 py-0.5 font-medium ml-2 flex items-center gap-1 ${getStatusColor(lead.status)}`}>
+                <Badge className={`text-xs px-2 py-0.5 font-medium flex items-center gap-1 flex-shrink-0 ${getStatusColor(lead.status)}`}>
                   <span>{getStatusIcon(lead.status)}</span>
                   {lead.status}
                 </Badge>
               </div>
               
-              <p className="text-xs text-muted-foreground leading-tight truncate mb-1">
+              <p className="text-xs text-muted-foreground leading-tight truncate mb-2">
                 {lead.title} • {lead.company}
               </p>
               
-              {/* Quick Actions Row */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              {/* Quick Actions Row - Fixed layout */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-8 px-2 hover:bg-primary/10"
+                    className="h-7 px-2 hover:bg-primary/10 text-xs flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
                       onEmailClick();
                     }}
                   >
-                    <Mail className="h-3 w-3 mr-1" />
-                    <span className="text-xs">Email</span>
+                    <Mail className="h-3 w-3" />
+                    <span>Email</span>
                   </Button>
 
                   {lead.phone && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-8 px-2 hover:bg-green-50"
+                      className="h-7 px-2 hover:bg-green-50 text-xs flex items-center gap-1"
                       onClick={(e) => {
                         e.stopPropagation();
                         callLead();
                       }}
                     >
-                      <Phone className="h-3 w-3 mr-1" />
-                      <span className="text-xs">Call</span>
+                      <Phone className="h-3 w-3" />
+                      <span>Call</span>
                     </Button>
                   )}
                 </div>
@@ -187,10 +187,14 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 text-xs text-muted-foreground"
+                  className="h-7 px-2 text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(true);
+                  }}
                 >
                   <span>View</span>
-                  <ChevronRight className="h-3 w-3 ml-1" />
+                  <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
             </div>
