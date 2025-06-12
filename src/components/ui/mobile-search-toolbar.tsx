@@ -10,6 +10,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Search, 
@@ -86,82 +87,91 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
               </Button>
             </SheetTrigger>
             
-            <SheetContent side="bottom" className="h-[60vh]">
-              <SheetHeader className="text-left mb-4">
-                <div className="flex items-center justify-between">
-                  <SheetTitle>Filters</SheetTitle>
-                  {activeFiltersCount > 0 && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={onClearFilters}
-                      className="text-xs"
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      Clear All
-                    </Button>
-                  )}
-                </div>
-              </SheetHeader>
+            <SheetContent side="bottom" className="h-[70vh] flex flex-col p-0">
+              <div className="flex-shrink-0 p-6 border-b">
+                <SheetHeader className="text-left">
+                  <div className="flex items-center justify-between">
+                    <SheetTitle>Filters</SheetTitle>
+                    {activeFiltersCount > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={onClearFilters}
+                        className="text-xs"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                </SheetHeader>
+              </div>
 
-              <div className="space-y-4">
-                {/* Status Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Status</label>
-                  <Select value={statusFilter} onValueChange={onStatusChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      {allStatuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full px-6">
+                  <div className="space-y-4 py-6">
+                    {/* Status Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Status</label>
+                      <Select value={statusFilter} onValueChange={onStatusChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Status</SelectItem>
+                          {allStatuses.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {status}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {/* Category Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={categoryFilter} onValueChange={onCategoryChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Categories" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {categories.map(category => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: category.color }}
-                            />
-                            {category.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    {/* Category Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Category</label>
+                      <Select value={categoryFilter} onValueChange={onCategoryChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Categories" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map(category => (
+                            <SelectItem key={category.id} value={category.id}>
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="w-3 h-3 rounded-full" 
+                                  style={{ backgroundColor: category.color }}
+                                />
+                                {category.name}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                {/* Data Availability Filter */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Data Availability</label>
-                  <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="All Leads" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Leads</SelectItem>
-                      <SelectItem value="has-phone">Has Phone</SelectItem>
-                      <SelectItem value="has-email">Has Email</SelectItem>
-                      <SelectItem value="has-both">Has Both</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                    {/* Data Availability Filter */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Data Availability</label>
+                      <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="All Leads" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Leads</SelectItem>
+                          <SelectItem value="has-phone">Has Phone</SelectItem>
+                          <SelectItem value="has-email">Has Email</SelectItem>
+                          <SelectItem value="has-both">Has Both</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Extra padding for better scrolling */}
+                    <div className="h-20" />
+                  </div>
+                </ScrollArea>
               </div>
             </SheetContent>
           </Sheet>
