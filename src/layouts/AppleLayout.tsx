@@ -42,14 +42,14 @@ const AppleLayout: React.FC<AppleLayoutProps> = ({
       
       <main className="flex-1 overflow-hidden">
         {isMobile ? (
-          // Mobile Layout - Full height container
+          // Mobile Layout - Full height container with no padding
           <div className="h-full pb-16">
             {children}
           </div>
         ) : (
-          // Desktop Layout - Padded container
-          <div className="p-4 lg:p-6 xl:p-8">
-            <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8">
+          // Desktop Layout - Minimal padding for edge spacing only
+          <div className="p-2 lg:p-4">
+            <div className="max-w-7xl mx-auto">
               {children}
             </div>
           </div>
