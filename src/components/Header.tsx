@@ -1,82 +1,83 @@
 
 import React from 'react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MobileNavigation } from '@/components/MobileNavigation';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { UserDropdown } from '@/components/UserDropdown';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  onAddLead?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
-  const getPageTitle = () => {
-    switch (activeTab) {
-      case 'dashboard':
-        return 'Dashboard';
-      case 'leads':
-        return 'Leads';
-      case 'import':
-        return 'Import Data';
-      case 'categories':
-        return 'Categories';
-      case 'templates':
-        return 'Email Templates';
-      case 'settings':
-        return 'Settings';
-      default:
-        return 'Dashboard';
-    }
-  };
+const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onAddLead }) => {
+  const isMobile = useIsMobile();
+
+  const tabs = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'leads', label: 'Leads' },
+    { id: 'import', label: 'Import' },
+    { id: 'categories', label: 'Categories' },
+    { id: 'templates', label: 'Templates' },
+    { id: 'settings', label: 'Settings' },
+  ];
 
   return (
-    <header className="border-b border-border bg-card/50 apple-blur sticky top-0 z-40">
-      <div className="px-4 lg:px-8 py-3 lg:py-4">
-        <div className="flex items-center justify-between gap-4">
-          {/* Left Zone: Brand + Mobile Menu + Desktop Navigation */}
-          <div className="flex items-center gap-3 lg:gap-6 flex-1 min-w-0">
-            {/* Brand */}
-            <div className="flex items-center gap-2 lg:gap-3 flex-shrink-0">
-              {/* Mobile Navigation */}
-              <MobileNavigation 
-                activeTab={activeTab} 
-                onTabChange={onTabChange} 
-              />
-              
-              <div className="w-7 h-7 lg:w-8 lg:h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-xs lg:text-sm font-bold text-primary-foreground">L</span>
-              </div>
-              <span className="font-semibold text-foreground text-sm lg:text-base">LeadManager</span>
-            </div>
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-16 items-center justify-between px-4 lg:px-6">
+        {/* Left Section - Logo/Title */}
+        <div className="flex items-center gap-4">
+          <h1 className="text-xl lg:text-2xl font-bold text-primary">Xonect</h1>
+        </div>
 
-            {/* Desktop Navigation - Hidden on Mobile */}
-            <div className="hidden lg:block">
-              <Tabs value={activeTab} onValueChange={onTabChange}>
-                <TabsList className="bg-muted/50 rounded-lg p-1 gap-1">
-                  <TabsTrigger value="dashboard" className="rounded-md font-medium text-xs px-3 py-1.5">Dashboard</TabsTrigger>
-                  <TabsTrigger value="leads" className="rounded-md font-medium text-xs px-3 py-1.5">Leads</TabsTrigger>
-                  <TabsTrigger value="import" className="rounded-md font-medium text-xs px-3 py-1.5">Import</TabsTrigger>
-                  <TabsTrigger value="categories" className="rounded-md font-medium text-xs px-3 py-1.5">Categories</TabsTrigger>
-                  <TabsTrigger value="templates" className="rounded-md font-medium text-xs px-3 py-1.5">Templates</TabsTrigger>
-                  <TabsTrigger value="settings" className="rounded-md font-medium text-xs px-3 py-1.5">Settings</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </div>
-          </div>
+        {/* Center Section - Desktop Navigation */}
+        {!isMobile && (
+          <nav className="hidden md:flex items-center space-x-1">
+            {tabs.map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "ghost"}
+                onClick={() => onTabChange(tab.id)}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  activeTab === tab.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </nav>
+        )}
 
-          {/* Center Zone: Page Title on Mobile */}
-          <div className="lg:hidden flex-1 text-center">
-            <h1 className="font-semibold text-foreground text-sm truncate">
-              {getPageTitle()}
-            </h1>
-          </div>
-
-          {/* Right Zone: User Dropdown */}
-          <div className="flex-shrink-0">
-            <div className="hidden lg:block">
-              <UserDropdown />
-            </div>
-          </div>
+        {/* Right Section - Actions and User */}
+        <div className="flex items-center gap-2">
+          {/* Add Lead Button - Show on mobile and when appropriate */}
+          {isMobile && onAddLead && (
+            <Button
+              onClick={onAddLead}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="hidden xs:inline">Add Lead</span>
+            </Button>
+          )}
+          
+          {/* Desktop Add Lead Button - Show on leads tab */}
+          {!isMobile && activeTab === 'leads' && onAddLead && (
+            <Button
+              onClick={onAddLead}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Add Lead
+            </Button>
+          )}
+          
+          <UserDropdown />
         </div>
       </div>
     </header>

@@ -12,6 +12,7 @@ import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { BrandingSettings } from '@/components/BrandingSettings';
 import { ImportHistory } from '@/components/ImportHistory';
 import { MobileNavigation } from '@/components/MobileNavigation';
+import { MobileLeadsList } from '@/components/ui/mobile-leads-list';
 import AppleLayout from '@/layouts/AppleLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -586,9 +587,9 @@ const Index = () => {
       categories={categories}
       onLeadAdded={handleImportComplete}
     >
-      <div className="space-y-6 lg:space-y-8">
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsContent value="dashboard" className="space-y-6 lg:space-y-8">
+      <div className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
+          <TabsContent value="dashboard" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
             <AnalyticsDashboard
               leads={leads}
               templates={templates}
@@ -598,33 +599,48 @@ const Index = () => {
             />
           </TabsContent>
 
-          <TabsContent value="leads" className="space-y-6 lg:space-y-8">
-            <Card className="apple-card">
-              <CardHeader className="pb-4 lg:pb-6">
-                <CardTitle className="text-lg lg:text-xl">All Leads</CardTitle>
-                <CardDescription className="text-sm lg:text-base">
-                  View and manage all your leads in one place.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="px-3 lg:px-6">
-                <LeadsDashboard
-                  leads={leads}
-                  templates={templates}
-                  categories={categories}
-                  importBatches={importBatches}
-                  branding={branding}
-                  onUpdateLead={handleUpdateLead}
-                  onDeleteLead={handleDeleteLead}
-                  onBulkUpdateStatus={handleBulkUpdateStatus}
-                  onBulkDelete={handleBulkDelete}
-                  onSendEmail={handleSendEmail}
-                  selectedBatchId={selectedBatchId}
-                />
-              </CardContent>
-            </Card>
+          <TabsContent value="leads" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+            {isMobile ? (
+              // Mobile Leads View - Full height
+              <MobileLeadsList
+                leads={leads}
+                categories={categories}
+                onUpdateLead={handleUpdateLead}
+                onDeleteLead={handleDeleteLead}
+                onEmailClick={handleSendEmail}
+                onViewDetails={(lead) => console.log('View details for:', lead)}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onBulkDelete={handleBulkDelete}
+              />
+            ) : (
+              // Desktop Leads View - Card layout
+              <Card className="apple-card">
+                <CardHeader className="pb-4 lg:pb-6">
+                  <CardTitle className="text-lg lg:text-xl">All Leads</CardTitle>
+                  <CardDescription className="text-sm lg:text-base">
+                    View and manage all your leads in one place.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-3 lg:px-6">
+                  <LeadsDashboard
+                    leads={leads}
+                    templates={templates}
+                    categories={categories}
+                    importBatches={importBatches}
+                    branding={branding}
+                    onUpdateLead={handleUpdateLead}
+                    onDeleteLead={handleDeleteLead}
+                    onBulkUpdateStatus={handleBulkUpdateStatus}
+                    onBulkDelete={handleBulkDelete}
+                    onSendEmail={handleSendEmail}
+                    selectedBatchId={selectedBatchId}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
-          <TabsContent value="import" className="space-y-8 lg:space-y-10">
+          <TabsContent value="import" className={isMobile ? "h-full p-4" : "space-y-8 lg:space-y-10"}>
             <div className="max-w-full">
               <CSVImport 
                 categories={categories} 
@@ -644,7 +660,7 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="categories" className="space-y-6 lg:space-y-8">
+          <TabsContent value="categories" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
             <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Lead Categories</CardTitle>
@@ -663,7 +679,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="templates" className="space-y-6 lg:space-y-8">
+          <TabsContent value="templates" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
             <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
@@ -680,7 +696,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6 lg:space-y-8">
+          <TabsContent value="settings" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
             <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>
