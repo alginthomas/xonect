@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { X } from 'lucide-react';
+import { X, User, Mail, Building, Briefcase, Phone, Linkedin, Tag, MessageSquare } from 'lucide-react';
 import type { Category } from '@/types/category';
 
 interface AddLeadDialogProps {
@@ -122,106 +122,169 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-md mx-auto h-[90vh] max-h-[600px] p-0 gap-0 rounded-xl">
-        {/* Header - Fixed */}
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-6 pb-4">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-xl font-semibold">Add New Lead</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
-              Fill in the details below. Required fields are marked with *
+      <DialogContent className="w-[95vw] max-w-md mx-auto h-[90vh] max-h-[700px] p-0 gap-0 rounded-2xl border-0 shadow-2xl bg-background/95 backdrop-blur-xl">
+        {/* Header */}
+        <div className="relative px-6 pt-8 pb-6 border-b border-border/10">
+          <button
+            onClick={handleClose}
+            className="absolute right-4 top-4 p-2 rounded-full hover:bg-accent/50 transition-colors"
+            disabled={loading}
+          >
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+          <DialogHeader className="space-y-3 text-left">
+            <DialogTitle className="text-2xl font-semibold text-foreground">
+              Add New Lead
+            </DialogTitle>
+            <DialogDescription className="text-base text-muted-foreground leading-relaxed">
+              Create a new lead by filling out the form below. Required fields are marked with an asterisk.
             </DialogDescription>
           </DialogHeader>
         </div>
         
         {/* Scrollable Content */}
-        <ScrollArea className="flex-1 px-6">
-          <form onSubmit={handleSubmit} className="space-y-6 py-4">
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <div className="text-sm font-medium text-foreground">Basic Information</div>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName" className="text-sm font-medium">
-                    First Name <span className="text-destructive">*</span>
+        <ScrollArea className="flex-1">
+          <form onSubmit={handleSubmit} className="px-6 py-6 space-y-8">
+            {/* Contact Information */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <User className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground">Contact Information</h3>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <Label htmlFor="firstName" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    First Name <span className="text-destructive text-base">*</span>
                   </Label>
                   <Input
                     id="firstName"
                     value={formData.firstName}
                     onChange={(e) => handleInputChange('firstName', e.target.value)}
-                    placeholder="John"
-                    className="h-11"
+                    placeholder="Enter first name"
+                    className="h-12 text-base"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName" className="text-sm font-medium">
-                    Last Name <span className="text-destructive">*</span>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="lastName" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    Last Name <span className="text-destructive text-base">*</span>
                   </Label>
                   <Input
                     id="lastName"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange('lastName', e.target.value)}
-                    placeholder="Doe"
-                    className="h-11"
+                    placeholder="Enter last name"
+                    className="h-12 text-base"
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm font-medium">
-                    Email <span className="text-destructive">*</span>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="email" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Email <span className="text-destructive text-base">*</span>
                   </Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="john.doe@company.com"
-                    className="h-11"
+                    placeholder="name@company.com"
+                    className="h-12 text-base"
                     required
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="phone" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    placeholder="+1 (555) 123-4567"
+                    className="h-12 text-base"
                   />
                 </div>
               </div>
             </div>
 
             {/* Professional Information */}
-            <div className="space-y-4">
-              <div className="text-sm font-medium text-foreground">Professional Information</div>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="company" className="text-sm font-medium">Company</Label>
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Building className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground">Professional Details</h3>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="space-y-3">
+                  <Label htmlFor="company" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Company
+                  </Label>
                   <Input
                     id="company"
                     value={formData.company}
                     onChange={(e) => handleInputChange('company', e.target.value)}
-                    placeholder="Company Inc."
-                    className="h-11"
+                    placeholder="Company name"
+                    className="h-12 text-base"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="title" className="text-sm font-medium">Job Title</Label>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="title" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Briefcase className="h-4 w-4" />
+                    Job Title
+                  </Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    placeholder="Marketing Manager"
-                    className="h-11"
+                    placeholder="Job title or role"
+                    className="h-12 text-base"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium">Category</Label>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="linkedin" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn Profile
+                  </Label>
+                  <Input
+                    id="linkedin"
+                    value={formData.linkedin}
+                    onChange={(e) => handleInputChange('linkedin', e.target.value)}
+                    placeholder="linkedin.com/in/username"
+                    className="h-12 text-base"
+                  />
+                </div>
+                
+                <div className="space-y-3">
+                  <Label htmlFor="category" className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Category
+                  </Label>
                   <Select value={formData.categoryId} onValueChange={(value) => handleInputChange('categoryId', value)}>
-                    <SelectTrigger className="h-11">
-                      <SelectValue placeholder="Select category" />
+                    <SelectTrigger className="h-12 text-base">
+                      <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-background border border-border shadow-lg">
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center gap-2">
+                        <SelectItem key={category.id} value={category.id} className="py-3">
+                          <div className="flex items-center gap-3">
                             <div 
                               className="w-3 h-3 rounded-full" 
                               style={{ backgroundColor: category.color }}
                             />
-                            {category.name}
+                            <span className="text-base">{category.name}</span>
                           </div>
                         </SelectItem>
                       ))}
@@ -231,59 +294,40 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
               </div>
             </div>
 
-            {/* Contact Information */}
-            <div className="space-y-4">
-              <div className="text-sm font-medium text-foreground">Contact Information</div>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    placeholder="+1 (555) 123-4567"
-                    className="h-11"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="linkedin" className="text-sm font-medium">LinkedIn Profile</Label>
-                  <Input
-                    id="linkedin"
-                    value={formData.linkedin}
-                    onChange={(e) => handleInputChange('linkedin', e.target.value)}
-                    placeholder="https://linkedin.com/in/johndoe"
-                    className="h-11"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Additional Notes */}
-            <div className="space-y-4">
-              <div className="text-sm font-medium text-foreground">Additional Notes</div>
-              <div className="space-y-2">
-                <Label htmlFor="remarks" className="text-sm font-medium">Remarks</Label>
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-medium text-foreground">Additional Information</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <Label htmlFor="remarks" className="text-sm font-medium text-foreground">
+                  Notes & Remarks
+                </Label>
                 <Textarea
                   id="remarks"
                   value={formData.remarks}
                   onChange={(e) => handleInputChange('remarks', e.target.value)}
-                  placeholder="Additional notes about this lead..."
-                  rows={3}
-                  className="resize-none"
+                  placeholder="Add any additional notes about this lead..."
+                  rows={4}
+                  className="resize-none text-base"
                 />
               </div>
             </div>
           </form>
         </ScrollArea>
 
-        {/* Footer - Fixed */}
-        <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-6 pt-4">
+        {/* Footer */}
+        <div className="border-t border-border/10 bg-background/80 backdrop-blur-sm p-6">
           <div className="flex gap-3">
             <Button 
               type="button" 
               variant="outline" 
               onClick={handleClose}
-              className="flex-1 h-11"
+              className="flex-1 h-12 text-base font-medium"
               disabled={loading}
             >
               Cancel
@@ -292,7 +336,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
               type="submit" 
               onClick={handleSubmit}
               disabled={loading}
-              className="flex-1 h-11"
+              className="flex-1 h-12 text-base font-medium bg-primary hover:bg-primary/90"
             >
               {loading ? 'Adding...' : 'Add Lead'}
             </Button>
