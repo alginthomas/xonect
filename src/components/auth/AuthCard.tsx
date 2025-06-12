@@ -38,18 +38,18 @@ const AuthCard: React.FC<AuthCardProps> = ({
       </CardHeader>
       <CardContent className="pb-8 px-6">
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 bg-muted/30 rounded-xl overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 bg-muted/30 rounded-xl">
             <TabsTrigger 
               value="signin" 
-              className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm px-2 whitespace-nowrap text-center flex-shrink-0 min-w-0"
+              className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm px-3 text-center overflow-hidden"
             >
-              Sign In
+              <span className="truncate">Sign In</span>
             </TabsTrigger>
             <TabsTrigger 
               value="signup" 
-              className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm px-2 whitespace-nowrap text-center flex-shrink-0 min-w-0"
+              className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm px-3 text-center overflow-hidden"
             >
-              Sign Up
+              <span className="truncate">Sign Up</span>
             </TabsTrigger>
           </TabsList>
 
