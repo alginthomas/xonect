@@ -137,12 +137,7 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
                         className="w-3 h-3 rounded-full flex-shrink-0" 
                         style={{ backgroundColor: category.color }}
                       />
-                      <span className="truncate">{category.name}</span>
-                      {category.description && (
-                        <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">
-                          {category.description}
-                        </span>
-                      )}
+                      <span className="truncate font-medium">{category.name}</span>
                     </div>
                     <Check
                       className={cn(
