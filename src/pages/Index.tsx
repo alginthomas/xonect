@@ -74,36 +74,24 @@ export default function Index() {
       return 'dashboard';
     }
     
-    if (tab) return tab;
-    
-    switch (location.pathname) {
-      case '/':
-        return 'dashboard';
-      case '/leads':
-        return 'leads';
-      case '/import':
-        return 'import';
-      case '/categories':
-        return 'categories';
-      case '/templates':
-        return 'templates';
-      case '/settings':
-        return 'settings';
-      default:
-        return 'dashboard';
-    }
+    // Return the tab from URL or default to dashboard
+    return tab || 'dashboard';
   };
 
   // Handle tab changes and update URL
   const handleTabChange = (value: string) => {
+    console.log('Changing tab to:', value);
     setActiveTab(value);
+    
     // Clear selected batch when changing tabs unless staying on dashboard
     if (value !== 'dashboard') {
       setSelectedBatchId(null);
     }
     
-    // Update URL with current tab, preserving other search params for leads tab
+    // Update URL with current tab
     const searchParams = new URLSearchParams(location.search);
+    
+    // Set the new tab
     searchParams.set('tab', value);
     
     // Only clear other params if not on leads tab
@@ -114,12 +102,18 @@ export default function Index() {
       });
     }
     
-    navigate(`/?${searchParams.toString()}`, { replace: true });
+    // Navigate to the new URL
+    const newUrl = `/?${searchParams.toString()}`;
+    console.log('Navigating to:', newUrl);
+    navigate(newUrl, { replace: true });
   };
 
+  // Initialize active tab from URL on component mount and location changes
   useEffect(() => {
-    setActiveTab(getActiveTab());
-  }, [location]);
+    const newActiveTab = getActiveTab();
+    console.log('Setting active tab from URL:', newActiveTab);
+    setActiveTab(newActiveTab);
+  }, [location.search]);
 
   useEffect(() => {
     fetchLeads();
@@ -592,7 +586,7 @@ export default function Index() {
   };
 
   const handleNavigateToLeads = (filter?: any) => {
-    setActiveTab('leads');
+    console.log('Navigate to leads with filter:', filter);
     
     // Build search params with filter if provided
     const searchParams = new URLSearchParams();
@@ -606,10 +600,11 @@ export default function Index() {
       });
     }
     
-    navigate(`/?${searchParams.toString()}`, { replace: true });
-    if (filter) {
-      console.log('Navigate to leads with filter:', filter);
-    }
+    const newUrl = `/?${searchParams.toString()}`;
+    console.log('Navigating to leads:', newUrl);
+    navigate(newUrl, { replace: true });
+    
+    setActiveTab('leads');
   };
 
   const handleAddLead = () => {
@@ -812,7 +807,7 @@ export default function Index() {
   return (
     <AppleLayout 
       activeTab={activeTab} 
-      onTabChange={setActiveTab}
+      onTabChange={handleTabChange}
     >
       {/* Desktop content */}
       {!isMobile && (
