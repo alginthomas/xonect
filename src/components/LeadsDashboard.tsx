@@ -1028,7 +1028,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           lead={selectedLeadForEmail}
           templates={templates}
           branding={branding}
-          onSendEmail={(leadId) => {
+          onEmailSent={(leadId) => {
             onSendEmail(leadId);
             setShowEmailDialog(false);
             setSelectedLeadForEmail(null);
