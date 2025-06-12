@@ -13,6 +13,7 @@ import AppleLayout from '@/layouts/AppleLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -35,6 +36,7 @@ const safeDate = (dateString: string | null | undefined): Date => {
 const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -580,16 +582,44 @@ const Index = () => {
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="flex flex-col gap-3 mb-4 lg:mb-6">
+            {/* Mobile-optimized Tab Navigation */}
             <div className="overflow-x-auto -mx-3 px-3 lg:mx-0 lg:px-0">
-              <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit">
-                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Dashboard</TabsTrigger>
-                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Leads</TabsTrigger>
-                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Import</TabsTrigger>
-                <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Categories</TabsTrigger>
-                <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Templates</TabsTrigger>
-                <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Settings</TabsTrigger>
+              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3' : 'grid-cols-6'} lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit gap-1`}>
+                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
+                  {isMobile ? '🏠' : 'Dashboard'}
+                </TabsTrigger>
+                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
+                  {isMobile ? '👥' : 'Leads'}
+                </TabsTrigger>
+                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
+                  {isMobile ? '📊' : 'Import'}
+                </TabsTrigger>
+                {!isMobile && (
+                  <>
+                    <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Categories</TabsTrigger>
+                    <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Templates</TabsTrigger>
+                    <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Settings</TabsTrigger>
+                  </>
+                )}
               </TabsList>
             </div>
+
+            {/* Mobile Secondary Navigation */}
+            {isMobile && !['dashboard', 'leads', 'import'].includes(activeTab) && (
+              <div className="overflow-x-auto -mx-3 px-3">
+                <TabsList className="grid w-full grid-cols-3 bg-muted/50 rounded-xl p-1 min-w-fit gap-1">
+                  <TabsTrigger value="categories" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
+                    📁 Categories
+                  </TabsTrigger>
+                  <TabsTrigger value="templates" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
+                    📧 Templates
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
+                    ⚙️ Settings
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+            )}
           </div>
 
           <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">

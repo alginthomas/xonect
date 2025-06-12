@@ -34,10 +34,10 @@ import { QuickActionsCell } from '@/components/QuickActionsCell';
 import { EmailDialog } from '@/components/EmailDialog';
 import { DraggableTableHeader } from '@/components/DraggableTableHeader';
 import { ColumnSettings } from '@/components/ColumnSettings';
-import { MobileFilterDrawer } from '@/components/ui/mobile-filter-drawer';
 import { MobilePagination } from '@/components/ui/mobile-pagination';
-import { MobileLeadCard } from '@/components/ui/mobile-lead-card';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
+import { DateGroupedLeads } from '@/components/ui/date-grouped-leads';
+import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
 import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -149,6 +149,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
     'Not Interested', 'Interested'
   ];
+
+  // Calculate active filters count
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (statusFilter !== 'all') count++;
+    if (categoryFilter !== 'all') count++;
+    if (dataAvailabilityFilter !== 'all') count++;
+    return count;
+  }, [statusFilter, categoryFilter, dataAvailabilityFilter]);
 
   // Filter leads based on batch selection and other filters
   const filteredLeads = useMemo(() => {
@@ -541,99 +550,21 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   return (
     <div className="space-y-3 lg:space-y-6">
-      {/* Sticky Mobile-optimized Search and Filters */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 pb-3 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search leads..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 h-11 lg:h-10 bg-background border-border/50"
-          />
-        </div>
-        
-        <div className="flex flex-col sm:flex-row gap-2">
-          {isMobile ? (
-            <>
-              <MobileFilterDrawer
-                statusFilter={statusFilter}
-                categoryFilter={categoryFilter}
-                dataAvailabilityFilter={dataAvailabilityFilter}
-                categories={categories}
-                onStatusChange={setStatusFilter}
-                onCategoryChange={setCategoryFilter}
-                onDataAvailabilityChange={setDataAvailabilityFilter}
-                onClearFilters={clearAllFilters}
-              />
-              
-              <Button onClick={handleExport} variant="outline" size="sm" className="flex-1">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </>
-          ) : (
-            <>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {allStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                        {category.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Data Filter" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Leads</SelectItem>
-                  <SelectItem value="has-phone">Has Phone</SelectItem>
-                  <SelectItem value="has-email">Has Email</SelectItem>
-                  <SelectItem value="has-both">Has Both</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <ColumnSettings
-                columns={visibleColumns}
-                onToggleVisibility={toggleColumnVisibility}
-                onReset={resetToDefault}
-              />
-
-              <Button onClick={handleExport} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-2" />
-                Export
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
+      {/* Mobile Search Toolbar */}
+      <MobileSearchToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        categoryFilter={categoryFilter}
+        onCategoryChange={setCategoryFilter}
+        dataAvailabilityFilter={dataAvailabilityFilter}
+        onDataAvailabilityChange={setDataAvailabilityFilter}
+        categories={categories}
+        onExport={handleExport}
+        onClearFilters={clearAllFilters}
+        activeFiltersCount={activeFiltersCount}
+      />
 
       {/* Bulk Actions - Mobile Optimized */}
       {selectedLeads.size > 0 && (
@@ -713,26 +644,21 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               <p className="text-xs">Try adjusting your search or filters.</p>
             </div>
           ) : isMobile ? (
-            // Mobile Card Layout - Improved
-            <div className="space-y-1">
-              {paginatedLeads.map(lead => (
-                <MobileLeadCard
-                  key={lead.id}
-                  lead={lead}
-                  categories={categories}
-                  isSelected={selectedLeads.has(lead.id)}
-                  onSelect={(checked) => handleSelectLead(lead.id, checked)}
-                  onStatusChange={(status) => handleStatusChange(lead.id, status)}
-                  onRemarksUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
-                  onEmailClick={() => {
-                    setSelectedLeadForEmail(lead);
-                    setShowEmailDialog(true);
-                  }}
-                  onViewDetails={() => openLeadSidebar(lead)}
-                  onDeleteLead={() => onDeleteLead(lead.id)}
-                />
-              ))}
-            </div>
+            // Mobile Date-Grouped Layout
+            <DateGroupedLeads
+              leads={paginatedLeads}
+              categories={categories}
+              selectedLeads={selectedLeads}
+              onSelectLead={handleSelectLead}
+              onStatusChange={handleStatusChange}
+              onRemarksUpdate={handleRemarksUpdate}
+              onEmailClick={(lead) => {
+                setSelectedLeadForEmail(lead);
+                setShowEmailDialog(true);
+              }}
+              onViewDetails={openLeadSidebar}
+              onDeleteLead={onDeleteLead}
+            />
           ) : (
             // Desktop Table Layout
             <DndContext
@@ -869,7 +795,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Floating Action Button for Mobile - Better positioned */}
+      {/* Floating Action Button for Mobile */}
       <FloatingActionButton
         onClick={() => {
           toast({
