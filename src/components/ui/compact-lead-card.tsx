@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -56,14 +55,13 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
       // Primary action is call if phone exists
       window.open(`tel:${lead.phone}`, '_self');
     } else {
-      // Fallback to email - copy email and open mailto
+      // Fallback to email - just copy email, don't change status
       try {
         await navigator.clipboard.writeText(lead.email);
         toast({
           title: 'Email copied',
           description: `${lead.email} copied to clipboard.`,
         });
-        window.open(`mailto:${lead.email}`, '_self');
       } catch (error) {
         toast({
           title: 'Copy failed',
@@ -77,14 +75,13 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   const handleSecondaryAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.phone) {
-      // Secondary action is email if phone exists - copy email and open mailto
+      // Secondary action is email if phone exists - just copy email, don't change status
       try {
         await navigator.clipboard.writeText(lead.email);
         toast({
           title: 'Email copied',
           description: `${lead.email} copied to clipboard.`,
         });
-        window.open(`mailto:${lead.email}`, '_self');
       } catch (error) {
         toast({
           title: 'Copy failed',
@@ -130,147 +127,91 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           
           {/* Lead info - left aligned */}
           <div className="flex-1 min-w-0 pr-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm leading-tight mb-1 truncate text-left">
-                  {lead.firstName} {lead.lastName}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-tight truncate text-left">
-                  {lead.title} • {lead.company}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 truncate text-left">
-                  {lead.email}
-                </p>
-              </div>
-              
-              <div className="flex flex-col items-end gap-1">
-                <Badge className={`text-xs px-2 py-1 font-medium whitespace-nowrap ${
-                  lead.status === 'New' ? 'bg-blue-500 text-white' :
-                  lead.status === 'Contacted' ? 'bg-green-500 text-white' :
-                  lead.status === 'Qualified' ? 'bg-emerald-500 text-white' :
-                  lead.status === 'Interested' ? 'bg-purple-500 text-white' :
-                  lead.status === 'Not Interested' ? 'bg-red-500 text-white' :
-                  lead.status === 'Unresponsive' ? 'bg-gray-500 text-white' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {lead.status}
-                </Badge>
-              </div>
+            <h3 className="font-semibold text-base leading-tight mb-2 text-left">
+              {lead.firstName} {lead.lastName}
+            </h3>
+            <div className="space-y-1 text-left">
+              <p className="text-sm text-muted-foreground">
+                {lead.company} • {lead.title}
+              </p>
+              <p className="text-sm text-muted-foreground truncate">
+                {lead.email}
+              </p>
             </div>
           </div>
+
+          {/* More actions menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0 flex-shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails(); }}>
+                <Eye className="h-4 w-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteLead(); }} className="text-red-600">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
-        {/* Action buttons row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            {/* Primary action button */}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 text-xs"
-              onClick={handlePrimaryAction}
-            >
-              {lead.phone ? (
-                <>
-                  <Phone className="h-3 w-3 mr-1" />
-                  Call
-                </>
-              ) : (
-                <>
-                  <Mail className="h-3 w-3 mr-1" />
-                  Email
-                </>
-              )}
-            </Button>
-
-            {/* Secondary action button - only show if phone exists */}
-            {lead.phone && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-3 text-xs"
-                onClick={handleSecondaryAction}
-              >
-                <Mail className="h-3 w-3 mr-1" />
-                Email
-              </Button>
-            )}
-
-            {/* View details button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-3 text-xs"
-              onClick={(e) => {
-                e.stopPropagation();
-                onViewDetails();
-              }}
-            >
-              <Eye className="h-3 w-3 mr-1" />
-              View
-            </Button>
-          </div>
-
-          {/* Status editor and more actions */}
-          <div className="flex items-center gap-2">
+        {/* Status section */}
+        <div className="pt-3 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-muted-foreground">Status:</span>
             <QuickStatusEditor
               status={lead.status}
               onChange={onStatusChange}
             />
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  window.open(`mailto:${lead.email}`, '_self');
-                  onEmailClick();
-                }}>
-                  <Mail className="h-4 w-4 mr-2" />
-                  Send Email
-                </DropdownMenuItem>
-                {lead.phone && (
-                  <DropdownMenuItem onClick={(e) => {
-                    e.stopPropagation();
-                    window.open(`tel:${lead.phone}`, '_self');
-                  }}>
-                    <Phone className="h-4 w-4 mr-2" />
-                    Call Lead
-                  </DropdownMenuItem>
-                )}
-                <DropdownMenuItem onClick={(e) => {
-                  e.stopPropagation();
-                  onViewDetails();
-                }}>
-                  <Eye className="h-4 w-4 mr-2" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteLead();
-                  }}
-                  className="text-red-600"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Lead
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          </div>
+          
+          {/* Action buttons placed below status */}
+          <div className="flex items-center gap-2">
+            {/* Primary action button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-3 hover:bg-primary/10 flex-1 justify-start"
+              onClick={handlePrimaryAction}
+            >
+              {lead.phone ? (
+                <>
+                  <Phone className="h-4 w-4 mr-2 text-primary" />
+                  <span className="text-sm">Call</span>
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2 text-primary" />
+                  <span className="text-sm">Email</span>
+                </>
+              )}
+            </Button>
+
+            {/* Secondary action button (only if phone exists) */}
+            {lead.phone && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-3 hover:bg-blue-50 flex-1 justify-start"
+                onClick={handleSecondaryAction}
+              >
+                <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                <span className="text-sm">Email</span>
+              </Button>
+            )}
           </div>
         </div>
-
-        {/* Show remarks if exists */}
-        {lead.remarks && (
-          <div className="mt-2 p-2 bg-muted/30 rounded text-xs text-muted-foreground text-left">
-            {lead.remarks}
-          </div>
-        )}
       </div>
     </Card>
   );

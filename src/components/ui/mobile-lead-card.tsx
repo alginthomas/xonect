@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -128,8 +127,9 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
         description: `${lead.email} has been copied to clipboard.`,
       });
 
-      // Open default email client with mailto
-      window.open(`mailto:${lead.email}`, '_self');
+      const subject = encodeURIComponent(`Following up on your interest`);
+      const body = encodeURIComponent(`Hi ${lead.firstName},\n\nI hope this email finds you well.\n\nBest regards`);
+      window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
       
       toast({
         title: 'Email opened',
