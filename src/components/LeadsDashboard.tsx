@@ -123,6 +123,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   
   // Column configuration
   const {
+    columns,
     visibleColumns,
     reorderColumns,
     toggleColumnVisibility,
@@ -565,6 +566,83 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         onClearFilters={clearAllFilters}
         activeFiltersCount={activeFiltersCount}
       />
+
+      {/* Desktop Search and Filters - Hidden on Mobile */}
+      {!isMobile && (
+        <Card className="apple-card">
+          <CardContent className="pt-6">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search leads..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Statuses</SelectItem>
+                    {allStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Filter by category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Data availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Data</SelectItem>
+                    <SelectItem value="has-email">Has Email</SelectItem>
+                    <SelectItem value="has-phone">Has Phone</SelectItem>
+                    <SelectItem value="has-both">Has Both</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <ColumnSettings
+                  columns={columns}
+                  onToggleVisibility={toggleColumnVisibility}
+                  onReset={resetToDefault}
+                />
+
+                <Button variant="outline" onClick={handleExport}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export
+                </Button>
+
+                {activeFiltersCount > 0 && (
+                  <Button variant="ghost" onClick={clearAllFilters}>
+                    <X className="h-4 w-4 mr-2" />
+                    Clear ({activeFiltersCount})
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bulk Actions - Mobile Optimized */}
       {selectedLeads.size > 0 && (
