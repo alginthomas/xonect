@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2, Copy } from 'lucide-react';
+import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2, Copy, Linkedin, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lead } from '@/types/lead';
 
@@ -40,6 +40,22 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     }
   };
 
+  const emailLead = () => {
+    window.open(`mailto:${lead.email}`, '_self');
+  };
+
+  const openLinkedIn = () => {
+    if (lead.linkedin) {
+      window.open(lead.linkedin, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const openWebsite = () => {
+    if (lead.organizationWebsite) {
+      window.open(lead.organizationWebsite, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const copyEmail = async () => {
     try {
       await navigator.clipboard.writeText(lead.email);
@@ -63,7 +79,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         size="sm"
         variant="ghost"
         className="h-7 w-7 p-0"
-        onClick={(e) => handleClick(e, onEmailClick)}
+        onClick={(e) => handleClick(e, emailLead)}
         title="Send Email"
       >
         <Mail className="h-3 w-3" />
@@ -79,6 +95,32 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
           title="Call Lead"
         >
           <Phone className="h-3 w-3" />
+        </Button>
+      )}
+
+      {/* LinkedIn Button */}
+      {lead.linkedin && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0"
+          onClick={(e) => handleClick(e, openLinkedIn)}
+          title="Open LinkedIn"
+        >
+          <Linkedin className="h-3 w-3" />
+        </Button>
+      )}
+
+      {/* Website Button */}
+      {lead.organizationWebsite && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0"
+          onClick={(e) => handleClick(e, openWebsite)}
+          title="Visit Website"
+        >
+          <Globe className="h-3 w-3" />
         </Button>
       )}
 
@@ -106,9 +148,9 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => onEmailClick()}>
+          <DropdownMenuItem onClick={() => emailLead()}>
             <Mail className="h-4 w-4 mr-2" />
-            Send Email
+            Open Email App
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => copyEmail()}>
             <Copy className="h-4 w-4 mr-2" />
@@ -118,6 +160,18 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
             <DropdownMenuItem onClick={() => callLead()}>
               <Phone className="h-4 w-4 mr-2" />
               Call Lead
+            </DropdownMenuItem>
+          )}
+          {lead.linkedin && (
+            <DropdownMenuItem onClick={() => openLinkedIn()}>
+              <Linkedin className="h-4 w-4 mr-2" />
+              Open LinkedIn
+            </DropdownMenuItem>
+          )}
+          {lead.organizationWebsite && (
+            <DropdownMenuItem onClick={() => openWebsite()}>
+              <Globe className="h-4 w-4 mr-2" />
+              Visit Website
             </DropdownMenuItem>
           )}
           <DropdownMenuItem onClick={() => onViewDetails()}>

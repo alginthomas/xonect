@@ -35,7 +35,9 @@ import {
   MessageSquare,
   Edit3,
   Check,
-  X
+  X,
+  Linkedin,
+  Globe
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -111,6 +113,22 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
     }
   };
 
+  const emailLead = () => {
+    window.open(`mailto:${lead.email}`, '_self');
+  };
+
+  const openLinkedIn = () => {
+    if (lead.linkedin) {
+      window.open(lead.linkedin, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const openWebsite = () => {
+    if (lead.organizationWebsite) {
+      window.open(lead.organizationWebsite, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const saveRemarks = () => {
     onRemarksUpdate(remarksText);
     setIsEditingRemarks(false);
@@ -131,7 +149,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           <Checkbox
             checked={isSelected}
             onCheckedChange={onSelect}
-            className="mt-0.5 h-4 w-4"
+            className="mt-0.5 h-4 w-4 rounded-full data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           />
           
           <Avatar className="h-10 w-10 flex-shrink-0">
@@ -187,7 +205,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 hover:bg-primary/10"
-                  onClick={onEmailClick}
+                  onClick={emailLead}
                 >
                   <Mail className="h-4 w-4" />
                 </Button>
@@ -211,6 +229,42 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Call Lead</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {lead.linkedin && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-blue-50"
+                    onClick={openLinkedIn}
+                  >
+                    <Linkedin className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Open LinkedIn</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
+            {lead.organizationWebsite && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 hover:bg-gray-50"
+                    onClick={openWebsite}
+                  >
+                    <Globe className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Visit Website</p>
                 </TooltipContent>
               </Tooltip>
             )}
@@ -264,10 +318,32 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={emailLead}>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Open Email App
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={copyEmail}>
                   <Copy className="h-4 w-4 mr-2" />
                   Copy Email
                 </DropdownMenuItem>
+                {lead.phone && (
+                  <DropdownMenuItem onClick={callLead}>
+                    <Phone className="h-4 w-4 mr-2" />
+                    Call Lead
+                  </DropdownMenuItem>
+                )}
+                {lead.linkedin && (
+                  <DropdownMenuItem onClick={openLinkedIn}>
+                    <Linkedin className="h-4 w-4 mr-2" />
+                    Open LinkedIn
+                  </DropdownMenuItem>
+                )}
+                {lead.organizationWebsite && (
+                  <DropdownMenuItem onClick={openWebsite}>
+                    <Globe className="h-4 w-4 mr-2" />
+                    Visit Website
+                  </DropdownMenuItem>
+                )}
                 {!lead.remarks && !isEditingRemarks && (
                   <DropdownMenuItem onClick={() => setIsEditingRemarks(true)}>
                     <MessageSquare className="h-4 w-4 mr-2" />
@@ -336,6 +412,40 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 <span className="text-xs">{category.name}</span>
               </div>
             </div>
+
+            {/* LinkedIn and Website Links */}
+            {(lead.linkedin || lead.organizationWebsite) && (
+              <div className="space-y-1">
+                {lead.linkedin && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">LinkedIn:</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={openLinkedIn}
+                    >
+                      <Linkedin className="h-3 w-3 mr-1" />
+                      Open Profile
+                    </Button>
+                  </div>
+                )}
+                {lead.organizationWebsite && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Website:</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={openWebsite}
+                    >
+                      <Globe className="h-3 w-3 mr-1" />
+                      Visit Site
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Additional Details */}
             <div className="space-y-1 text-xs text-muted-foreground">

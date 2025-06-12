@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -53,6 +52,14 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, brand
       .replace(/{{organization_name}}/g, leadData.company || '')
       .replace(/{{industry}}/g, leadData.industry || '')
       .replace(/{{location}}/g, leadData.location || '');
+  };
+
+  const openDefaultEmailClient = () => {
+    const emailSubject = encodeURIComponent(subject);
+    const emailBody = encodeURIComponent(content);
+    const mailtoUrl = `mailto:${lead.email}?subject=${emailSubject}&body=${emailBody}`;
+    window.open(mailtoUrl, '_self');
+    setOpen(false);
   };
 
   const handleSendEmail = async () => {
@@ -205,6 +212,10 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, brand
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={() => setOpen(false)}>
               Cancel
+            </Button>
+            <Button variant="outline" onClick={openDefaultEmailClient}>
+              <Mail className="h-4 w-4 mr-2" />
+              Open Email App
             </Button>
             <Button onClick={handleSendEmail} disabled={sending}>
               {sending ? 'Sending...' : 'Send Professional Email'}

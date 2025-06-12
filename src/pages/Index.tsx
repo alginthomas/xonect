@@ -586,13 +586,34 @@ const Index = () => {
             <div className="overflow-x-auto -mx-3 px-3 lg:mx-0 lg:px-0">
               <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3' : 'grid-cols-6'} lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit gap-1`}>
                 <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? '🏠' : 'Dashboard'}
+                  {isMobile ? (
+                    <div className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      <span>Dashboard</span>
+                    </div>
+                  ) : (
+                    'Dashboard'
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? '👥' : 'Leads'}
+                  {isMobile ? (
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      <span>Leads</span>
+                    </div>
+                  ) : (
+                    'Leads'
+                  )}
                 </TabsTrigger>
                 <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? '📊' : 'Import'}
+                  {isMobile ? (
+                    <div className="flex items-center gap-1">
+                      <Download className="h-3 w-3" />
+                      <span>Import</span>
+                    </div>
+                  ) : (
+                    'Import'
+                  )}
                 </TabsTrigger>
                 {!isMobile && (
                   <>
@@ -609,13 +630,22 @@ const Index = () => {
               <div className="overflow-x-auto -mx-3 px-3">
                 <TabsList className="grid w-full grid-cols-3 bg-muted/50 rounded-xl p-1 min-w-fit gap-1">
                   <TabsTrigger value="categories" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    📁 Categories
+                    <div className="flex items-center gap-1">
+                      <MessageSquare className="h-3 w-3" />
+                      <span>Categories</span>
+                    </div>
                   </TabsTrigger>
                   <TabsTrigger value="templates" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    📧 Templates
+                    <div className="flex items-center gap-1">
+                      <Mail className="h-3 w-3" />
+                      <span>Templates</span>
+                    </div>
                   </TabsTrigger>
                   <TabsTrigger value="settings" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    ⚙️ Settings
+                    <div className="flex items-center gap-1">
+                      <Building2 className="h-3 w-3" />
+                      <span>Settings</span>
+                    </div>
                   </TabsTrigger>
                 </TabsList>
               </div>

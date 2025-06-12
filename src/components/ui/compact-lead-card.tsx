@@ -30,7 +30,9 @@ import {
   Building2,
   MessageSquare,
   Save,
-  Edit3
+  Edit3,
+  Linkedin,
+  Globe
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -116,6 +118,22 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     }
   };
 
+  const emailLead = () => {
+    window.open(`mailto:${lead.email}`, '_self');
+  };
+
+  const openLinkedIn = () => {
+    if (lead.linkedin) {
+      window.open(lead.linkedin, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const openWebsite = () => {
+    if (lead.organizationWebsite) {
+      window.open(lead.organizationWebsite, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const saveRemarks = () => {
     onRemarksUpdate(remarksText);
     setIsEditingRemarks(false);
@@ -146,7 +164,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               checked={isSelected}
               onCheckedChange={onSelect}
               onClick={(e) => e.stopPropagation()}
-              className="h-4 w-4 flex-shrink-0"
+              className="h-4 w-4 flex-shrink-0 rounded-full data-[state=checked]:bg-primary data-[state=checked]:border-primary"
             />
             
             {/* Avatar */}
@@ -182,7 +200,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                     className="h-7 px-2 hover:bg-primary/10 text-xs flex items-center gap-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onEmailClick();
+                      emailLead();
                     }}
                   >
                     <Mail className="h-3 w-3" />
@@ -291,6 +309,19 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                     <span className="text-sm">{lead.phone}</span>
                   </div>
                 )}
+                {lead.linkedin && (
+                  <div className="flex items-center gap-2">
+                    <Linkedin className="h-3 w-3 text-muted-foreground" />
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-sm font-normal"
+                      onClick={openLinkedIn}
+                    >
+                      LinkedIn Profile
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -306,6 +337,20 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                   <span className="text-sm text-muted-foreground">Company:</span>
                   <span className="text-sm">{lead.company}</span>
                 </div>
+                {lead.organizationWebsite && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Website:</span>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-sm font-normal"
+                      onClick={openWebsite}
+                    >
+                      <Globe className="h-3 w-3 mr-1" />
+                      Visit Website
+                    </Button>
+                  </div>
+                )}
                 {lead.companySize && (
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Size:</span>
@@ -385,7 +430,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             {/* Action Buttons - Responsive */}
             <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button 
-                onClick={onEmailClick} 
+                onClick={emailLead} 
                 className="flex-1"
               >
                 <Mail className="h-4 w-4 mr-2" />
