@@ -36,6 +36,7 @@ export interface Lead {
   createdAt: Date;
   completenessScore: number;
   categoryId?: string;
+  importBatchId?: string;
   remarks?: string;
 }
 

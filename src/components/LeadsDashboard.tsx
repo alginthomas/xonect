@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -646,7 +645,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     checked={isAllCurrentPageSelected}
                     ref={(el) => {
                       if (el) {
-                        el.indeterminate = isPartialSelection;
+                        (el as any).indeterminate = isPartialSelection;
                       }
                     }}
                     onCheckedChange={handleSelectAll}
@@ -972,9 +971,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                 Remarks
                               </h4>
                               <QuickRemarkEditor
-                                leadId={lead.id}
-                                currentRemarks={lead.remarks}
-                                onUpdateRemarks={(remarks) => onUpdateLead(lead.id, { remarks })}
+                                lead={lead}
+                                onUpdateRemarks={(leadId, remarks) => onUpdateLead(leadId, { remarks })}
                               />
                             </div>
 
@@ -1014,35 +1012,29 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       </Card>
 
       {/* Dialogs */}
-      <LeadRemarksDialog
-        lead={selectedLeadForRemarks}
-        isOpen={showRemarksDialog}
-        onClose={() => {
-          setShowRemarksDialog(false);
-          setSelectedLeadForRemarks(null);
-        }}
-        onSave={(remarks) => {
-          if (selectedLeadForRemarks) {
-            onUpdateLead(selectedLeadForRemarks.id, { remarks });
-          }
-        }}
-      />
+      {selectedLeadForRemarks && (
+        <LeadRemarksDialog
+          lead={selectedLeadForRemarks}
+          onUpdateRemarks={(leadId, remarks) => {
+            onUpdateLead(leadId, { remarks });
+            setShowRemarksDialog(false);
+            setSelectedLeadForRemarks(null);
+          }}
+        />
+      )}
 
-      <EmailDialog
-        lead={selectedLeadForEmail}
-        templates={templates}
-        branding={branding}
-        isOpen={showEmailDialog}
-        onClose={() => {
-          setShowEmailDialog(false);
-          setSelectedLeadForEmail(null);
-        }}
-        onSend={(leadId) => {
-          onSendEmail(leadId);
-          setShowEmailDialog(false);
-          setSelectedLeadForEmail(null);
-        }}
-      />
+      {selectedLeadForEmail && (
+        <EmailDialog
+          lead={selectedLeadForEmail}
+          templates={templates}
+          branding={branding}
+          onSend={(leadId) => {
+            onSendEmail(leadId);
+            setShowEmailDialog(false);
+            setSelectedLeadForEmail(null);
+          }}
+        />
+      )}
     </div>
   );
 };
