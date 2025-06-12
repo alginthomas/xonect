@@ -61,9 +61,13 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn("w-full justify-between", className)}
+          className={cn(
+            "w-full h-12 justify-between text-left font-normal px-4 py-3",
+            !value && "text-muted-foreground",
+            className
+          )}
         >
-          <div className="flex items-center gap-2 flex-1 text-left">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             {selectedCategory && (
               <div 
                 className="w-3 h-3 rounded-full flex-shrink-0" 
@@ -73,30 +77,31 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
             {isNewCategory && (
               <Plus className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             )}
-            <span className="truncate">
+            <span className="truncate flex-1">
               {value || placeholder}
             </span>
             {isNewCategory && (
-              <span className="text-xs text-muted-foreground ml-auto">
+              <span className="text-xs text-muted-foreground flex-shrink-0">
                 (will create)
               </span>
             )}
           </div>
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <ChevronsUpDown className="ml-2 h-4 w-4 flex-shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
         <Command>
           <CommandInput
             placeholder="Search or type new category name..."
             value={searchValue}
             onValueChange={handleInputChange}
+            className="h-12"
           />
           <CommandList>
             <CommandEmpty>
               {searchValue ? (
-                <div className="p-2 text-center">
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
+                <div className="p-4 text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
                     <Plus className="h-4 w-4" />
                     Create new category
                   </div>
@@ -121,22 +126,23 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
                     key={category.id}
                     value={category.name}
                     onSelect={() => handleSelect(category.name)}
+                    className="flex items-center gap-3 px-4 py-3"
                   >
-                    <div className="flex items-center gap-2 flex-1">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <div 
-                        className="w-3 h-3 rounded-full" 
+                        className="w-3 h-3 rounded-full flex-shrink-0" 
                         style={{ backgroundColor: category.color }}
                       />
-                      <span>{category.name}</span>
+                      <span className="truncate">{category.name}</span>
                       {category.description && (
-                        <span className="text-xs text-muted-foreground ml-auto">
+                        <span className="text-xs text-muted-foreground ml-auto flex-shrink-0">
                           {category.description}
                         </span>
                       )}
                     </div>
                     <Check
                       className={cn(
-                        "ml-auto h-4 w-4",
+                        "h-4 w-4 flex-shrink-0",
                         value === category.name ? "opacity-100" : "opacity-0"
                       )}
                     />
@@ -152,9 +158,10 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
                 <CommandItem
                   value={searchValue}
                   onSelect={() => handleSelect(searchValue)}
+                  className="flex items-center gap-3 px-4 py-3"
                 >
                   <div className="flex items-center gap-2 flex-1">
-                    <Plus className="h-3 w-3 text-muted-foreground" />
+                    <Plus className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                     <span>Create "{searchValue}"</span>
                   </div>
                 </CommandItem>
