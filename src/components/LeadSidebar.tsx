@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -64,15 +63,22 @@ export const LeadSidebar: React.FC<LeadSidebarProps> = ({
     switch (status) {
       case 'New': return 'bg-blue-100 text-blue-800';
       case 'Contacted': return 'bg-yellow-100 text-yellow-800';
+      case 'Opened': return 'bg-purple-100 text-purple-800';
+      case 'Clicked': return 'bg-indigo-100 text-indigo-800';
+      case 'Replied': return 'bg-cyan-100 text-cyan-800';
       case 'Qualified': return 'bg-green-100 text-green-800';
       case 'Unqualified': return 'bg-red-100 text-red-800';
+      case 'Call Back': return 'bg-orange-100 text-orange-800';
+      case 'Unresponsive': return 'bg-gray-100 text-gray-800';
+      case 'Not Interested': return 'bg-slate-100 text-slate-800';
+      case 'Interested': return 'bg-emerald-100 text-emerald-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getSeniorityColor = (seniority: string) => {
     switch (seniority) {
-      case 'Entry-level': return 'bg-green-100 text-green-800';
+      case 'Junior': return 'bg-green-100 text-green-800';
       case 'Mid-level': return 'bg-blue-100 text-blue-800';
       case 'Senior': return 'bg-orange-100 text-orange-800';
       case 'Executive': return 'bg-purple-100 text-purple-800';
@@ -180,6 +186,22 @@ export const LeadSidebar: React.FC<LeadSidebarProps> = ({
       });
     }
   };
+
+  const openWebsite = () => {
+    if (lead.organizationWebsite) {
+      let url = lead.organizationWebsite;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const allStatuses: LeadStatus[] = [
+    'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
+    'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
+    'Not Interested', 'Interested'
+  ];
 
   const renderEditableField = (field: string, label: string, value: string, type: 'text' | 'textarea' | 'select' = 'text', options?: string[]) => {
     const isEditing = editingField === field;
@@ -293,10 +315,11 @@ export const LeadSidebar: React.FC<LeadSidebarProps> = ({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="New">New</SelectItem>
-                      <SelectItem value="Contacted">Contacted</SelectItem>
-                      <SelectItem value="Qualified">Qualified</SelectItem>
-                      <SelectItem value="Unqualified">Unqualified</SelectItem>
+                      {allStatuses.map((statusOption) => (
+                        <SelectItem key={statusOption} value={statusOption}>
+                          {statusOption}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -399,7 +422,7 @@ export const LeadSidebar: React.FC<LeadSidebarProps> = ({
                 'Small (1-50)', 'Medium (51-200)', 'Large (201-1000)', 'Enterprise (1000+)'
               ])}
               {renderEditableField('seniority', 'Seniority', lead.seniority, 'select', [
-                'Entry-level', 'Mid-level', 'Senior', 'Executive', 'C-level'
+                'Junior', 'Mid-level', 'Senior', 'Executive', 'C-level'
               ])}
               
               {lead.organizationWebsite && (
@@ -407,14 +430,12 @@ export const LeadSidebar: React.FC<LeadSidebarProps> = ({
                   <Label>Company Website</Label>
                   <div className="flex items-center gap-2 p-2 border rounded">
                     <Globe className="h-4 w-4" />
-                    <a 
-                      href={lead.organizationWebsite} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline flex-1"
+                    <button 
+                      onClick={openWebsite}
+                      className="text-blue-600 hover:underline flex-1 text-left"
                     >
                       {lead.organizationWebsite}
-                    </a>
+                    </button>
                     <ExternalLink className="h-4 w-4" />
                   </div>
                 </div>

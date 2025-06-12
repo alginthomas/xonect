@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -105,6 +104,13 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   useEffect(() => {
     localStorage.setItem('leadsPerPage', itemsPerPage.toString());
   }, [itemsPerPage]);
+
+  // All available statuses for filtering
+  const allStatuses: LeadStatus[] = [
+    'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
+    'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
+    'Not Interested', 'Interested'
+  ];
 
   // Filter leads based on batch selection and other filters
   const filteredLeads = useMemo(() => {
@@ -365,15 +371,16 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           
           <div className="flex gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Contacted">Contacted</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Unqualified">Unqualified</SelectItem>
+                {allStatuses.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {status}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -431,18 +438,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'New')}>
-                    Mark as New
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'Contacted')}>
-                    Mark as Contacted
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'Qualified')}>
-                    Mark as Qualified
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBulkAction('status', 'Unqualified')}>
-                    Mark as Unqualified
-                  </DropdownMenuItem>
+                  {allStatuses.map((status) => (
+                    <DropdownMenuItem key={status} onClick={() => handleBulkAction('status', status)}>
+                      Mark as {status}
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuContent>
               </DropdownMenu>
 

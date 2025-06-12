@@ -8,7 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2 } from 'lucide-react';
+import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2, Copy } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import type { Lead } from '@/types/lead';
 
 interface QuickActionsCellProps {
@@ -26,6 +27,8 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   onDeleteLead,
   className = ""
 }) => {
+  const { toast } = useToast();
+
   const handleClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
     action();
@@ -34,6 +37,22 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   const callLead = () => {
     if (lead.phone) {
       window.open(`tel:${lead.phone}`, '_self');
+    }
+  };
+
+  const copyEmail = async () => {
+    try {
+      await navigator.clipboard.writeText(lead.email);
+      toast({
+        title: 'Email copied',
+        description: `${lead.email} has been copied to clipboard.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Copy failed',
+        description: 'Failed to copy email to clipboard.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -90,6 +109,10 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
           <DropdownMenuItem onClick={() => onEmailClick()}>
             <Mail className="h-4 w-4 mr-2" />
             Send Email
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => copyEmail()}>
+            <Copy className="h-4 w-4 mr-2" />
+            Copy Email
           </DropdownMenuItem>
           {lead.phone && (
             <DropdownMenuItem onClick={() => callLead()}>
