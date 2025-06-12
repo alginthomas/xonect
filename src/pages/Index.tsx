@@ -788,8 +788,6 @@ export default function Index() {
     <AppleLayout 
       activeTab={activeTab} 
       onTabChange={setActiveTab}
-      categories={categories}
-      onLeadAdded={handleImportComplete}
     >
       {/* Desktop content */}
       {!isMobile && (
