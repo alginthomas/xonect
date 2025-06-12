@@ -396,10 +396,7 @@ export default function Index() {
   };
 
   const handleViewDetails = (lead: Lead) => {
-    toast({
-      title: 'Lead Details',
-      description: `Viewing details for ${lead.firstName} ${lead.lastName}`,
-    });
+    navigate(`/lead/${lead.id}`);
   };
 
   const handleImportComplete = () => {

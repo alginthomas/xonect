@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -49,19 +50,8 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 }) => {
   const { toast } = useToast();
 
-  const getStatusColor = (status: LeadStatus) => {
-    switch (status) {
-      case 'New': return 'bg-blue-500 text-white';
-      case 'Contacted': return 'bg-green-500 text-white';
-      case 'Qualified': return 'bg-emerald-500 text-white';
-      case 'Interested': return 'bg-purple-500 text-white';
-      case 'Not Interested': return 'bg-red-500 text-white';
-      case 'Unresponsive': return 'bg-gray-500 text-white';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const handlePrimaryAction = async () => {
+  const handlePrimaryAction = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (lead.phone) {
       // Primary action is call if phone exists
       window.open(`tel:${lead.phone}`, '_self');
@@ -84,7 +74,8 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     }
   };
 
-  const handleSecondaryAction = async () => {
+  const handleSecondaryAction = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (lead.phone) {
       // Secondary action is email if phone exists
       try {
@@ -104,17 +95,30 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     }
   };
 
+  const handleCardClick = () => {
+    onViewDetails();
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
-    <Card className="mb-2 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-lg overflow-hidden">
+    <Card 
+      className="mb-2 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-lg overflow-hidden cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="p-3">
         {/* Single row layout with all essential info */}
         <div className="flex items-center gap-3">
           {/* Selection checkbox */}
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={onSelect}
-            className="h-4 w-4 flex-shrink-0"
-          />
+          <div onClick={handleCheckboxClick}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={onSelect}
+              className="h-4 w-4 flex-shrink-0"
+            />
+          </div>
           
           {/* Compact avatar */}
           <Avatar className="h-10 w-10 flex-shrink-0">
@@ -130,9 +134,6 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               <h3 className="font-semibold text-sm leading-tight truncate">
                 {lead.firstName} {lead.lastName}
               </h3>
-              <Badge className={`text-xs px-2 py-0.5 font-medium flex-shrink-0 ml-2 ${getStatusColor(lead.status)}`}>
-                {lead.status}
-              </Badge>
             </div>
             
             <div className="flex items-center justify-between">
@@ -178,23 +179,22 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             {/* More actions menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-10 w-10 p-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={onViewDetails}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails(); }}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  // Quick status change
-                }}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Change Status
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onDeleteLead} className="text-red-600">
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteLead(); }} className="text-red-600">
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Lead
                 </DropdownMenuItem>
@@ -203,8 +203,8 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </div>
         </div>
 
-        {/* Progressive disclosure - status editor (appears on tap) */}
-        <div className="mt-2 pt-2 border-t border-border/30">
+        {/* Progressive disclosure - status editor */}
+        <div className="mt-2 pt-2 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">Status:</span>
             <QuickStatusEditor
