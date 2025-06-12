@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -124,40 +123,39 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
-      {/* Safe area container following Apple spacing principles */}
-      <div className="w-full max-w-sm mx-auto px-6 py-8">
-        {/* Brand Header with Apple-style spacing */}
-        <div className="text-center mb-12">
-          <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-3xl font-semibold text-primary-foreground">X</span>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Brand Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg">
+              <span className="text-2xl font-semibold text-primary-foreground">X</span>
             </div>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground mb-2">Xonect</h1>
+          <h1 className="text-2xl font-semibold text-foreground mb-1">Xonect</h1>
           <p className="text-sm text-muted-foreground">powered by Thomas & Niyogi</p>
         </div>
 
-        {/* Main Auth Card with Apple-style design */}
-        <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-xl font-semibold text-center">Welcome</CardTitle>
-            <CardDescription className="text-center text-muted-foreground">
+        {/* Main Auth Card */}
+        <Card className="border-0 shadow-xl bg-card/95 backdrop-blur-sm">
+          <CardHeader className="text-center pb-4">
+            <CardTitle className="text-xl font-semibold">Welcome</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Sign in to your account or create a new one
             </CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50">
+              <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 h-10">
                 <TabsTrigger 
                   value="signin" 
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
                 >
                   Sign In
                 </TabsTrigger>
                 <TabsTrigger 
                   value="signup"
-                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                  className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
                 >
                   Sign Up
                 </TabsTrigger>
@@ -166,7 +164,7 @@ const Auth = () => {
               <TabsContent value="signin" className="space-y-4 mt-0">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email" className="text-sm font-medium">Email</Label>
+                    <Label htmlFor="signin-email" className="text-sm font-medium text-foreground">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -174,11 +172,11 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-11 bg-background border-border/50 focus:border-primary"
+                      className="h-11 bg-background border-border/50 focus:border-primary text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password" className="text-sm font-medium">Password</Label>
+                    <Label htmlFor="signin-password" className="text-sm font-medium text-foreground">Password</Label>
                     <Input
                       id="signin-password"
                       type="password"
@@ -186,12 +184,12 @@ const Auth = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="h-11 bg-background border-border/50 focus:border-primary"
+                      className="h-11 bg-background border-border/50 focus:border-primary text-sm"
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full h-11 mt-6 font-medium" 
+                    className="w-full h-11 mt-6 font-medium text-sm" 
                     disabled={loading}
                   >
                     {loading ? (
@@ -209,7 +207,7 @@ const Auth = () => {
               <TabsContent value="signup" className="space-y-4 mt-0">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name" className="text-sm font-medium">Full Name</Label>
+                    <Label htmlFor="signup-name" className="text-sm font-medium text-foreground">Full Name</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -217,11 +215,11 @@ const Auth = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      className="h-11 bg-background border-border/50 focus:border-primary"
+                      className="h-11 bg-background border-border/50 focus:border-primary text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email" className="text-sm font-medium">Email</Label>
+                    <Label htmlFor="signup-email" className="text-sm font-medium text-foreground">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -229,11 +227,11 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-11 bg-background border-border/50 focus:border-primary"
+                      className="h-11 bg-background border-border/50 focus:border-primary text-sm"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password" className="text-sm font-medium">Password</Label>
+                    <Label htmlFor="signup-password" className="text-sm font-medium text-foreground">Password</Label>
                     <Input
                       id="signup-password"
                       type="password"
@@ -242,12 +240,12 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
-                      className="h-11 bg-background border-border/50 focus:border-primary"
+                      className="h-11 bg-background border-border/50 focus:border-primary text-sm"
                     />
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full h-11 mt-6 font-medium" 
+                    className="w-full h-11 mt-6 font-medium text-sm" 
                     disabled={loading}
                   >
                     {loading ? (
@@ -265,8 +263,8 @@ const Auth = () => {
           </CardContent>
         </Card>
 
-        {/* Footer with Apple-style spacing */}
-        <div className="text-center mt-8">
+        {/* Footer */}
+        <div className="text-center mt-6">
           <p className="text-xs text-muted-foreground">
             © 2025 Thomas & Niyogi. All rights reserved.
           </p>
