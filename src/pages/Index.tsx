@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Building2, User, Download, MessageSquare, Mail } from 'lucide-react';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { CSVImport } from '@/components/CSVImport';
 import { CategoryManager } from '@/components/CategoryManager';
