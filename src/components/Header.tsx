@@ -1,19 +1,23 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { UserDropdown } from '@/components/UserDropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
+
 interface HeaderProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
   onAddLead?: () => void;
 }
+
 const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
   onAddLead
 }) => {
   const isMobile = useIsMobile();
+  
   const tabs = [{
     id: 'dashboard',
     label: 'Dashboard'
@@ -33,8 +37,10 @@ const Header: React.FC<HeaderProps> = ({
     id: 'settings',
     label: 'Settings'
   }];
-  return <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-16 items-center justify-between lg:px-6 px-0">
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+      <div className="flex h-16 items-center justify-between px-4">
         {/* Left Section - Logo/Title */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3">
@@ -46,23 +52,40 @@ const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center Section - Desktop Navigation */}
-        {!isMobile && <nav className="hidden md:flex items-center space-x-1">
-            {tabs.map(tab => <Button key={tab.id} variant={activeTab === tab.id ? "default" : "ghost"} onClick={() => onTabChange(tab.id)} className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${activeTab === tab.id ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'}`}>
+        {!isMobile && (
+          <nav className="hidden md:flex items-center space-x-1">
+            {tabs.map(tab => (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "ghost"}
+                onClick={() => onTabChange(tab.id)}
+                className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                  activeTab === tab.id 
+                    ? 'bg-primary text-primary-foreground shadow-sm' 
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+                }`}
+              >
                 {tab.label}
-              </Button>)}
-          </nav>}
+              </Button>
+            ))}
+          </nav>
+        )}
 
         {/* Right Section - Actions and User */}
         <div className="flex items-center gap-3">
           {/* Desktop Add Lead Button - Show on leads tab only */}
-          {!isMobile && activeTab === 'leads' && onAddLead && <Button onClick={onAddLead} size="sm" className="flex items-center gap-2 font-medium">
+          {!isMobile && activeTab === 'leads' && onAddLead && (
+            <Button onClick={onAddLead} size="sm" className="flex items-center gap-2 font-medium">
               <Plus className="h-4 w-4" />
               Add Lead
-            </Button>}
+            </Button>
+          )}
           
           <UserDropdown />
         </div>
       </div>
-    </header>;
+    </header>
+  );
 };
+
 export default Header;
