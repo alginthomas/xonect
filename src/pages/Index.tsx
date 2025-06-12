@@ -580,37 +580,9 @@ const Index = () => {
   };
 
   return (
-    <AppleLayout>
+    <AppleLayout activeTab={activeTab} onTabChange={handleTabChange}>
       <div className="space-y-4 lg:space-y-8">
-        {/* Mobile-First Header with Navigation */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 min-w-0">
-            <h1 className="text-xl lg:text-3xl font-bold tracking-tight truncate">Lead Management</h1>
-            <p className="text-muted-foreground text-sm lg:text-base hidden sm:block">
-              Manage your leads, track engagement, and grow your business.
-            </p>
-          </div>
-          
-          {/* Mobile Navigation */}
-          <MobileNavigation 
-            activeTab={activeTab} 
-            onTabChange={handleTabChange} 
-          />
-        </div>
-
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          {/* Desktop Navigation - Hidden on Mobile */}
-          <div className="hidden lg:block mb-6">
-            <TabsList className="grid w-auto grid-cols-6 bg-muted rounded-xl p-1 gap-1">
-              <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
-              <TabsTrigger value="leads" className="rounded-lg font-medium">Leads</TabsTrigger>
-              <TabsTrigger value="import" className="rounded-lg font-medium">Import</TabsTrigger>
-              <TabsTrigger value="categories" className="rounded-lg font-medium">Categories</TabsTrigger>
-              <TabsTrigger value="templates" className="rounded-lg font-medium">Templates</TabsTrigger>
-              <TabsTrigger value="settings" className="rounded-lg font-medium">Settings</TabsTrigger>
-            </TabsList>
-          </div>
-
           <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
             <AnalyticsDashboard
               leads={leads}
