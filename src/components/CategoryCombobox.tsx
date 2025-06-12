@@ -54,6 +54,10 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
     category.name.toLowerCase().includes(searchValue.toLowerCase())
   );
 
+  // Determine what to display in the button
+  const displayText = value || placeholder;
+  const showPlaceholder = !value;
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -63,7 +67,7 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
           aria-expanded={open}
           className={cn(
             "w-full h-12 justify-between text-left font-normal px-4 py-3",
-            !value && "text-muted-foreground",
+            showPlaceholder && "text-muted-foreground",
             className
           )}
         >
@@ -78,7 +82,7 @@ export const CategoryCombobox: React.FC<CategoryComboboxProps> = ({
               <Plus className="h-3 w-3 text-muted-foreground flex-shrink-0" />
             )}
             <span className="truncate flex-1">
-              {value || placeholder}
+              {displayText}
             </span>
             {isNewCategory && (
               <span className="text-xs text-muted-foreground flex-shrink-0">
