@@ -120,8 +120,8 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col justify-center px-6 py-12 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col justify-center px-4 py-8 lg:px-8">
+      <div className="w-full max-w-lg mx-auto">
         <AuthBrandHeader />
         
         <AuthCard

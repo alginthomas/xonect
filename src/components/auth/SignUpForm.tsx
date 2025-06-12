@@ -28,7 +28,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
 }) => {
   return (
     <form onSubmit={onSubmit} className="space-y-6">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label htmlFor="signup-name" className="text-sm font-medium text-left block">
           Full Name
         </Label>
@@ -39,10 +39,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           value={fullName}
           onChange={(e) => onFullNameChange(e.target.value)}
           required
-          className="w-full text-left"
+          className="w-full text-left h-11"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label htmlFor="signup-email" className="text-sm font-medium text-left block">
           Email
         </Label>
@@ -53,10 +53,10 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           required
-          className="w-full text-left"
+          className="w-full text-left h-11"
         />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-3">
         <Label htmlFor="signup-password" className="text-sm font-medium text-left block">
           Password
         </Label>
@@ -68,12 +68,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           onChange={(e) => onPasswordChange(e.target.value)}
           required
           minLength={6}
-          className="w-full text-left"
+          className="w-full text-left h-11"
         />
       </div>
       <Button 
         type="submit" 
-        className="w-full" 
+        className="w-full h-11 mt-8" 
         disabled={loading}
       >
         {loading ? (
