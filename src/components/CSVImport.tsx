@@ -3,11 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, CheckCircle, AlertCircle, FileText, X, Database } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, X, Database, Building2, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CategoryCombobox } from './CategoryCombobox';
+import { validateCSVData } from '@/utils/security';
 import type { Lead } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -24,6 +25,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
   const [categoryName, setCategoryName] = useState<string>('');
   const [batchName, setBatchName] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState(false);
+  const [importMode, setImportMode] = useState<'full' | 'company'>('full');
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -92,95 +94,6 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
     
     return url.trim();
   };
-
-  const processFile = useCallback((selectedFile: File) => {
-    if (selectedFile && selectedFile.type === 'text/csv') {
-      setFile(selectedFile);
-      
-      // Auto-generate batch name from file name
-      const fileName = selectedFile.name.replace('.csv', '');
-      const timestamp = new Date().toLocaleDateString();
-      setBatchName(`${fileName} - ${timestamp}`);
-      
-      // Auto-suggest category name from file name
-      if (!categoryName) {
-        const suggestedCategory = fileName
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, l => l.toUpperCase());
-        setCategoryName(suggestedCategory);
-      }
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const lines = text.split('\n').filter(line => line.trim());
-        
-        if (lines.length === 0) return;
-        
-        const headers = parseCSVLine(lines[0]);
-        console.log('CSV Headers found:', headers);
-        
-        const sampleRows = lines.slice(1, 4).map(line => {
-          const values = parseCSVLine(line);
-          const row: any = {};
-          headers.forEach((header, index) => {
-            row[header] = values[index] || '';
-          });
-          return row;
-        });
-        
-        console.log('Sample rows:', sampleRows);
-        setPreview(sampleRows);
-      };
-      reader.readAsText(selectedFile);
-    } else {
-      toast({
-        title: "Invalid file",
-        description: "Please select a CSV file",
-        variant: "destructive",
-      });
-    }
-  }, [toast, categoryName]);
-
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-    if (selectedFile) {
-      processFile(selectedFile);
-    }
-  }, [processFile]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const csvFile = files.find(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
-    
-    if (csvFile) {
-      processFile(csvFile);
-    } else {
-      toast({
-        title: "Invalid file",
-        description: "Please drop a CSV file",
-        variant: "destructive",
-      });
-    }
-  }, [processFile, toast]);
-
-  const removeFile = useCallback(() => {
-    setFile(null);
-    setPreview([]);
-  }, []);
 
   const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
     if (!employeeCount) return 'Small (1-50)';
@@ -259,6 +172,128 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
     return colors[Math.floor(Math.random() * colors.length)];
   };
 
+  const generatePlaceholderEmail = (company: string): string => {
+    const domain = company.toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .substring(0, 15);
+    return `contact@${domain}.com`;
+  };
+
+  const detectImportMode = (headers: string[], sampleRows: any[]): 'full' | 'company' => {
+    const normalizedHeaders = headers.map(h => normalizeHeader(h));
+    
+    // Check if we have personal contact fields
+    const hasPersonalFields = normalizedHeaders.some(h => 
+      ['firstname', 'lastname', 'email', 'name'].includes(h)
+    );
+    
+    // Check if we have company fields
+    const hasCompanyFields = normalizedHeaders.some(h => 
+      ['organizationname', 'company', 'companyname'].includes(h)
+    );
+    
+    // If we have company but minimal personal info, suggest company mode
+    if (hasCompanyFields && !hasPersonalFields) {
+      return 'company';
+    }
+    
+    return 'full';
+  };
+
+  const processFile = useCallback((selectedFile: File) => {
+    if (selectedFile && selectedFile.type === 'text/csv') {
+      setFile(selectedFile);
+      
+      // Auto-generate batch name from file name
+      const fileName = selectedFile.name.replace('.csv', '');
+      const timestamp = new Date().toLocaleDateString();
+      setBatchName(`${fileName} - ${timestamp}`);
+      
+      // Auto-suggest category name from file name
+      if (!categoryName) {
+        const suggestedCategory = fileName
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, l => l.toUpperCase());
+        setCategoryName(suggestedCategory);
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length === 0) return;
+        
+        const headers = parseCSVLine(lines[0]);
+        console.log('CSV Headers found:', headers);
+        
+        const sampleRows = lines.slice(1, 4).map(line => {
+          const values = parseCSVLine(line);
+          const row: any = {};
+          headers.forEach((header, index) => {
+            row[header] = values[index] || '';
+          });
+          return row;
+        });
+        
+        // Auto-detect import mode
+        const detectedMode = detectImportMode(headers, sampleRows);
+        setImportMode(detectedMode);
+        
+        console.log('Sample rows:', sampleRows);
+        console.log('Detected import mode:', detectedMode);
+        setPreview(sampleRows);
+      };
+      reader.readAsText(selectedFile);
+    } else {
+      toast({
+        title: "Invalid file",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+    }
+  }, [toast, categoryName]);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (selectedFile) {
+      processFile(selectedFile);
+    }
+  }, [processFile]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const csvFile = files.find(file => file.type === 'text/csv' || file.name.endsWith('.csv'));
+    
+    if (csvFile) {
+      processFile(csvFile);
+    } else {
+      toast({
+        title: "Invalid file",
+        description: "Please drop a CSV file",
+        variant: "destructive",
+      });
+    }
+  }, [processFile, toast]);
+
+  const removeFile = useCallback(() => {
+    setFile(null);
+    setPreview([]);
+  }, []);
+
   const handleImport = async () => {
     if (!file || !batchName.trim() || !user) {
       toast({
@@ -289,7 +324,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
             .from('categories')
             .insert([{
               name: categoryName.trim(),
-              description: `Auto-created during import of ${file.name}`,
+              description: `Auto-created during ${importMode} import of ${file.name}`,
               color: generateRandomColor(),
               criteria: {},
               user_id: user.id
@@ -338,6 +373,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
             user_id: user.id,
             metadata: {
               headers,
+              importMode,
               processingTime: new Date().toISOString(),
               categoryName: categoryName.trim() || undefined
             }
@@ -367,28 +403,58 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
             rawLead[header] = values[i] || '';
           });
 
-          // Personal Details
-          const firstName = findColumnValue(rawLead, ['first_name']);
-          const lastName = findColumnValue(rawLead, ['last_name']);
+          // Organization Information (primary for company-only mode)
+          const company = findColumnValue(rawLead, ['organization_name', 'company', 'company_name']);
+          const phone = cleanPhoneNumber(findColumnValue(rawLead, ['organization_phone', 'phone', 'company_phone']));
+          const organizationWebsite = cleanUrl(findColumnValue(rawLead, ['organization_website_url', 'website', 'company_website']));
+
+          // Personal Details (with fallbacks for company-only mode)
+          let firstName = findColumnValue(rawLead, ['first_name']);
+          let lastName = findColumnValue(rawLead, ['last_name']);
           const name = findColumnValue(rawLead, ['name']);
+          let email = findColumnValue(rawLead, ['email']);
+          
+          // Company-only mode fallbacks
+          if (importMode === 'company' && (!firstName || !lastName || !email)) {
+            if (!firstName && !lastName && name) {
+              // Split name if provided
+              const nameParts = name.split(' ');
+              firstName = nameParts[0] || 'Contact';
+              lastName = nameParts.slice(1).join(' ') || 'Person';
+            } else {
+              firstName = firstName || 'Business';
+              lastName = lastName || 'Contact';
+            }
+            
+            if (!email) {
+              email = generatePlaceholderEmail(company);
+            }
+          }
+
+          // Skip if we don't have minimum required data
+          if (importMode === 'full' && (!firstName && !lastName && !email)) {
+            console.log(`Skipping row ${index + 1}: Missing essential personal data`);
+            failedImports++;
+            return;
+          }
+
+          if (importMode === 'company' && !company) {
+            console.log(`Skipping row ${index + 1}: Missing company name`);
+            failedImports++;
+            return;
+          }
+
+          // Continue with existing field processing...
           const headline = findColumnValue(rawLead, ['headline']);
-          const title = findColumnValue(rawLead, ['title']);
+          const title = findColumnValue(rawLead, ['title']) || (importMode === 'company' ? 'Contact Person' : '');
           const seniority = findColumnValue(rawLead, ['seniority']);
           const department = findColumnValue(rawLead, ['department']);
           const keywords = findColumnValue(rawLead, ['keywords']);
           const photoUrl = findColumnValue(rawLead, ['photo_url']);
-
-          // Contact Information
-          const email = findColumnValue(rawLead, ['email']);
           const personalEmail = findColumnValue(rawLead, ['personal_email']);
           const linkedin = cleanUrl(findColumnValue(rawLead, ['linkedin_url']));
           const twitterUrl = cleanUrl(findColumnValue(rawLead, ['twitter_url']));
           const facebookUrl = cleanUrl(findColumnValue(rawLead, ['facebook_url']));
-
-          // Organization Information
-          const company = findColumnValue(rawLead, ['organization_name']);
-          const phone = cleanPhoneNumber(findColumnValue(rawLead, ['organization_phone']));
-          const organizationWebsite = cleanUrl(findColumnValue(rawLead, ['organization_website_url']));
           const organizationLogo = findColumnValue(rawLead, ['organization_logo_url']);
           const organizationDomain = findColumnValue(rawLead, ['organization_primary_domain']);
           const organizationFounded = findColumnValue(rawLead, ['organization_founded_year']);
@@ -398,17 +464,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           const city = findColumnValue(rawLead, ['city', 'organization_city']);
           const state = findColumnValue(rawLead, ['state', 'organization_state']);
           const country = findColumnValue(rawLead, ['country', 'organization_country']);
-          const location = buildLocation(city, state, country);
+          const location = findColumnValue(rawLead, ['location']) || buildLocation(city, state, country);
 
           // Business Metadata
           const employeeCount = findColumnValue(rawLead, ['estimated_num_employees']);
           const industry = findColumnValue(rawLead, ['industry']);
-
-          if (!firstName && !lastName && !email) {
-            console.log(`Skipping row ${index + 1}: Missing essential data`);
-            failedImports++;
-            return;
-          }
 
           // Create lead object for database insertion
           const leadData = {
@@ -458,6 +518,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           
           // Auto-tag leads based on data quality and characteristics
           const tags = [];
+          if (importMode === 'company') tags.push('Company Lead');
           if (leadData.completeness_score >= 90) tags.push('Complete Profile');
           if (leadData.completeness_score < 60) tags.push('Incomplete');
           if (leadData.seniority === 'C-level' || leadData.seniority === 'Executive') tags.push('High Priority');
@@ -466,6 +527,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
           if (leadData.organization_website) tags.push('Has Website');
           if (leadData.department) tags.push('Department Known');
           if (leadData.organization_founded && new Date().getFullYear() - leadData.organization_founded <= 5) tags.push('New Company');
+          if (email && email.includes('contact@') && importMode === 'company') tags.push('Placeholder Email');
           
           leadData.tags = tags;
 
@@ -513,11 +575,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
 
         console.log(`Successfully imported ${successfulImports} leads`);
         
+        const modeText = importMode === 'company' ? 'company-only' : 'full contact';
         const successMessage = categoryName.trim() && !categories.find(cat => 
           cat.name.toLowerCase() === categoryName.toLowerCase()
         ) 
-          ? `Imported ${successfulImports} leads and created category "${categoryName}"`
-          : `Imported ${successfulImports} leads successfully`;
+          ? `Imported ${successfulImports} ${modeText} leads and created category "${categoryName}"`
+          : `Imported ${successfulImports} ${modeText} leads successfully`;
         
         toast({
           title: "Import successful",
@@ -556,10 +619,68 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
         </div>
         <h2 className="text-3xl font-bold tracking-tight">Import Lead Database</h2>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. 
-          Categories are created automatically if they don't exist.
+          Upload your lead CSV with personal details or company-only data for telesales. 
+          The system automatically detects your import format and creates categories as needed.
         </p>
       </div>
+
+      {/* Import Mode Selection */}
+      <Card className="apple-card">
+        <CardHeader className="text-center pb-6">
+          <CardTitle className="flex items-center justify-center gap-3 text-xl">
+            Import Mode Selection
+          </CardTitle>
+          <CardDescription className="text-base">
+            Choose the type of data you're importing
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button
+              variant={importMode === 'full' ? 'default' : 'outline'}
+              onClick={() => setImportMode('full')}
+              className="h-20 flex flex-col gap-2"
+            >
+              <User className="h-6 w-6" />
+              <div>
+                <div className="font-semibold">Full Contact Import</div>
+                <div className="text-xs opacity-80">Complete personal & company data</div>
+              </div>
+            </Button>
+            
+            <Button
+              variant={importMode === 'company' ? 'default' : 'outline'}
+              onClick={() => setImportMode('company')}
+              className="h-20 flex flex-col gap-2"
+            >
+              <Building2 className="h-6 w-6" />
+              <div>
+                <div className="font-semibold">Company-Only Import</div>
+                <div className="text-xs opacity-80">Telesales: org name, phone, location</div>
+              </div>
+            </Button>
+          </div>
+          
+          {importMode === 'company' && (
+            <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Building2 className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="font-semibold text-blue-900">Company-Only Import Format</h4>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Perfect for telesales! Minimum required: <code className="bg-blue-100 px-1 rounded">organization_name</code>. 
+                    Optional: <code className="bg-blue-100 px-1 rounded">organization_phone</code>, <code className="bg-blue-100 px-1 rounded">organization_city</code>, <code className="bg-blue-100 px-1 rounded">location</code>
+                  </p>
+                  <p className="text-xs text-blue-600 mt-2">
+                    System will auto-generate placeholder contact details and tag leads as "Company Lead"
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Import Form */}
       <Card className="apple-card">
@@ -655,7 +776,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
                     <div>
                       <p className="font-semibold text-green-900">{file.name}</p>
                       <p className="text-sm text-green-700">
-                        {(file.size / 1024).toFixed(1)} KB • Ready to import
+                        {(file.size / 1024).toFixed(1)} KB • {importMode === 'company' ? 'Company-only' : 'Full contact'} import mode
                       </p>
                     </div>
                   </div>
@@ -678,7 +799,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
                 <h4 className="font-semibold text-green-900">File Preview</h4>
-                <span className="text-sm text-muted-foreground">(first 3 rows)</span>
+                <span className="text-sm text-muted-foreground">(first 3 rows • {importMode} mode)</span>
               </div>
               
               <div className="border rounded-lg overflow-hidden bg-muted/20">
@@ -727,12 +848,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImportComplete, categori
               {importing ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  Processing Import...
+                  Processing {importMode === 'company' ? 'Company-Only' : 'Full Contact'} Import...
                 </>
               ) : (
                 <>
                   <Database className="h-5 w-5 mr-3" />
-                  Import Lead Database
+                  Import {importMode === 'company' ? 'Company-Only' : 'Full Contact'} Database
                 </>
               )}
             </Button>

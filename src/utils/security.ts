@@ -22,8 +22,8 @@ export const sanitizeInput = (input: string): string => {
     .trim();
 };
 
-// Validate CSV data structure
-export const validateCSVData = (data: any[]): { isValid: boolean; errors: string[] } => {
+// Validate CSV data structure with support for company-only imports
+export const validateCSVData = (data: any[], importMode: 'full' | 'company' = 'full'): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
   
   if (!Array.isArray(data)) {
@@ -41,26 +41,48 @@ export const validateCSVData = (data: any[]): { isValid: boolean; errors: string
     return { isValid: false, errors };
   }
 
-  // Check required fields
-  const requiredFields = ['first_name', 'last_name', 'email', 'company', 'title'];
   const firstRow = data[0];
   
-  for (const field of requiredFields) {
-    if (!firstRow.hasOwnProperty(field) || !firstRow[field]) {
-      errors.push(`Missing required field: ${field}`);
+  if (importMode === 'full') {
+    // Check required fields for full contact import
+    const requiredFields = ['first_name', 'last_name', 'email', 'company', 'title'];
+    
+    for (const field of requiredFields) {
+      if (!firstRow.hasOwnProperty(field) || !firstRow[field]) {
+        errors.push(`Missing required field: ${field}`);
+      }
     }
-  }
 
-  // Validate email addresses
-  let invalidEmails = 0;
-  for (const row of data.slice(0, 100)) { // Check first 100 rows for performance
-    if (row.email && !isValidEmail(row.email)) {
-      invalidEmails++;
+    // Validate email addresses
+    let invalidEmails = 0;
+    for (const row of data.slice(0, 100)) { // Check first 100 rows for performance
+      if (row.email && !isValidEmail(row.email)) {
+        invalidEmails++;
+      }
     }
-  }
 
-  if (invalidEmails > 0) {
-    errors.push(`Found ${invalidEmails} invalid email addresses in first 100 rows`);
+    if (invalidEmails > 0) {
+      errors.push(`Found ${invalidEmails} invalid email addresses in first 100 rows`);
+    }
+  } else if (importMode === 'company') {
+    // Check required fields for company-only import
+    const requiredFields = ['organization_name'];
+    
+    for (const field of requiredFields) {
+      if (!firstRow.hasOwnProperty(field) || !firstRow[field]) {
+        errors.push(`Missing required field for company import: ${field}`);
+      }
+    }
+
+    // Check if we have some useful company data
+    const companyFields = ['organization_phone', 'organization_city', 'location', 'phone', 'city'];
+    const hasAdditionalData = companyFields.some(field => 
+      firstRow.hasOwnProperty(field) && firstRow[field]
+    );
+
+    if (!hasAdditionalData) {
+      errors.push('Company import should include at least phone or location information');
+    }
   }
 
   return { isValid: errors.length === 0, errors };
