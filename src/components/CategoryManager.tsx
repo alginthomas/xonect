@@ -26,13 +26,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
   onDeleteCategory
 }) => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [newCategory, setNewCategory] = useState({
-    name: '',
-    description: '',
-    color: '#3B82F6'
-  });
-  const [editCategory, setEditCategory] = useState({
     name: '',
     description: '',
     color: '#3B82F6'
@@ -55,41 +49,6 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
     });
     setNewCategory({ name: '', description: '', color: '#3B82F6' });
     setIsCreateOpen(false);
-  };
-
-  const handleEditCategory = () => {
-    if (!editCategory.name.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Category name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (editingCategory) {
-      onUpdateCategory(editingCategory.id, {
-        name: editCategory.name,
-        description: editCategory.description,
-        color: editCategory.color
-      });
-      setEditingCategory(null);
-      setEditCategory({ name: '', description: '', color: '#3B82F6' });
-    }
-  };
-
-  const openEditDialog = (category: Category) => {
-    setEditingCategory(category);
-    setEditCategory({
-      name: category.name,
-      description: category.description || '',
-      color: category.color
-    });
-  };
-
-  const closeEditDialog = () => {
-    setEditingCategory(null);
-    setEditCategory({ name: '', description: '', color: '#3B82F6' });
   };
 
   const defaultColors = [
@@ -166,62 +125,6 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
             </DialogContent>
           </Dialog>
 
-          {/* Edit Category Dialog */}
-          <Dialog open={!!editingCategory} onOpenChange={(open) => !open && closeEditDialog()}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Category</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="editCategoryName">Category Name</Label>
-                  <Input
-                    id="editCategoryName"
-                    value={editCategory.name}
-                    onChange={(e) => setEditCategory(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="e.g., Tech Companies"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="editCategoryDescription">Description (Optional)</Label>
-                  <Textarea
-                    id="editCategoryDescription"
-                    value={editCategory.description}
-                    onChange={(e) => setEditCategory(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Brief description of this category"
-                  />
-                </div>
-                <div>
-                  <Label>Color</Label>
-                  <div className="flex gap-2 mt-2">
-                    {defaultColors.map(color => (
-                      <button
-                        key={color}
-                        className={`w-8 h-8 rounded-full border-2 ${
-                          editCategory.color === color ? 'border-gray-800' : 'border-gray-300'
-                        }`}
-                        style={{ backgroundColor: color }}
-                        onClick={() => setEditCategory(prev => ({ ...prev, color }))}
-                      />
-                    ))}
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={closeEditDialog} variant="outline" className="flex-1">
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleEditCategory} 
-                    className="flex-1"
-                    disabled={!editCategory.name.trim()}
-                  >
-                    Update Category
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
           <div className="space-y-2">
             {categories.map(category => (
               <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
@@ -238,11 +141,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => openEditDialog(category)}
-                  >
+                  <Button variant="outline" size="sm">
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button 
