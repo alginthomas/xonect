@@ -4,20 +4,9 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { 
   Mail, 
   Phone, 
-  MoreHorizontal, 
-  Eye, 
-  Trash2,
-  MessageSquare,
   Check
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
@@ -139,7 +128,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </Avatar>
           
           {/* Lead info - left aligned */}
-          <div className="flex-1 min-w-0 pr-3">
+          <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base leading-tight mb-2 text-left">
               {lead.firstName} {lead.lastName}
             </h3>
@@ -152,31 +141,6 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               </p>
             </div>
           </div>
-
-          {/* More actions menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-9 w-9 p-0 flex-shrink-0"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onViewDetails(); }}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeleteLead(); }} className="text-red-600">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Lead
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Status section */}
