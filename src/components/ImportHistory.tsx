@@ -60,7 +60,10 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
     if (!leads || !Array.isArray(leads)) {
       return [];
     }
-    return leads.filter(lead => lead.importBatchId === batchId);
+    return leads.filter(lead => 
+      lead.categoryId === batchId || 
+      importBatches.find(batch => batch.id === batchId)?.categoryId === lead.categoryId
+    );
   };
 
   const getBatchStats = (batch: ImportBatch) => {
@@ -107,15 +110,8 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   };
 
   const handleViewBatchLeads = (batchId: string) => {
-    console.log('Viewing leads for batch:', batchId);
-    
-    // Use the callback prop if provided, otherwise navigate to leads tab
-    if (onViewBatchLeads) {
-      onViewBatchLeads(batchId);
-    } else {
-      // Navigate to the main page with leads tab and batch filter
-      navigate(`/?tab=leads&batch=${batchId}`);
-    }
+    // Navigate directly to the leads dashboard with the batch filter applied
+    navigate(`/?tab=dashboard&batch=${batchId}`);
   };
 
   const getCategoryName = (categoryId?: string) => {
