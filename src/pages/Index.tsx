@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -585,73 +584,37 @@ const Index = () => {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <div className="flex flex-col gap-3 mb-4 lg:mb-6">
             {/* Mobile-optimized Tab Navigation */}
-            <div className="overflow-x-auto -mx-3 px-3 lg:mx-0 lg:px-0">
-              <TabsList className={`grid w-full ${isMobile ? 'grid-cols-3' : 'grid-cols-6'} lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit gap-1`}>
-                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? (
-                    <div className="flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      <span>Dashboard</span>
-                    </div>
-                  ) : (
-                    'Dashboard'
-                  )}
+            <div className="w-full">
+              <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 bg-muted rounded-xl p-1 h-12">
+                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 flex items-center justify-center gap-1">
+                  <Building2 className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
                 </TabsTrigger>
-                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? (
-                    <div className="flex items-center gap-1">
-                      <User className="h-3 w-3" />
-                      <span>Leads</span>
-                    </div>
-                  ) : (
-                    'Leads'
-                  )}
+                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 flex items-center justify-center gap-1">
+                  <User className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline">Leads</span>
                 </TabsTrigger>
-                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">
-                  {isMobile ? (
-                    <div className="flex items-center gap-1">
-                      <Download className="h-3 w-3" />
-                      <span>Import</span>
-                    </div>
-                  ) : (
-                    'Import'
-                  )}
+                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 flex items-center justify-center gap-1">
+                  <Download className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline">Import</span>
                 </TabsTrigger>
-                {!isMobile && (
-                  <>
-                    <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Categories</TabsTrigger>
-                    <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Templates</TabsTrigger>
-                    <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 whitespace-nowrap">Settings</TabsTrigger>
-                  </>
-                )}
+                <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 flex items-center justify-center gap-1">
+                  <MessageSquare className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline lg:hidden">Cat</span>
+                  <span className="hidden lg:inline">Categories</span>
+                </TabsTrigger>
+                <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 flex items-center justify-center gap-1">
+                  <Mail className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline lg:hidden">Temp</span>
+                  <span className="hidden lg:inline">Templates</span>
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4 flex items-center justify-center gap-1">
+                  <Building2 className="h-3 w-3 lg:h-4 lg:w-4" />
+                  <span className="hidden sm:inline lg:hidden">Set</span>
+                  <span className="hidden lg:inline">Settings</span>
+                </TabsTrigger>
               </TabsList>
             </div>
-
-            {/* Mobile Secondary Navigation */}
-            {isMobile && !['dashboard', 'leads', 'import'].includes(activeTab) && (
-              <div className="overflow-x-auto -mx-3 px-3">
-                <TabsList className="grid w-full grid-cols-3 bg-muted/50 rounded-xl p-1 min-w-fit gap-1">
-                  <TabsTrigger value="categories" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <MessageSquare className="h-3 w-3" />
-                      <span>Categories</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="templates" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <Mail className="h-3 w-3" />
-                      <span>Templates</span>
-                    </div>
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" className="rounded-lg font-medium text-xs px-2 whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
-                      <span>Settings</span>
-                    </div>
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-            )}
           </div>
 
           <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">

@@ -142,6 +142,70 @@
       min-height: 44px;
       min-width: 44px;
     }
+
+    /* Import page specific mobile improvements */
+    .import-container {
+      padding: 1rem;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .import-card {
+      margin: 0;
+      border-radius: 0.75rem;
+    }
+
+    .import-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .import-form input[type="file"] {
+      width: 100%;
+      min-height: 48px;
+    }
+
+    .import-form .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .import-form .form-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .import-history {
+      overflow-x: auto;
+    }
+
+    .import-history table {
+      min-width: 100%;
+      font-size: 0.875rem;
+    }
+
+    .import-history th,
+    .import-history td {
+      padding: 0.5rem;
+      white-space: nowrap;
+    }
+  }
+
+  /* Tablet responsive improvements */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .import-container {
+      max-width: 100%;
+      padding: 1.5rem;
+    }
+
+    .import-form .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
   }
 
   /* Enhanced accessibility */
@@ -160,6 +224,15 @@
   :focus-visible {
     outline: 2px solid hsl(var(--ring));
     outline-offset: 2px;
+  }
+
+  /* Checkbox rounded styling */
+  .checkbox-round {
+    border-radius: 50% !important;
+  }
+  
+  .checkbox-round[data-state="checked"] {
+    border-radius: 50% !important;
   }
 }
 
@@ -232,5 +305,26 @@
 
   .mobile-header-hierarchy {
     @apply text-lg lg:text-xl;
+  }
+
+  /* Import page responsive improvements */
+  .import-responsive {
+    @apply w-full max-w-none lg:max-w-6xl mx-auto px-3 lg:px-0;
+  }
+
+  .import-card-responsive {
+    @apply w-full border-0 lg:border shadow-none lg:shadow-sm rounded-none lg:rounded-xl;
+  }
+
+  .import-form-responsive {
+    @apply space-y-4 lg:space-y-6;
+  }
+
+  .import-grid-responsive {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+  }
+
+  .import-button-responsive {
+    @apply w-full sm:w-auto;
   }
 }
