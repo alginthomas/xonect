@@ -25,8 +25,8 @@ const SignInForm: React.FC<SignInFormProps> = ({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-3">
-        <Label htmlFor="signin-email" className="text-sm font-medium text-foreground/90 block">
-          Email
+        <Label htmlFor="signin-email" className="text-sm font-semibold text-foreground block">
+          Email Address
         </Label>
         <Input
           id="signin-email"
@@ -39,7 +39,7 @@ const SignInForm: React.FC<SignInFormProps> = ({
         />
       </div>
       <div className="space-y-3">
-        <Label htmlFor="signin-password" className="text-sm font-medium text-foreground/90 block">
+        <Label htmlFor="signin-password" className="text-sm font-semibold text-foreground block">
           Password
         </Label>
         <Input
@@ -54,12 +54,12 @@ const SignInForm: React.FC<SignInFormProps> = ({
       </div>
       <Button 
         type="submit" 
-        className="w-full h-12 mt-8 rounded-xl font-medium text-base transition-all duration-200 apple-button" 
+        className="w-full h-12 mt-8 rounded-xl font-semibold text-base transition-all duration-200 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]" 
         disabled={loading}
       >
         {loading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             Signing in...
           </>
         ) : (

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,29 +26,37 @@ const AuthCard: React.FC<AuthCardProps> = ({
   onSignIn,
   onSignUp
 }) => {
-  return <Card className="bg-background/95 backdrop-blur-sm shadow-lg border-0 apple-blur apple-shadow-lg">
-      <CardHeader className="space-y-3 pb-6">
-        <CardTitle className="text-2xl text-center font-semibold tracking-tight">Welcome</CardTitle>
-        <CardDescription className="text-center text-muted-foreground px-0">
-          Sign in to your account or create a new one
+  return <Card className="w-full max-w-md bg-background/95 backdrop-blur-sm shadow-xl border border-border/20 rounded-2xl overflow-hidden">
+      <CardHeader className="space-y-4 pb-8 pt-8 px-8 bg-gradient-to-b from-muted/30 to-transparent">
+        <CardTitle className="text-3xl text-center font-bold tracking-tight text-foreground">
+          Welcome
+        </CardTitle>
+        <CardDescription className="text-center text-muted-foreground text-base leading-relaxed">
+          Sign in to your account or create a new one to get started
         </CardDescription>
       </CardHeader>
-      <CardContent className="pb-8 px-6">
+      <CardContent className="p-8">
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 rounded-xl bg-slate-200 my-0 mx-0 py-0 px-0">
-            <TabsTrigger value="signin" className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm text-center overflow-hidden py-0 px-0">
-              <span className="truncate">Sign In</span>
+          <TabsList className="grid w-full grid-cols-2 mb-8 h-14 p-1 rounded-xl bg-muted/50 backdrop-blur-sm border border-border/10">
+            <TabsTrigger 
+              value="signin" 
+              className="h-12 rounded-lg font-semibold text-sm transition-all duration-300 ease-in-out data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/20 text-muted-foreground hover:text-foreground data-[state=active]:scale-[0.98] px-6"
+            >
+              Sign In
             </TabsTrigger>
-            <TabsTrigger value="signup" className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm px-3 text-center overflow-hidden">
-              <span className="truncate">Sign Up</span>
+            <TabsTrigger 
+              value="signup" 
+              className="h-12 rounded-lg font-semibold text-sm transition-all duration-300 ease-in-out data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border/20 text-muted-foreground hover:text-foreground data-[state=active]:scale-[0.98] px-6"
+            >
+              Sign Up
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="signin" className="space-y-0 mt-0">
+          <TabsContent value="signin" className="space-y-0 mt-0 focus-visible:outline-none">
             <SignInForm email={email} password={password} loading={loading} onEmailChange={onEmailChange} onPasswordChange={onPasswordChange} onSubmit={onSignIn} />
           </TabsContent>
 
-          <TabsContent value="signup" className="space-y-0 mt-0">
+          <TabsContent value="signup" className="space-y-0 mt-0 focus-visible:outline-none">
             <SignUpForm email={email} password={password} fullName={fullName} loading={loading} onEmailChange={onEmailChange} onPasswordChange={onPasswordChange} onFullNameChange={onFullNameChange} onSubmit={onSignUp} />
           </TabsContent>
         </Tabs>
