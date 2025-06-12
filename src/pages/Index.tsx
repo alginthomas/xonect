@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AppleLayout } from '@/layouts/AppleLayout';
+import AppleLayout from '@/layouts/AppleLayout';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { CSVImport } from '@/components/CSVImport';
 import { ImportHistory } from '@/components/ImportHistory';
@@ -109,6 +109,26 @@ const Index = () => {
 
   const handleCreateCategory = async (categoryData: any) => {
     console.log('Create category:', categoryData);
+  };
+
+  const handleUpdateCategory = async (id: string, updates: any) => {
+    console.log('Update category:', id, updates);
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    console.log('Delete category:', id);
+  };
+
+  const handleImportComplete = () => {
+    console.log('Import completed');
+  };
+
+  const handleSaveTemplate = async (templateData: any) => {
+    console.log('Save template:', templateData);
+  };
+
+  const handleSaveBranding = async (brandingData: any) => {
+    console.log('Save branding:', brandingData);
   };
 
   // Calculate some basic stats for the overview
@@ -306,19 +326,34 @@ const Index = () => {
           </TabsContent>
 
           <TabsContent value="import">
-            <CSVImport />
+            <CSVImport 
+              onImportComplete={handleImportComplete}
+              categories={mockCategories}
+              onCreateCategory={handleCreateCategory}
+            />
           </TabsContent>
 
           <TabsContent value="categories">
-            <CategoryManager />
+            <CategoryManager
+              categories={mockCategories}
+              onCreateCategory={handleCreateCategory}
+              onUpdateCategory={handleUpdateCategory}
+              onDeleteCategory={handleDeleteCategory}
+            />
           </TabsContent>
 
           <TabsContent value="templates">
-            <EmailTemplateBuilder />
+            <EmailTemplateBuilder
+              onSaveTemplate={handleSaveTemplate}
+              templates={mockTemplates}
+            />
           </TabsContent>
 
           <TabsContent value="settings">
-            <BrandingSettings />
+            <BrandingSettings
+              branding={mockBranding}
+              onSave={handleSaveBranding}
+            />
           </TabsContent>
         </Tabs>
       </div>
