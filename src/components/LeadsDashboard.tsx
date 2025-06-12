@@ -123,33 +123,46 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   // Filter leads based on batch selection and other filters
   const filteredLeads = useMemo(() => {
+    console.log('Filtering leads:', { 
+      totalLeads: leads.length, 
+      selectedBatchId, 
+      searchTerm, 
+      statusFilter, 
+      categoryFilter, 
+      dataAvailabilityFilter 
+    });
+    
     let filtered = leads;
 
     // Filter by selected batch
     if (selectedBatchId) {
       filtered = filtered.filter(lead => lead.importBatchId === selectedBatchId);
+      console.log('After batch filter:', filtered.length);
     }
 
     // Filter by search term
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
       filtered = filtered.filter(lead =>
-        lead.firstName.toLowerCase().includes(term) ||
-        lead.lastName.toLowerCase().includes(term) ||
-        lead.email.toLowerCase().includes(term) ||
-        lead.company.toLowerCase().includes(term) ||
-        lead.title.toLowerCase().includes(term)
+        lead.firstName?.toLowerCase().includes(term) ||
+        lead.lastName?.toLowerCase().includes(term) ||
+        lead.email?.toLowerCase().includes(term) ||
+        lead.company?.toLowerCase().includes(term) ||
+        lead.title?.toLowerCase().includes(term)
       );
+      console.log('After search filter:', filtered.length);
     }
 
     // Filter by status
     if (statusFilter !== 'all') {
       filtered = filtered.filter(lead => lead.status === statusFilter);
+      console.log('After status filter:', filtered.length);
     }
 
     // Filter by category
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(lead => lead.categoryId === categoryFilter);
+      console.log('After category filter:', filtered.length);
     }
 
     // Filter by data availability
@@ -164,6 +177,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       );
     }
 
+    console.log('Final filtered count:', filtered.length);
     return filtered;
   }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter]);
 
@@ -281,7 +295,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     });
   };
 
-  const startEdit = (leadId: string, field: string, currentValue: string) => {
+  const startEdit = async (leadId: string, field: string, currentValue: string) => {
     setEditingLead(leadId);
     setEditingField(field);
     setEditValue(currentValue || '');
@@ -300,6 +314,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       setEditingLead(null);
       setEditingField(null);
       setEditValue('');
+
+      toast({
+        title: 'Lead updated',
+        description: 'Lead information has been successfully updated.',
+      });
     } catch (error) {
       toast({
         title: 'Update failed',
@@ -429,6 +448,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 if (e.key === 'Enter') saveEdit();
                 if (e.key === 'Escape') cancelEdit();
               }}
+              autoFocus
             />
           )}
           <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
@@ -443,11 +463,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
     return (
       <div 
-        className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1"
+        className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1 group"
         onClick={() => startEdit(lead.id, field, value)}
       >
         <span className="flex-1">{value || 'Not set'}</span>
-        <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100" />
+        <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     );
   };
@@ -589,7 +609,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">
-              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedLeads.length)} of {sortedLeads.length} leads
+              Showing {Math.min(startIndex + 1, filteredLeads.length)} to {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
             </span>
             
             <div className="flex gap-1">
@@ -603,14 +623,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </Button>
               
               <span className="flex items-center px-3 text-sm">
-                {currentPage} of {totalPages}
+                {currentPage} of {Math.max(1, Math.ceil(filteredLeads.length / itemsPerPage))}
               </span>
               
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))}
+                disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)}
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </Button>
@@ -801,14 +821,19 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setExpandedLead(isExpanded ? null : lead.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedLead(isExpanded ? null : lead.id);
+                              console.log('Toggling expanded lead:', isExpanded ? null : lead.id);
+                            }}
+                            className="h-8 w-8 p-0"
                           >
                             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                           </Button>
                           
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -847,9 +872,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     
                     {/* Expanded Details Row */}
                     {isExpanded && (
-                      <AppleTableRow>
-                        <AppleTableCell colSpan={9} className="bg-muted/30">
-                          <div className="p-4 space-y-4">
+                      <AppleTableRow className="bg-muted/30">
+                        <AppleTableCell colSpan={9}>
+                          <div className="p-6 space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                               {/* Contact Information */}
                               <div className="space-y-3">
@@ -857,18 +882,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                   <Phone className="h-4 w-4" />
                                   Contact Information
                                 </h4>
-                                <div className="space-y-2 text-sm">
+                                <div className="space-y-3 text-sm">
                                   <div className="group">
-                                    <label className="text-muted-foreground">Email:</label>
+                                    <label className="text-muted-foreground block mb-1">Email:</label>
                                     {renderEditableField(lead, 'email', lead.email)}
                                   </div>
                                   <div className="group">
-                                    <label className="text-muted-foreground">Phone:</label>
-                                    {renderEditableField(lead, 'phone', lead.phone)}
+                                    <label className="text-muted-foreground block mb-1">Phone:</label>
+                                    {renderEditableField(lead, 'phone', lead.phone || '')}
                                   </div>
                                   <div className="group">
-                                    <label className="text-muted-foreground">Personal Email:</label>
-                                    {renderEditableField(lead, 'personalEmail', lead.personalEmail)}
+                                    <label className="text-muted-foreground block mb-1">Personal Email:</label>
+                                    {renderEditableField(lead, 'personalEmail', lead.personalEmail || '')}
                                   </div>
                                   {lead.linkedin && (
                                     <div className="flex items-center gap-2">
@@ -877,7 +902,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                         href={lead.linkedin} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline"
+                                        className="text-blue-600 hover:underline text-sm"
                                       >
                                         LinkedIn Profile
                                       </a>
@@ -892,21 +917,21 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                   <Building className="h-4 w-4" />
                                   Company Information
                                 </h4>
-                                <div className="space-y-2 text-sm">
+                                <div className="space-y-3 text-sm">
                                   <div className="group">
-                                    <label className="text-muted-foreground">Industry:</label>
-                                    {renderEditableField(lead, 'industry', lead.industry)}
+                                    <label className="text-muted-foreground block mb-1">Industry:</label>
+                                    {renderEditableField(lead, 'industry', lead.industry || '')}
                                   </div>
                                   <div className="group">
-                                    <label className="text-muted-foreground">Location:</label>
-                                    {renderEditableField(lead, 'location', lead.location)}
+                                    <label className="text-muted-foreground block mb-1">Location:</label>
+                                    {renderEditableField(lead, 'location', lead.location || '')}
                                   </div>
                                   <div className="group">
-                                    <label className="text-muted-foreground">Department:</label>
-                                    {renderEditableField(lead, 'department', lead.department)}
+                                    <label className="text-muted-foreground block mb-1">Department:</label>
+                                    {renderEditableField(lead, 'department', lead.department || '')}
                                   </div>
                                   <div className="group">
-                                    <label className="text-muted-foreground">Company Size:</label>
+                                    <label className="text-muted-foreground block mb-1">Company Size:</label>
                                     {renderEditableField(lead, 'companySize', lead.companySize, 'select', [
                                       'Small (1-50)', 'Medium (51-200)', 'Large (201-1000)', 'Enterprise (1000+)'
                                     ])}
@@ -918,7 +943,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                         href={lead.organizationWebsite} 
                                         target="_blank" 
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline"
+                                        className="text-blue-600 hover:underline text-sm"
                                       >
                                         Company Website
                                       </a>
@@ -933,21 +958,21 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                   <Target className="h-4 w-4" />
                                   Lead Management
                                 </h4>
-                                <div className="space-y-2 text-sm">
+                                <div className="space-y-3 text-sm">
                                   <div className="group">
-                                    <label className="text-muted-foreground">Status:</label>
+                                    <label className="text-muted-foreground block mb-1">Status:</label>
                                     {renderEditableField(lead, 'status', lead.status, 'select', [
                                       'New', 'Contacted', 'Qualified', 'Unqualified'
                                     ])}
                                   </div>
                                   <div className="group">
-                                    <label className="text-muted-foreground">Seniority:</label>
+                                    <label className="text-muted-foreground block mb-1">Seniority:</label>
                                     {renderEditableField(lead, 'seniority', lead.seniority, 'select', [
                                       'Entry-level', 'Mid-level', 'Senior', 'Executive', 'C-level'
                                     ])}
                                   </div>
                                   <div>
-                                    <label className="text-muted-foreground">Category:</label>
+                                    <label className="text-muted-foreground block mb-1">Category:</label>
                                     <CategoryCombobox
                                       categories={categories}
                                       value={category.name}
@@ -957,15 +982,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                     />
                                   </div>
                                   <div>
-                                    <label className="text-muted-foreground">Batch:</label>
-                                    <div className="text-sm">{getBatchName(lead.importBatchId)}</div>
+                                    <label className="text-muted-foreground block mb-1">Batch:</label>
+                                    <div className="text-sm px-2 py-1">{getBatchName(lead.importBatchId)}</div>
                                   </div>
                                 </div>
                               </div>
                             </div>
                             
                             {/* Remarks Section */}
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               <h4 className="font-semibold text-sm flex items-center gap-2">
                                 <MessageSquare className="h-4 w-4" />
                                 Remarks
@@ -977,18 +1002,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                             </div>
 
                             {/* Stats */}
-                            <div className="flex gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Mail className="h-3 w-3" />
-                                {lead.emailsSent} emails sent
+                            <div className="flex gap-6 text-sm text-muted-foreground border-t pt-4">
+                              <div className="flex items-center gap-2">
+                                <Mail className="h-4 w-4" />
+                                <span>{lead.emailsSent || 0} emails sent</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                Last contact: {lead.lastContactDate ? format(lead.lastContactDate, 'MMM dd, yyyy') : 'Never'}
+                              <div className="flex items-center gap-2">
+                                <Calendar className="h-4 w-4" />
+                                <span>Last contact: {lead.lastContactDate ? format(lead.lastContactDate, 'MMM dd, yyyy') : 'Never'}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Target className="h-3 w-3" />
-                                Completeness: {lead.completenessScore}%
+                              <div className="flex items-center gap-2">
+                                <Target className="h-4 w-4" />
+                                <span>Completeness: {lead.completenessScore || 0}%</span>
                               </div>
                             </div>
                           </div>
@@ -1002,7 +1027,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           </AppleTable>
 
           {paginatedLeads.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No leads found</h3>
               <p>Try adjusting your search criteria or filters.</p>
