@@ -5,6 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +27,10 @@ import {
   MoreVertical,
   ChevronRight,
   User,
-  Building2
+  Building2,
+  MessageSquare,
+  Save,
+  Edit3
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +61,8 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   onDeleteLead
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isEditingRemarks, setIsEditingRemarks] = useState(false);
+  const [remarksText, setRemarksText] = useState(lead.remarks || '');
   const { toast } = useToast();
 
   const getCategoryInfo = (categoryId: string | undefined) => {
@@ -109,6 +116,20 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     }
   };
 
+  const saveRemarks = () => {
+    onRemarksUpdate(remarksText);
+    setIsEditingRemarks(false);
+    toast({
+      title: 'Remarks updated',
+      description: 'Lead remarks have been saved successfully.',
+    });
+  };
+
+  const cancelRemarksEdit = () => {
+    setRemarksText(lead.remarks || '');
+    setIsEditingRemarks(false);
+  };
+
   const category = getCategoryInfo(lead.categoryId);
 
   return (
@@ -152,9 +173,9 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                 {lead.title} • {lead.company}
               </p>
               
-              {/* Quick Actions Row - Fixed layout */}
+              {/* Quick Actions Row - Responsive */}
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -165,7 +186,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                     }}
                   >
                     <Mail className="h-3 w-3" />
-                    <span>Email</span>
+                    <span className="hidden xs:inline">Email</span>
                   </Button>
 
                   {lead.phone && (
@@ -179,7 +200,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                       }}
                     >
                       <Phone className="h-3 w-3" />
-                      <span>Call</span>
+                      <span className="hidden xs:inline">Call</span>
                     </Button>
                   )}
                 </div>
@@ -193,7 +214,8 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                     setIsExpanded(true);
                   }}
                 >
-                  <span>View</span>
+                  <span className="hidden xs:inline">View</span>
+                  <Eye className="h-3 w-3 xs:hidden" />
                   <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
@@ -204,7 +226,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 
       {/* Expanded Details Sheet */}
       <Sheet open={isExpanded} onOpenChange={setIsExpanded}>
-        <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
+        <SheetContent side="bottom" className="h-[85vh] overflow-y-auto">
           <SheetHeader className="text-left mb-4">
             <div className="flex items-center gap-3 mb-2">
               <Avatar className="h-12 w-12">
@@ -312,17 +334,56 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             </div>
 
             {/* Remarks Section */}
-            {lead.remarks && (
-              <div className="space-y-2">
-                <h4 className="font-medium text-sm">Remarks</h4>
-                <div className="p-3 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground">{lead.remarks}</p>
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Remarks
+                </h4>
+                {!isEditingRemarks && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsEditingRemarks(true)}
+                    className="h-7 px-2 text-xs"
+                  >
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    {lead.remarks ? 'Edit' : 'Add'}
+                  </Button>
+                )}
               </div>
-            )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-2 pt-4">
+              {isEditingRemarks ? (
+                <div className="space-y-3">
+                  <Textarea
+                    value={remarksText}
+                    onChange={(e) => setRemarksText(e.target.value)}
+                    placeholder="Add your remarks about this lead..."
+                    className="min-h-[80px]"
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={saveRemarks} className="flex-1">
+                      <Save className="h-3 w-3 mr-1" />
+                      Save Remarks
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={cancelRemarksEdit} className="flex-1">
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-muted/30 rounded-lg min-h-[60px]">
+                  {lead.remarks ? (
+                    <p className="text-sm text-muted-foreground">{lead.remarks}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">No remarks added yet</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons - Responsive */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-4">
               <Button 
                 onClick={onEmailClick} 
                 className="flex-1"
