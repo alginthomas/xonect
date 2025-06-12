@@ -95,6 +95,20 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
     try {
       console.log('Submitting lead data:', formData);
       
+      // Get the current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('Error getting user:', userError);
+        throw new Error('You must be logged in to add leads');
+      }
+
+      if (!user) {
+        throw new Error('You must be logged in to add leads');
+      }
+
+      console.log('Current user ID:', user.id);
+
       const { data, error } = await supabase
         .from('leads')
         .insert([{
@@ -112,7 +126,8 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
           emails_sent: 0,
           seniority: 'Mid-level',
           company_size: 'Small (1-50)',
-          tags: []
+          tags: [],
+          user_id: user.id // Add the user_id field
         }])
         .select();
 
@@ -150,7 +165,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[96vw] max-w-md mx-auto h-[92vh] max-h-[680px] p-0 gap-0 rounded-2xl border-0 shadow-2xl bg-background overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-md mx-auto h-[90vh] max-h-[640px] p-0 gap-0 rounded-2xl border-0 shadow-2xl bg-background overflow-hidden">
         {/* Fixed Header */}
         <div className="flex-shrink-0 px-5 pt-6 pb-4 bg-background border-b border-border/5">
           <button
@@ -352,7 +367,7 @@ export const AddLeadDialog: React.FC<AddLeadDialogProps> = ({
         </ScrollArea>
 
         {/* Fixed Footer */}
-        <div className="flex-shrink-0 border-t border-border/5 bg-background px-5 py-4">
+        <div className="flex-shrink-0 border-t border-border/5 bg-background px-5 py-4 rounded-b-2xl">
           <div className="flex gap-3">
             <Button 
               type="button" 
