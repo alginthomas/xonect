@@ -86,6 +86,18 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     setIsFilterSheetOpen(false);
   };
 
+  const handleLocationChange = (value: string) => {
+    if (onLocationChange) {
+      onLocationChange(value === 'all-locations' ? '' : value);
+    }
+  };
+
+  const handleIndustryChange = (value: string) => {
+    if (onIndustryChange) {
+      onIndustryChange(value === 'all-industries' ? '' : value);
+    }
+  };
+
   const totalActiveFilters = activeFiltersCount + 
     (selectedSeniority !== 'all' ? 1 : 0) +
     (selectedCompanySize !== 'all' ? 1 : 0) +
@@ -265,12 +277,12 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                   {onLocationChange && (
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Location</label>
-                      <Select value={selectedLocation} onValueChange={onLocationChange}>
+                      <Select value={selectedLocation || 'all-locations'} onValueChange={handleLocationChange}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="All Locations" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Locations</SelectItem>
+                          <SelectItem value="all-locations">All Locations</SelectItem>
                           {availableLocations.map(location => (
                             <SelectItem key={location} value={location}>
                               {location}
@@ -284,12 +296,12 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                   {onIndustryChange && (
                     <div>
                       <label className="text-xs text-muted-foreground mb-1 block">Industry</label>
-                      <Select value={selectedIndustry} onValueChange={onIndustryChange}>
+                      <Select value={selectedIndustry || 'all-industries'} onValueChange={handleIndustryChange}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="All Industries" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Industries</SelectItem>
+                          <SelectItem value="all-industries">All Industries</SelectItem>
                           {availableIndustries.map(industry => (
                             <SelectItem key={industry} value={industry}>
                               {industry}
