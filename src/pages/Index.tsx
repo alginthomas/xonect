@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -588,7 +587,7 @@ export default function Index() {
   const renderContent = () => {
     return (
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
-        <TabsContent value="dashboard" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="dashboard" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
           <AnalyticsDashboard
             leads={leads}
             templates={templates}
@@ -598,9 +597,9 @@ export default function Index() {
           />
         </TabsContent>
 
-        <TabsContent value="leads" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="leads" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
           {isMobile ? (
-            // Mobile Leads View - Full height
+            // Mobile Leads View - With proper padding
             <MobileLeadsList
               leads={leads}
               categories={categories}
@@ -641,7 +640,7 @@ export default function Index() {
 
         <TabsContent value="import" className={isMobile ? "h-full" : "space-y-8 lg:space-y-10"}>
           {isMobile ? (
-            // Mobile-optimized import page
+            // Mobile-optimized import page with proper padding
             <div className="h-full flex flex-col bg-background">
               <div className="flex-1 overflow-y-auto">
                 <div className="p-4 space-y-6">
@@ -693,12 +692,12 @@ export default function Index() {
           )}
         </TabsContent>
 
-        <TabsContent value="categories" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
+        <TabsContent value="categories" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
           {isMobile ? (
-            // Mobile-optimized categories page
+            // Mobile-optimized categories page with proper padding
             <div className="h-full flex flex-col bg-background">
               <div className="flex-1 overflow-y-auto">
-                <div className="space-y-4">
+                <div className="p-4 space-y-4">
                   <div className="text-center py-4">
                     <FolderOpen className="h-12 w-12 mx-auto mb-3 text-primary" />
                     <h1 className="text-xl font-semibold mb-2">Lead Categories</h1>
@@ -737,38 +736,86 @@ export default function Index() {
           )}
         </TabsContent>
 
-        <TabsContent value="templates" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
-          <Card className="apple-card">
-            <CardHeader>
-              <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
-              <CardDescription className="text-sm lg:text-base">
-                Create and manage email templates for your campaigns.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EmailTemplateBuilder 
-                onSaveTemplate={handleSaveTemplate}
-                templates={templates}
-              />
-            </CardContent>
-          </Card>
+        <TabsContent value="templates" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+          {isMobile ? (
+            // Mobile templates with proper padding
+            <div className="h-full flex flex-col bg-background">
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4">
+                  <Card className="apple-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
+                      <CardDescription className="text-sm lg:text-base">
+                        Create and manage email templates for your campaigns.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <EmailTemplateBuilder 
+                        onSaveTemplate={handleSaveTemplate}
+                        templates={templates}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
+                  Create and manage email templates for your campaigns.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EmailTemplateBuilder 
+                  onSaveTemplate={handleSaveTemplate}
+                  templates={templates}
+                />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
-        <TabsContent value="settings" className={isMobile ? "h-full p-4" : "space-y-6 lg:space-y-8"}>
-          <Card className="apple-card">
-            <CardHeader>
-              <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>
-              <CardDescription className="text-sm lg:text-base">
-                Customize your company branding for email communications.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <BrandingSettings 
-                branding={branding}
-                onSave={handleSaveBranding}
-              />
-            </CardContent>
-          </Card>
+        <TabsContent value="settings" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
+          {isMobile ? (
+            // Mobile settings with proper padding
+            <div className="h-full flex flex-col bg-background">
+              <div className="flex-1 overflow-y-auto">
+                <div className="p-4">
+                  <Card className="apple-card">
+                    <CardHeader>
+                      <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>
+                      <CardDescription className="text-sm lg:text-base">
+                        Customize your company branding for email communications.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <BrandingSettings 
+                        branding={branding}
+                        onSave={handleSaveBranding}
+                      />
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
+                  Customize your company branding for email communications.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BrandingSettings 
+                  branding={branding}
+                  onSave={handleSaveBranding}
+                />
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     );
@@ -781,27 +828,29 @@ export default function Index() {
       categories={categories}
       onLeadAdded={handleImportComplete}
     >
-      {/* Desktop content */}
+      {/* Desktop content with proper spacing */}
       {!isMobile && (
-        <div className="space-y-6">
+        <div className="space-y-6 px-4 lg:px-6">
           {renderContent()}
         </div>
       )}
 
-      {/* Mobile content - more streamlined */}
+      {/* Mobile content - properly padded */}
       {isMobile && (
         <div className="flex flex-col h-full bg-background">
           {activeTab === 'leads' ? (
-            <MobileLeadsList
-              leads={leads}
-              categories={categories}
-              onUpdateLead={handleUpdateLead}
-              onDeleteLead={handleDeleteLead}
-              onEmailClick={handleSendEmail}
-              onViewDetails={handleViewDetails}
-              onBulkUpdateStatus={handleBulkUpdateStatus}
-              onBulkDelete={handleBulkDelete}
-            />
+            <div className="p-4">
+              <MobileLeadsList
+                leads={leads}
+                categories={categories}
+                onUpdateLead={handleUpdateLead}
+                onDeleteLead={handleDeleteLead}
+                onEmailClick={handleSendEmail}
+                onViewDetails={handleViewDetails}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onBulkDelete={handleBulkDelete}
+              />
+            </div>
           ) : (
             renderContent()
           )}
