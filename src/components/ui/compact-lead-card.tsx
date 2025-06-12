@@ -21,7 +21,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
-import { openEmailClient, copyEmailOnly } from '@/utils/emailUtils';
+import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -54,33 +54,15 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
       // Primary action is call if phone exists
       window.open(`tel:${lead.phone}`, '_self');
     } else {
-      // Fallback to email with mail client
-      await openEmailClient({
-        to: lead.email,
-        firstName: lead.firstName,
-        lastName: lead.lastName,
-        company: lead.company,
-        title: lead.title
-      });
-      // Call the callback to update lead status
-      onEmailClick();
+      // Fallback to email copy only
+      await copyEmailOnly(lead.email);
     }
   };
 
   const handleSecondaryAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (lead.phone) {
-      // Secondary action is email if phone exists
-      await openEmailClient({
-        to: lead.email,
-        firstName: lead.firstName,
-        lastName: lead.lastName,
-        company: lead.company,
-        title: lead.title
-      });
-      // Call the callback to update lead status
-      onEmailClick();
-    }
+    // Always just copy email for secondary action
+    await copyEmailOnly(lead.email);
   };
 
   const handleCardClick = () => {
@@ -184,7 +166,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               ) : (
                 <>
                   <Mail className="h-4 w-4 mr-2 text-primary" />
-                  <span className="text-sm">Email</span>
+                  <span className="text-sm">Copy Email</span>
                 </>
               )}
             </Button>
@@ -198,7 +180,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                 onClick={handleSecondaryAction}
               >
                 <Mail className="h-4 w-4 mr-2 text-blue-600" />
-                <span className="text-sm">Email</span>
+                <span className="text-sm">Copy Email</span>
               </Button>
             )}
           </div>

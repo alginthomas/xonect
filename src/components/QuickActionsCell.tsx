@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2, Copy, Linkedin, Globe } from 'lucide-react';
-import { openEmailClient, copyEmailOnly } from '@/utils/emailUtils';
+import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead } from '@/types/lead';
 
 interface QuickActionsCellProps {
@@ -43,18 +43,8 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   };
 
   const emailLead = async () => {
-    await openEmailClient({
-      to: lead.email,
-      firstName: lead.firstName,
-      lastName: lead.lastName,
-      company: lead.company,
-      title: lead.title
-    });
-    
-    // Call the callback to update lead status
-    if (onEmailClick) {
-      onEmailClick();
-    }
+    await copyEmailOnly(lead.email);
+    // Do not call onEmailClick to prevent status changes
   };
 
   const openLinkedIn = () => {
@@ -77,7 +67,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         variant="ghost"
         className="h-7 w-7 p-0"
         onClick={(e) => handleClick(e, emailLead)}
-        title="Send Email"
+        title="Copy Email"
       >
         <Mail className="h-3 w-3" />
       </Button>
@@ -147,7 +137,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={() => emailLead()}>
             <Mail className="h-4 w-4 mr-2" />
-            Send Email
+            Copy Email
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => copyEmail()}>
             <Copy className="h-4 w-4 mr-2" />
