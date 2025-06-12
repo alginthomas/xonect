@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -5,9 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from '@/components/ui/drawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,38 +16,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableHead, AppleTableRow, AppleTableCell } from '@/components/ui/apple-table';
-import { LeadRemarksDialog } from '@/components/LeadRemarksDialog';
-import { QuickRemarkEditor } from '@/components/QuickRemarkEditor';
+import { LeadSidebar } from '@/components/LeadSidebar';
+import { QuickStatusEditor } from '@/components/QuickStatusEditor';
+import { QuickRemarksCell } from '@/components/QuickRemarksCell';
+import { QuickActionsCell } from '@/components/QuickActionsCell';
 import { EmailDialog } from '@/components/EmailDialog';
-import { CategoryCombobox } from '@/components/CategoryCombobox';
 import {
   Search,
   Download,
   Users,
   Mail,
   Phone,
-  MessageSquare,
   Trash2,
-  MoreHorizontal,
-  ExternalLink,
   ChevronUp,
   ChevronDown,
-  ChevronRight,
-  Globe,
-  Linkedin,
-  MapPin,
-  Building,
-  Calendar,
-  Briefcase,
-  Target,
-  Tag,
-  X,
-  Eye,
-  Edit,
-  Save,
-  Filter,
   ChevronLeft,
   ChevronRightIcon,
+  Filter,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -106,14 +90,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const saved = localStorage.getItem('leadsPerPage');
     return saved ? parseInt(saved) : 25;
   });
-  const [expandedLead, setExpandedLead] = useState<string | null>(null);
-  const [editingLead, setEditingLead] = useState<string | null>(null);
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<string>('');
-  const [showRemarksDialog, setShowRemarksDialog] = useState(false);
-  const [selectedLeadForRemarks, setSelectedLeadForRemarks] = useState<Lead | null>(null);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  
+  // Sidebar state
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  
+  // Email dialog state
   const [selectedLeadForEmail, setSelectedLeadForEmail] = useState<Lead | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  
   const { toast } = useToast();
 
   // Persist items per page setting
@@ -223,14 +208,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const allCurrentSelected = currentPageLeadIds.every(id => selectedLeads.has(id));
     
     if (allCurrentSelected) {
-      // Deselect all current page leads
       setSelectedLeads(prev => {
         const newSet = new Set(prev);
         currentPageLeadIds.forEach(id => newSet.delete(id));
         return newSet;
       });
     } else {
-      // Select all current page leads
       setSelectedLeads(prev => new Set([...prev, ...currentPageLeadIds]));
     }
   }, [paginatedLeads, selectedLeads]);
@@ -295,85 +278,43 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     });
   };
 
-  const startEdit = async (leadId: string, field: string, currentValue: string) => {
-    setEditingLead(leadId);
-    setEditingField(field);
-    setEditValue(currentValue || '');
+  const openLeadSidebar = (lead: Lead) => {
+    setSelectedLead(lead);
+    setShowSidebar(true);
   };
 
-  const saveEdit = async () => {
-    if (!editingLead || !editingField) return;
+  const closeSidebar = () => {
+    setShowSidebar(false);
+    setSelectedLead(null);
+  };
 
+  const handleStatusChange = async (leadId: string, status: LeadStatus) => {
     try {
-      const updates: Partial<Lead> = {
-        [editingField]: editValue
-      };
-      
-      await onUpdateLead(editingLead, updates);
-      
-      setEditingLead(null);
-      setEditingField(null);
-      setEditValue('');
-
+      await onUpdateLead(leadId, { status });
       toast({
-        title: 'Lead updated',
-        description: 'Lead information has been successfully updated.',
+        title: 'Status updated',
+        description: `Lead status updated to ${status}`,
       });
     } catch (error) {
       toast({
         title: 'Update failed',
-        description: 'Failed to update lead. Please try again.',
+        description: 'Failed to update status. Please try again.',
         variant: 'destructive',
       });
     }
   };
 
-  const cancelEdit = () => {
-    setEditingLead(null);
-    setEditingField(null);
-    setEditValue('');
-  };
-
-  const handleCategoryChange = async (leadId: string, categoryName: string) => {
+  const handleRemarksUpdate = async (leadId: string, remarks: string) => {
     try {
-      // Check if category exists
-      let categoryId = '';
-      const existingCategory = categories.find(cat => 
-        cat.name.toLowerCase() === categoryName.toLowerCase()
-      );
-
-      if (existingCategory) {
-        categoryId = existingCategory.id;
-      } else if (onCreateCategory) {
-        // Create new category
-        await onCreateCategory({
-          name: categoryName,
-          description: `Created automatically`,
-          color: '#3B82F6',
-          criteria: {}
-        });
-        
-        // Find the newly created category
-        const newCategory = categories.find(cat => 
-          cat.name.toLowerCase() === categoryName.toLowerCase()
-        );
-        
-        if (newCategory) {
-          categoryId = newCategory.id;
-        }
-      }
-
-      if (categoryId) {
-        await onUpdateLead(leadId, { categoryId });
-        toast({
-          title: 'Category updated',
-          description: `Lead category updated to ${categoryName}`,
-        });
-      }
+      await onUpdateLead(leadId, { remarks });
+      toast({
+        title: 'Remarks updated',
+        description: 'Lead remarks have been updated.',
+      });
     } catch (error) {
       toast({
         title: 'Update failed',
-        description: 'Failed to update category. Please try again.',
+        description: 'Failed to update remarks. Please try again.',
         variant: 'destructive',
       });
     }
@@ -391,16 +332,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     return category ? { name: category.name, color: category.color } : { name: 'Unknown', color: '#6B7280' };
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'New': return 'bg-blue-100 text-blue-800';
-      case 'Contacted': return 'bg-yellow-100 text-yellow-800';
-      case 'Qualified': return 'bg-green-100 text-green-800';
-      case 'Unqualified': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getSizeColor = (size: string) => {
     switch (size) {
       case 'Small (1-50)': return 'bg-blue-100 text-blue-800';
@@ -409,67 +340,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       case 'Enterprise (1000+)': return 'bg-purple-100 text-purple-800';
       default: return 'bg-gray-100 text-gray-800';
     }
-  };
-
-  const getSeniorityColor = (seniority: string) => {
-    switch (seniority) {
-      case 'Entry-level': return 'bg-green-100 text-green-800';
-      case 'Mid-level': return 'bg-blue-100 text-blue-800';
-      case 'Senior': return 'bg-orange-100 text-orange-800';
-      case 'Executive': return 'bg-purple-100 text-purple-800';
-      case 'C-level': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const renderEditableField = (lead: Lead, field: string, value: string, type: 'text' | 'select' = 'text', options?: string[]) => {
-    const isEditing = editingLead === lead.id && editingField === field;
-
-    if (isEditing) {
-      return (
-        <div className="flex items-center gap-2">
-          {type === 'select' && options ? (
-            <Select value={editValue} onValueChange={setEditValue}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {options.map(option => (
-                  <SelectItem key={option} value={option}>{option}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          ) : (
-            <Input
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              className="h-8 text-xs"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
-              }}
-              autoFocus
-            />
-          )}
-          <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
-            <Save className="h-3 w-3" />
-          </Button>
-          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
-            <X className="h-3 w-3" />
-          </Button>
-        </div>
-      );
-    }
-
-    return (
-      <div 
-        className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1 group"
-        onClick={() => startEdit(lead.id, field, value)}
-      >
-        <span className="flex-1">{value || 'Not set'}</span>
-        <Edit className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-      </div>
-    );
   };
 
   // Calculate checkbox state for select all
@@ -486,7 +356,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search leads..."
+              placeholder="Search leads by name, email, company..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -672,6 +542,23 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   />
                 </AppleTableHead>
                 <AppleTableHead 
+                  className="cursor-pointer hover:bg-muted/50 w-24"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center gap-2">
+                    Status
+                    {sortField === 'status' && (
+                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
+                </AppleTableHead>
+                <AppleTableHead className="w-48">
+                  Quick Remarks
+                </AppleTableHead>
+                <AppleTableHead className="w-32">
+                  Actions
+                </AppleTableHead>
+                <AppleTableHead 
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('firstName')}
                 >
@@ -694,19 +581,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   </div>
                 </AppleTableHead>
                 <AppleTableHead>Contact</AppleTableHead>
-                <AppleTableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('status')}
-                >
-                  <div className="flex items-center gap-2">
-                    Status
-                    {sortField === 'status' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </AppleTableHead>
                 <AppleTableHead>Category</AppleTableHead>
-                <AppleTableHead>Details</AppleTableHead>
                 <AppleTableHead 
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleSort('createdAt')}
@@ -718,309 +593,112 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                     )}
                   </div>
                 </AppleTableHead>
-                <AppleTableHead className="w-12">Actions</AppleTableHead>
               </AppleTableRow>
             </AppleTableHeader>
             <AppleTableBody>
               {paginatedLeads.map((lead) => {
                 const category = getCategoryInfo(lead.categoryId);
-                const isExpanded = expandedLead === lead.id;
                 
                 return (
-                  <React.Fragment key={lead.id}>
-                    <AppleTableRow className="group hover:bg-muted/50">
-                      <AppleTableCell>
-                        <Checkbox
-                          checked={selectedLeads.has(lead.id)}
-                          onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
-                        />
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-                            <AvatarFallback>
-                              {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">
-                              {lead.firstName} {lead.lastName}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {lead.title}
-                            </div>
-                          </div>
-                        </div>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div>
-                          <div className="font-medium">{lead.company}</div>
-                          <div className="flex gap-1 mt-1">
-                            <Badge variant="outline" className={getSizeColor(lead.companySize)}>
-                              {lead.companySize.replace(/\s*\([^)]*\)/, '')}
-                            </Badge>
-                          </div>
-                        </div>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-3 w-3" />
-                            <span className="truncate max-w-[200px]">{lead.email}</span>
-                          </div>
-                          {lead.phone && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-3 w-3" />
-                              <span>{lead.phone}</span>
-                            </div>
-                          )}
-                        </div>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <Badge className={getStatusColor(lead.status)}>
-                          {lead.status}
-                        </Badge>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: category.color }}
-                          />
-                          <span className="text-sm">{category.name}</span>
-                        </div>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div className="flex gap-1">
-                          <Badge variant="outline" className={getSeniorityColor(lead.seniority)}>
-                            {lead.seniority}
-                          </Badge>
-                          {lead.industry && (
-                            <Badge variant="outline">
-                              {lead.industry}
-                            </Badge>
-                          )}
-                        </div>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div className="text-sm text-muted-foreground">
-                          {format(lead.createdAt, 'MMM dd, yyyy')}
-                        </div>
-                      </AppleTableCell>
-                      
-                      <AppleTableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedLead(isExpanded ? null : lead.id);
-                              console.log('Toggling expanded lead:', isExpanded ? null : lead.id);
-                            }}
-                            className="h-8 w-8 p-0"
-                          >
-                            {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                          </Button>
-                          
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedLeadForEmail(lead);
-                                  setShowEmailDialog(true);
-                                }}
-                              >
-                                <Mail className="h-4 w-4 mr-2" />
-                                Send Email
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  setSelectedLeadForRemarks(lead);
-                                  setShowRemarksDialog(true);
-                                }}
-                              >
-                                <MessageSquare className="h-4 w-4 mr-2" />
-                                Add Remarks
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => onDeleteLead(lead.id)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </AppleTableCell>
-                    </AppleTableRow>
+                  <AppleTableRow 
+                    key={lead.id}
+                    className="group hover:bg-muted/50 cursor-pointer"
+                    onClick={() => openLeadSidebar(lead)}
+                  >
+                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedLeads.has(lead.id)}
+                        onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+                      />
+                    </AppleTableCell>
                     
-                    {/* Expanded Details Row */}
-                    {isExpanded && (
-                      <AppleTableRow className="bg-muted/30">
-                        <AppleTableCell colSpan={9}>
-                          <div className="p-6 space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                              {/* Contact Information */}
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                  <Phone className="h-4 w-4" />
-                                  Contact Information
-                                </h4>
-                                <div className="space-y-3 text-sm">
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Email:</label>
-                                    {renderEditableField(lead, 'email', lead.email)}
-                                  </div>
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Phone:</label>
-                                    {renderEditableField(lead, 'phone', lead.phone || '')}
-                                  </div>
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Personal Email:</label>
-                                    {renderEditableField(lead, 'personalEmail', lead.personalEmail || '')}
-                                  </div>
-                                  {lead.linkedin && (
-                                    <div className="flex items-center gap-2">
-                                      <Linkedin className="h-3 w-3" />
-                                      <a 
-                                        href={lead.linkedin} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline text-sm"
-                                      >
-                                        LinkedIn Profile
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Company Information */}
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                  <Building className="h-4 w-4" />
-                                  Company Information
-                                </h4>
-                                <div className="space-y-3 text-sm">
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Industry:</label>
-                                    {renderEditableField(lead, 'industry', lead.industry || '')}
-                                  </div>
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Location:</label>
-                                    {renderEditableField(lead, 'location', lead.location || '')}
-                                  </div>
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Department:</label>
-                                    {renderEditableField(lead, 'department', lead.department || '')}
-                                  </div>
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Company Size:</label>
-                                    {renderEditableField(lead, 'companySize', lead.companySize, 'select', [
-                                      'Small (1-50)', 'Medium (51-200)', 'Large (201-1000)', 'Enterprise (1000+)'
-                                    ])}
-                                  </div>
-                                  {lead.organizationWebsite && (
-                                    <div className="flex items-center gap-2">
-                                      <Globe className="h-3 w-3" />
-                                      <a 
-                                        href={lead.organizationWebsite} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 hover:underline text-sm"
-                                      >
-                                        Company Website
-                                      </a>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              {/* Lead Management */}
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-sm flex items-center gap-2">
-                                  <Target className="h-4 w-4" />
-                                  Lead Management
-                                </h4>
-                                <div className="space-y-3 text-sm">
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Status:</label>
-                                    {renderEditableField(lead, 'status', lead.status, 'select', [
-                                      'New', 'Contacted', 'Qualified', 'Unqualified'
-                                    ])}
-                                  </div>
-                                  <div className="group">
-                                    <label className="text-muted-foreground block mb-1">Seniority:</label>
-                                    {renderEditableField(lead, 'seniority', lead.seniority, 'select', [
-                                      'Entry-level', 'Mid-level', 'Senior', 'Executive', 'C-level'
-                                    ])}
-                                  </div>
-                                  <div>
-                                    <label className="text-muted-foreground block mb-1">Category:</label>
-                                    <CategoryCombobox
-                                      categories={categories}
-                                      value={category.name}
-                                      onChange={(categoryName) => handleCategoryChange(lead.id, categoryName)}
-                                      placeholder="Select or create category"
-                                      className="mt-1"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="text-muted-foreground block mb-1">Batch:</label>
-                                    <div className="text-sm px-2 py-1">{getBatchName(lead.importBatchId)}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Remarks Section */}
-                            <div className="space-y-3">
-                              <h4 className="font-semibold text-sm flex items-center gap-2">
-                                <MessageSquare className="h-4 w-4" />
-                                Remarks
-                              </h4>
-                              <QuickRemarkEditor
-                                lead={lead}
-                                onUpdateRemarks={(leadId, remarks) => onUpdateLead(leadId, { remarks })}
-                              />
-                            </div>
-
-                            {/* Stats */}
-                            <div className="flex gap-6 text-sm text-muted-foreground border-t pt-4">
-                              <div className="flex items-center gap-2">
-                                <Mail className="h-4 w-4" />
-                                <span>{lead.emailsSent || 0} emails sent</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                <span>Last contact: {lead.lastContactDate ? format(lead.lastContactDate, 'MMM dd, yyyy') : 'Never'}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Target className="h-4 w-4" />
-                                <span>Completeness: {lead.completenessScore || 0}%</span>
-                              </div>
-                            </div>
+                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
+                      <QuickStatusEditor
+                        status={lead.status}
+                        onChange={(status) => handleStatusChange(lead.id, status)}
+                      />
+                    </AppleTableCell>
+                    
+                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
+                      <QuickRemarksCell
+                        remarks={lead.remarks || ''}
+                        onUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
+                      />
+                    </AppleTableCell>
+                    
+                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
+                      <QuickActionsCell
+                        lead={lead}
+                        onEmailClick={() => {
+                          setSelectedLeadForEmail(lead);
+                          setShowEmailDialog(true);
+                        }}
+                        onViewDetails={() => openLeadSidebar(lead)}
+                        onDeleteLead={() => onDeleteLead(lead.id)}
+                      />
+                    </AppleTableCell>
+                    
+                    <AppleTableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+                          <AvatarFallback>
+                            {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-medium">
+                            {lead.firstName} {lead.lastName}
                           </div>
-                        </AppleTableCell>
-                      </AppleTableRow>
-                    )}
-                  </React.Fragment>
+                          <div className="text-sm text-muted-foreground">
+                            {lead.title}
+                          </div>
+                        </div>
+                      </div>
+                    </AppleTableCell>
+                    
+                    <AppleTableCell>
+                      <div>
+                        <div className="font-medium">{lead.company}</div>
+                        <div className="flex gap-1 mt-1">
+                          <Badge variant="outline" className={getSizeColor(lead.companySize)}>
+                            {lead.companySize.replace(/\s*\([^)]*\)/, '')}
+                          </Badge>
+                        </div>
+                      </div>
+                    </AppleTableCell>
+                    
+                    <AppleTableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3 w-3" />
+                          <span className="truncate max-w-[200px]">{lead.email}</span>
+                        </div>
+                        {lead.phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3 w-3" />
+                            <span>{lead.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    </AppleTableCell>
+                    
+                    <AppleTableCell>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        <span className="text-sm">{category.name}</span>
+                      </div>
+                    </AppleTableCell>
+                    
+                    <AppleTableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {format(lead.createdAt, 'MMM dd, yyyy')}
+                      </div>
+                    </AppleTableCell>
+                  </AppleTableRow>
                 );
               })}
             </AppleTableBody>
@@ -1036,18 +714,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </CardContent>
       </Card>
 
-      {/* Dialogs */}
-      {selectedLeadForRemarks && (
-        <LeadRemarksDialog
-          lead={selectedLeadForRemarks}
-          onUpdateRemarks={(leadId, remarks) => {
-            onUpdateLead(leadId, { remarks });
-            setShowRemarksDialog(false);
-            setSelectedLeadForRemarks(null);
-          }}
-        />
-      )}
+      {/* Sidebar for Lead Details */}
+      <LeadSidebar
+        lead={selectedLead}
+        isOpen={showSidebar}
+        onClose={closeSidebar}
+        categories={categories}
+        onUpdateLead={onUpdateLead}
+        onCreateCategory={onCreateCategory}
+      />
 
+      {/* Email Dialog */}
       {selectedLeadForEmail && (
         <EmailDialog
           lead={selectedLeadForEmail}
