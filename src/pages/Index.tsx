@@ -395,6 +395,13 @@ export default function Index() {
     }
   };
 
+  const handleViewDetails = (lead: Lead) => {
+    toast({
+      title: 'Lead Details',
+      description: `Viewing details for ${lead.firstName} ${lead.lastName}`,
+    });
+  };
+
   const handleImportComplete = () => {
     fetchLeads();
     fetchImportBatches();
@@ -602,7 +609,7 @@ export default function Index() {
               onUpdateLead={handleUpdateLead}
               onDeleteLead={handleDeleteLead}
               onEmailClick={handleSendEmail}
-              onViewDetails={(lead) => console.log('View details for:', lead)}
+              onViewDetails={handleViewDetails}
               onBulkUpdateStatus={handleBulkUpdateStatus}
               onBulkDelete={handleBulkDelete}
             />
@@ -714,12 +721,8 @@ export default function Index() {
     <AppleLayout 
       activeTab={activeTab} 
       onTabChange={setActiveTab}
-      onAddLead={() => {
-        toast({
-          title: 'Add Lead',
-          description: 'Lead creation feature coming soon!',
-        });
-      }}
+      categories={categories}
+      onLeadAdded={handleImportComplete}
     >
       {/* Desktop content */}
       {!isMobile && (
