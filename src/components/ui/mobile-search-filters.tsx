@@ -86,7 +86,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
         <div className="overflow-x-auto scrollbar-hide">
           <div style={{
           minWidth: 'max-content'
-        }} className="flex items-center gap-2 pb-2 py-[4px] px-[2px]">
+        }} className="flex items-center gap-2 pb-2 py-[4px] px-[6px]">
             <Select value={selectedStatus} onValueChange={onStatusChange}>
               <SelectTrigger className="w-28 h-9 text-xs flex-shrink-0">
                 <SelectValue placeholder="Status" />
