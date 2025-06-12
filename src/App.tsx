@@ -7,7 +7,7 @@ import LeadDetails from './pages/LeadDetails';
 import Auth from './pages/Auth';
 import NotFound from './pages/NotFound';
 import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import './App.css';
 
