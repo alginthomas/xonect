@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 import { UserDropdown } from '@/components/UserDropdown';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -70,8 +71,16 @@ const Header: React.FC<HeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Section - User */}
+        {/* Right Section - Actions and User */}
         <div className="flex items-center gap-3">
+          {/* Desktop Add Lead Button - Show on leads tab only */}
+          {!isMobile && activeTab === 'leads' && onAddLead && (
+            <Button onClick={onAddLead} size="sm" className="flex items-center gap-2 font-medium">
+              <Plus className="h-4 w-4" />
+              Add Lead
+            </Button>
+          )}
+          
           <UserDropdown />
         </div>
       </div>
