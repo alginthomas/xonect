@@ -27,9 +27,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
   onSubmit,
 }) => {
   return (
-    <form onSubmit={onSubmit} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="signup-name" className="text-sm font-medium text-foreground">Full Name</Label>
+        <Label htmlFor="signup-name" className="text-sm font-medium text-left block">
+          Full Name
+        </Label>
         <Input
           id="signup-name"
           type="text"
@@ -37,11 +39,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           value={fullName}
           onChange={(e) => onFullNameChange(e.target.value)}
           required
-          className="h-11 bg-background border-border/50 focus:border-primary text-sm"
+          className="w-full text-left"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="signup-email" className="text-sm font-medium text-foreground">Email</Label>
+        <Label htmlFor="signup-email" className="text-sm font-medium text-left block">
+          Email
+        </Label>
         <Input
           id="signup-email"
           type="email"
@@ -49,11 +53,13 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           required
-          className="h-11 bg-background border-border/50 focus:border-primary text-sm"
+          className="w-full text-left"
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="signup-password" className="text-sm font-medium text-foreground">Password</Label>
+        <Label htmlFor="signup-password" className="text-sm font-medium text-left block">
+          Password
+        </Label>
         <Input
           id="signup-password"
           type="password"
@@ -62,12 +68,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           onChange={(e) => onPasswordChange(e.target.value)}
           required
           minLength={6}
-          className="h-11 bg-background border-border/50 focus:border-primary text-sm"
+          className="w-full text-left"
         />
       </div>
       <Button 
         type="submit" 
-        className="w-full h-11 mt-6 font-medium text-sm" 
+        className="w-full" 
         disabled={loading}
       >
         {loading ? (

@@ -29,28 +29,18 @@ const AuthCard: React.FC<AuthCardProps> = ({
   onSignUp,
 }) => {
   return (
-    <Card className="border-0 shadow-xl bg-card/95 backdrop-blur-sm">
-      <CardHeader className="text-center pb-4">
-        <CardTitle className="text-xl font-semibold">Welcome</CardTitle>
-        <CardDescription className="text-muted-foreground">
+    <Card className="border shadow-sm bg-card">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl text-left">Welcome</CardTitle>
+        <CardDescription className="text-left">
           Sign in to your account or create a new one
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      <CardContent>
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50 h-10">
-            <TabsTrigger 
-              value="signin" 
-              className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
-            >
-              Sign In
-            </TabsTrigger>
-            <TabsTrigger 
-              value="signup"
-              className="data-[state=active]:bg-background data-[state=active]:shadow-sm text-sm"
-            >
-              Sign Up
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="signin">Sign In</TabsTrigger>
+            <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin" className="space-y-4 mt-0">
