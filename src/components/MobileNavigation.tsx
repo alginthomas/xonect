@@ -45,16 +45,15 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      console.log('MobileNavigation: Initiating sign out...');
       setIsOpen(false);
-      toast({
-        title: 'Signed out',
-        description: 'You have been signed out successfully.',
-      });
+      await signOut();
+      // Note: signOut now handles the redirect and any notifications
     } catch (error) {
+      console.error('MobileNavigation: Sign out error:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to sign out. Please try again.',
+        title: 'Sign out failed',
+        description: 'There was an error signing out. Please try again.',
         variant: 'destructive',
       });
     }

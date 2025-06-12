@@ -25,6 +25,25 @@ export const useAuth = () => {
   return context;
 };
 
+// Helper function to clean up auth state
+const cleanupAuthState = () => {
+  // Remove all Supabase auth keys from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+  
+  // Remove from sessionStorage if in use
+  if (typeof sessionStorage !== 'undefined') {
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -34,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -51,9 +71,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
+    try {
+      console.log('Attempting to sign out...');
+      
+      // Clean up auth state first
+      cleanupAuthState();
+      
+      // Clear local state immediately
+      setUser(null);
+      setSession(null);
+      
+      // Attempt to sign out from Supabase (with fallback)
+      try {
+        const { error } = await supabase.auth.signOut({ scope: 'global' });
+        if (error) {
+          console.log('Supabase sign out error (continuing anyway):', error.message);
+        }
+      } catch (supabaseError) {
+        console.log('Supabase sign out failed (continuing anyway):', supabaseError);
+      }
+      
+      // Force redirect to auth page for clean state
+      window.location.href = '/auth';
+      
+    } catch (error) {
+      console.error('Sign out process failed:', error);
+      // Even if there's an error, redirect to auth page
+      window.location.href = '/auth';
     }
   };
 

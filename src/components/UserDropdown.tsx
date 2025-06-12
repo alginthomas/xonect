@@ -18,15 +18,14 @@ export const UserDropdown: React.FC = () => {
 
   const handleSignOut = async () => {
     try {
+      console.log('UserDropdown: Initiating sign out...');
       await signOut();
-      toast({
-        title: 'Signed out',
-        description: 'You have been signed out successfully.',
-      });
+      // Note: signOut now handles the redirect and toast, so we don't need to do it here
     } catch (error) {
+      console.error('UserDropdown: Sign out error:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to sign out. Please try again.',
+        title: 'Sign out failed',
+        description: 'There was an error signing out. Please try again.',
         variant: 'destructive',
       });
     }
