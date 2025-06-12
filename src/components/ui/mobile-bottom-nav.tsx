@@ -8,29 +8,26 @@ import {
   Upload, 
   FolderOpen, 
   Mail, 
-  Settings,
-  Plus
+  Settings
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
-  onAddLead: () => void;
   unreadCount?: number;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   activeTab,
   onTabChange,
-  onAddLead,
   unreadCount = 0
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Home', icon: Home },
     { id: 'leads', label: 'Leads', icon: Users },
-    { id: 'add', label: 'Add', icon: Plus, isAction: true },
     { id: 'import', label: 'Import', icon: Upload },
     { id: 'categories', label: 'Categories', icon: FolderOpen },
+    { id: 'templates', label: 'Templates', icon: Mail },
   ];
 
   return (
@@ -39,19 +36,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
-          
-          if (item.isAction) {
-            return (
-              <Button
-                key={item.id}
-                onClick={onAddLead}
-                size="sm"
-                className="h-14 w-14 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-200 relative"
-              >
-                <Icon className="h-6 w-6" />
-              </Button>
-            );
-          }
           
           return (
             <Button

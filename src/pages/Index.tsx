@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +13,8 @@ import { BrandingSettings } from '@/components/BrandingSettings';
 import { ImportHistory } from '@/components/ImportHistory';
 import { MobileNavigation } from '@/components/MobileNavigation';
 import { MobileLeadsList } from '@/components/ui/mobile-leads-list';
+import { FloatingActionButton } from '@/components/ui/floating-action-button';
+import { AddLeadDialog } from '@/components/AddLeadDialog';
 import AppleLayout from '@/layouts/AppleLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +57,7 @@ export default function Index() {
   });
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [isAddLeadDialogOpen, setIsAddLeadDialogOpen] = useState(false);
   const { toast } = useToast();
   const { deleteBatch, loading } = useImportBatchOperations();
 
@@ -585,6 +587,14 @@ export default function Index() {
     }
   };
 
+  const handleAddLead = () => {
+    setIsAddLeadDialogOpen(true);
+  };
+
+  const handleLeadAdded = () => {
+    fetchLeads();
+  };
+
   const renderContent = () => {
     return (
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
@@ -792,21 +802,31 @@ export default function Index() {
       {isMobile && (
         <div className="flex flex-col h-full bg-background">
           {activeTab === 'leads' ? (
-            <MobileLeadsList
-              leads={leads}
-              categories={categories}
-              onUpdateLead={handleUpdateLead}
-              onDeleteLead={handleDeleteLead}
-              onEmailClick={handleSendEmail}
-              onViewDetails={handleViewDetails}
-              onBulkUpdateStatus={handleBulkUpdateStatus}
-              onBulkDelete={handleBulkDelete}
-            />
+            <>
+              <MobileLeadsList
+                leads={leads}
+                categories={categories}
+                onUpdateLead={handleUpdateLead}
+                onDeleteLead={handleDeleteLead}
+                onEmailClick={handleSendEmail}
+                onViewDetails={handleViewDetails}
+                onBulkUpdateStatus={handleBulkUpdateStatus}
+                onBulkDelete={handleBulkDelete}
+              />
+              <FloatingActionButton onClick={handleAddLead} />
+            </>
           ) : (
             renderContent()
           )}
         </div>
       )}
+
+      <AddLeadDialog
+        isOpen={isAddLeadDialogOpen}
+        onClose={() => setIsAddLeadDialogOpen(false)}
+        categories={categories}
+        onLeadAdded={handleLeadAdded}
+      />
     </AppleLayout>
   );
 }
