@@ -248,11 +248,31 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
         <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
           {/* Compact Tabs Header */}
           <div className="flex-shrink-0 px-3 py-2">
-            <TabsList className="flex w-full h-8 p-0.5 bg-muted">
-              <TabsTrigger value="overview" className="flex-1 text-xs px-1 py-1 min-w-0 h-7">Overview</TabsTrigger>
-              <TabsTrigger value="contact" className="flex-1 text-xs px-1 py-1 min-w-0 h-7">Contact</TabsTrigger>
-              <TabsTrigger value="company" className="flex-1 text-xs px-1 py-1 min-w-0 h-7">Company</TabsTrigger>
-              <TabsTrigger value="activity" className="flex-1 text-xs px-1 py-1 min-w-0 h-7">Activity</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4 h-8 p-0.5 bg-muted rounded-md">
+              <TabsTrigger 
+                value="overview" 
+                className="text-[10px] sm:text-xs px-0.5 py-1 h-7 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-sm transition-all"
+              >
+                Overview
+              </TabsTrigger>
+              <TabsTrigger 
+                value="contact" 
+                className="text-[10px] sm:text-xs px-0.5 py-1 h-7 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-sm transition-all"
+              >
+                Contact
+              </TabsTrigger>
+              <TabsTrigger 
+                value="company" 
+                className="text-[10px] sm:text-xs px-0.5 py-1 h-7 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-sm transition-all"
+              >
+                Company
+              </TabsTrigger>
+              <TabsTrigger 
+                value="activity" 
+                className="text-[10px] sm:text-xs px-0.5 py-1 h-7 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm rounded-sm transition-all"
+              >
+                Activity
+              </TabsTrigger>
             </TabsList>
           </div>
 
