@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -27,6 +26,8 @@ import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileLeadDetails } from '@/components/ui/mobile-lead-details';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -34,6 +35,7 @@ export default function LeadDetails() {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [lead, setLead] = useState<Lead | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [remarks, setRemarks] = useState('');
@@ -222,6 +224,11 @@ export default function LeadDetails() {
         </Button>
       </div>
     );
+  }
+
+  // Use mobile component on mobile devices
+  if (isMobile) {
+    return <MobileLeadDetails lead={lead} categories={categories} />;
   }
 
   const category = getCategoryInfo(lead.categoryId);
