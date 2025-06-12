@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CompactLeadCard } from './compact-lead-card';
 import { MobileSearchFilters } from './mobile-search-filters';
 import { Button } from '@/components/ui/button';
@@ -29,18 +30,59 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onBulkUpdateStatus,
   onBulkDelete
 }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedSeniority, setSelectedSeniority] = useState<Seniority | 'all'>('all');
-  const [selectedCompanySize, setSelectedCompanySize] = useState<CompanySize | 'all'>('all');
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [selectedIndustry, setSelectedIndustry] = useState('');
-  const [selectedDataFilter, setSelectedDataFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>('date');
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Initialize state from URL params
+  const searchParams = new URLSearchParams(location.search);
+  
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
+  const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>((searchParams.get('status') as LeadStatus) || 'all');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
+  const [selectedSeniority, setSelectedSeniority] = useState<Seniority | 'all'>((searchParams.get('seniority') as Seniority) || 'all');
+  const [selectedCompanySize, setSelectedCompanySize] = useState<CompanySize | 'all'>((searchParams.get('companySize') as CompanySize) || 'all');
+  const [selectedLocation, setSelectedLocation] = useState(searchParams.get('location') || '');
+  const [selectedIndustry, setSelectedIndustry] = useState(searchParams.get('industry') || '');
+  const [selectedDataFilter, setSelectedDataFilter] = useState(searchParams.get('dataFilter') || 'all');
+  const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>((searchParams.get('sort') as 'name' | 'date' | 'status') || 'date');
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const [leadsPerPage, setLeadsPerPage] = useState(parseInt(searchParams.get('pageSize') || '10'));
+  
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-  const [currentPage, setCurrentPage] = useState(1);
-  const [leadsPerPage, setLeadsPerPage] = useState(10);
+
+  // Function to update URL with current filter state
+  const updateURLParams = (updates: Record<string, string | number>) => {
+    const currentParams = new URLSearchParams(location.search);
+    
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value && value !== 'all' && value !== '' && value !== 1) {
+        currentParams.set(key, String(value));
+      } else if (key === 'page' && value === 1) {
+        currentParams.delete(key);
+      } else {
+        currentParams.delete(key);
+      }
+    });
+    
+    navigate(`/?${currentParams.toString()}`, { replace: true });
+  };
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURLParams({
+      search: searchQuery,
+      status: selectedStatus,
+      category: selectedCategory,
+      seniority: selectedSeniority,
+      companySize: selectedCompanySize,
+      location: selectedLocation,
+      industry: selectedIndustry,
+      dataFilter: selectedDataFilter,
+      sort: sortBy,
+      page: currentPage,
+      pageSize: leadsPerPage
+    });
+  }, [searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, sortBy, currentPage, leadsPerPage]);
 
   // Selection mode is active when there are selected leads
   const selectionMode = selectedLeads.size > 0;
@@ -136,9 +178,11 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const startIndex = (currentPage - 1) * leadsPerPage;
   const paginatedLeads = filteredAndSortedLeads.slice(startIndex, startIndex + leadsPerPage);
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (except page itself)
   useMemo(() => {
-    setCurrentPage(1);
+    if (currentPage > 1) {
+      setCurrentPage(1);
+    }
   }, [searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, sortBy]);
 
   const activeFiltersCount = useMemo(() => {
@@ -162,6 +206,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     setSelectedIndustry('');
     setSelectedDataFilter('all');
     setSearchQuery('');
+    setCurrentPage(1);
   };
 
   const handleSelectLead = (leadId: string, checked: boolean) => {
@@ -197,7 +242,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handlePageChange = (newPage: number) => {
-    setCurrentPage(Math.max(1, Math.min(totalPages, newPage)));
+    const validPage = Math.max(1, Math.min(totalPages, newPage));
+    setCurrentPage(validPage);
   };
 
   return (

@@ -101,7 +101,20 @@ export default function Index() {
     if (value !== 'dashboard') {
       setSelectedBatchId(null);
     }
-    navigate(`/?tab=${value}`, { replace: true });
+    
+    // Update URL with current tab, preserving other search params for leads tab
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set('tab', value);
+    
+    // Only clear other params if not on leads tab
+    if (value !== 'leads') {
+      // Remove leads-specific params when navigating away from leads
+      ['search', 'status', 'category', 'seniority', 'companySize', 'location', 'industry', 'dataFilter', 'page', 'pageSize', 'sort'].forEach(param => {
+        searchParams.delete(param);
+      });
+    }
+    
+    navigate(`/?${searchParams.toString()}`, { replace: true });
   };
 
   useEffect(() => {
@@ -580,9 +593,21 @@ export default function Index() {
 
   const handleNavigateToLeads = (filter?: any) => {
     setActiveTab('leads');
-    navigate('/?tab=leads', { replace: true });
+    
+    // Build search params with filter if provided
+    const searchParams = new URLSearchParams();
+    searchParams.set('tab', 'leads');
+    
     if (filter) {
-      // You can implement filtering logic here if needed
+      Object.entries(filter).forEach(([key, value]) => {
+        if (value && value !== 'all' && value !== '') {
+          searchParams.set(key, String(value));
+        }
+      });
+    }
+    
+    navigate(`/?${searchParams.toString()}`, { replace: true });
+    if (filter) {
       console.log('Navigate to leads with filter:', filter);
     }
   };
