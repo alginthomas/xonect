@@ -54,7 +54,22 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, brand
       .replace(/{{location}}/g, leadData.location || '');
   };
 
-  const openDefaultEmailClient = () => {
+  const openDefaultEmailClient = async () => {
+    // Copy email to clipboard first
+    try {
+      await navigator.clipboard.writeText(lead.email);
+      toast({
+        title: 'Email copied',
+        description: `${lead.email} has been copied to clipboard.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Copy failed',
+        description: 'Failed to copy email to clipboard.',
+        variant: 'destructive',
+      });
+    }
+
     const emailSubject = encodeURIComponent(subject);
     const emailBody = encodeURIComponent(content);
     const mailtoUrl = `mailto:${lead.email}?subject=${emailSubject}&body=${emailBody}`;
@@ -84,6 +99,17 @@ export const EmailDialog: React.FC<EmailDialogProps> = ({ lead, templates, brand
     setSending(true);
     
     try {
+      // Copy email to clipboard first
+      try {
+        await navigator.clipboard.writeText(lead.email);
+        toast({
+          title: 'Email copied',
+          description: `${lead.email} has been copied to clipboard.`,
+        });
+      } catch (error) {
+        // Continue with email sending even if copy fails
+      }
+
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           to: lead.email,

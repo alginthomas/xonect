@@ -119,8 +119,15 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
     }
   };
 
-  const emailLead = () => {
+  const emailLead = async () => {
     try {
+      // Copy email to clipboard first
+      await navigator.clipboard.writeText(lead.email);
+      toast({
+        title: 'Email copied',
+        description: `${lead.email} has been copied to clipboard.`,
+      });
+
       const subject = encodeURIComponent(`Following up on your interest`);
       const body = encodeURIComponent(`Hi ${lead.firstName},\n\nI hope this email finds you well.\n\nBest regards`);
       window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
@@ -135,7 +142,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
     } catch (error) {
       toast({
         title: 'Email failed',
-        description: 'Failed to open email client.',
+        description: 'Failed to open email client or copy email.',
         variant: 'destructive',
       });
     }

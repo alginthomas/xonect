@@ -40,8 +40,24 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     }
   };
 
-  const emailLead = () => {
+  const emailLead = async () => {
+    // Copy email to clipboard first
+    try {
+      await navigator.clipboard.writeText(lead.email);
+      toast({
+        title: 'Email copied',
+        description: `${lead.email} has been copied to clipboard.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Copy failed',
+        description: 'Failed to copy email to clipboard.',
+        variant: 'destructive',
+      });
+    }
+
     window.open(`mailto:${lead.email}`, '_self');
+    onEmailClick(); // Track the email action
   };
 
   const openLinkedIn = () => {

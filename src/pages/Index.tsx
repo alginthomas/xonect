@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -571,6 +570,15 @@ const Index = () => {
     });
   };
 
+  const handleNavigateToLeads = (filter?: any) => {
+    setActiveTab('leads');
+    navigate('/?tab=leads', { replace: true });
+    if (filter) {
+      // You can implement filtering logic here if needed
+      console.log('Navigate to leads with filter:', filter);
+    }
+  };
+
   return (
     <AppleLayout>
       <div className="space-y-4 lg:space-y-8">
@@ -604,18 +612,12 @@ const Index = () => {
           </div>
 
           <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
-            <LeadsDashboard
+            <AnalyticsDashboard
               leads={leads}
               templates={templates}
               categories={categories}
               importBatches={importBatches}
-              branding={branding}
-              onUpdateLead={handleUpdateLead}
-              onDeleteLead={handleDeleteLead}
-              onBulkUpdateStatus={handleBulkUpdateStatus}
-              onBulkDelete={handleBulkDelete}
-              onSendEmail={handleSendEmail}
-              selectedBatchId={selectedBatchId}
+              onNavigateToLeads={handleNavigateToLeads}
             />
           </TabsContent>
 
