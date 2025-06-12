@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -56,10 +55,9 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
       // Primary action is call if phone exists
       window.open(`tel:${lead.phone}`, '_self');
     } else {
-      // Fallback to email
+      // Fallback to email - just copy email, don't change status
       try {
         await navigator.clipboard.writeText(lead.email);
-        onEmailClick();
         toast({
           title: 'Email copied',
           description: `${lead.email} copied to clipboard.`,
@@ -77,10 +75,9 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   const handleSecondaryAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.phone) {
-      // Secondary action is email if phone exists
+      // Secondary action is email if phone exists - just copy email, don't change status
       try {
         await navigator.clipboard.writeText(lead.email);
-        onEmailClick();
         toast({
           title: 'Email copied',
           description: `${lead.email} copied to clipboard.`,
