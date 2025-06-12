@@ -408,13 +408,26 @@ const Index = () => {
 
   const handleCreateCategory = async (categoryData: Partial<Category>) => {
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast({
+          title: 'Authentication required',
+          description: 'You must be logged in to create categories.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { data, error } = await supabase
         .from('categories')
         .insert([{
           name: categoryData.name,
           description: categoryData.description || '',
           color: categoryData.color || '#3B82F6',
-          criteria: categoryData.criteria || {}
+          criteria: categoryData.criteria || {},
+          user_id: user.id // Add the user_id field
         }])
         .select()
         .single();
@@ -436,6 +449,11 @@ const Index = () => {
           updatedAt: safeDate(data.updated_at)
         };
         setCategories(prev => [transformedCategory, ...prev]);
+        
+        toast({
+          title: 'Category created',
+          description: `Category "${data.name}" has been created successfully.`,
+        });
       }
     } catch (error: any) {
       toast({
