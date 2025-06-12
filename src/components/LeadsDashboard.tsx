@@ -1,4 +1,16 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +32,9 @@ import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { QuickRemarksCell } from '@/components/QuickRemarksCell';
 import { QuickActionsCell } from '@/components/QuickActionsCell';
 import { EmailDialog } from '@/components/EmailDialog';
+import { DraggableTableHeader } from '@/components/DraggableTableHeader';
+import { ColumnSettings } from '@/components/ColumnSettings';
+import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
 import {
   Search,
   Download,
@@ -98,7 +113,21 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const [selectedLeadForEmail, setSelectedLeadForEmail] = useState<Lead | null>(null);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   
+  // Column configuration
+  const {
+    visibleColumns,
+    reorderColumns,
+    toggleColumnVisibility,
+    resetToDefault,
+  } = useColumnConfiguration();
+  
   const { toast } = useToast();
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor)
+  );
 
   // Persist items per page setting
   useEffect(() => {
@@ -326,6 +355,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      reorderColumns(active.id, over.id);
+    }
+  };
+
   const getBatchName = (batchId: string | undefined) => {
     if (!batchId) return 'Direct Entry';
     const batch = importBatches.find(b => b.id === batchId);
@@ -353,6 +390,118 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const selectedCurrentPageCount = currentPageLeadIds.filter(id => selectedLeads.has(id)).length;
   const isAllCurrentPageSelected = currentPageLeadIds.length > 0 && selectedCurrentPageCount === currentPageLeadIds.length;
   const isPartialSelection = selectedCurrentPageCount > 0 && selectedCurrentPageCount < currentPageLeadIds.length;
+
+  // Render column content based on column id
+  const renderColumnContent = (columnId: string, lead: Lead) => {
+    switch (columnId) {
+      case 'select':
+        return (
+          <Checkbox
+            checked={selectedLeads.has(lead.id)}
+            onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+          />
+        );
+      
+      case 'status':
+        return (
+          <QuickStatusEditor
+            status={lead.status}
+            onChange={(status) => handleStatusChange(lead.id, status)}
+          />
+        );
+      
+      case 'remarks':
+        return (
+          <QuickRemarksCell
+            remarks={lead.remarks || ''}
+            onUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
+          />
+        );
+      
+      case 'actions':
+        return (
+          <QuickActionsCell
+            lead={lead}
+            onEmailClick={() => {
+              setSelectedLeadForEmail(lead);
+              setShowEmailDialog(true);
+            }}
+            onViewDetails={() => openLeadSidebar(lead)}
+            onDeleteLead={() => onDeleteLead(lead.id)}
+          />
+        );
+      
+      case 'name':
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+              <AvatarFallback>
+                {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-medium">
+                {lead.firstName} {lead.lastName}
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {lead.title}
+              </div>
+            </div>
+          </div>
+        );
+      
+      case 'company':
+        return (
+          <div>
+            <div className="font-medium">{lead.company}</div>
+            <div className="flex gap-1 mt-1">
+              <Badge variant="outline" className={getSizeColor(lead.companySize)}>
+                {lead.companySize.replace(/\s*\([^)]*\)/, '')}
+              </Badge>
+            </div>
+          </div>
+        );
+      
+      case 'contact':
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm">
+              <Mail className="h-3 w-3" />
+              <span className="truncate max-w-[200px]">{lead.email}</span>
+            </div>
+            {lead.phone && (
+              <div className="flex items-center gap-2 text-sm">
+                <Phone className="h-3 w-3" />
+                <span>{lead.phone}</span>
+              </div>
+            )}
+          </div>
+        );
+      
+      case 'category':
+        const category = getCategoryInfo(lead.categoryId);
+        return (
+          <div className="flex items-center gap-2">
+            <div 
+              className="w-3 h-3 rounded-full" 
+              style={{ backgroundColor: category.color }}
+            />
+            <span className="text-sm">{category.name}</span>
+          </div>
+        );
+      
+      case 'created':
+        return (
+          <div className="text-sm text-muted-foreground">
+            {format(lead.createdAt, 'MMM dd, yyyy')}
+          </div>
+        );
+      
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -415,6 +564,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 <SelectItem value="has-both">Has Both</SelectItem>
               </SelectContent>
             </Select>
+
+            <ColumnSettings
+              columns={visibleColumns}
+              onToggleVisibility={toggleColumnVisibility}
+              onReset={resetToDefault}
+            />
 
             <Button onClick={handleExport} variant="outline" size="sm">
               <Download className="h-4 w-4 mr-2" />
@@ -509,7 +664,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </div>
       </div>
 
-      {/* Results Summary */}
+      {/* Results Summary with Draggable Table */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2">
@@ -527,182 +682,71 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AppleTable>
-            <AppleTableHeader>
-              <AppleTableRow>
-                <AppleTableHead className="w-12">
-                  <Checkbox
-                    checked={isAllCurrentPageSelected}
-                    ref={(el) => {
-                      if (el) {
-                        (el as any).indeterminate = isPartialSelection;
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <AppleTable>
+              <AppleTableHeader>
+                <AppleTableRow>
+                  <SortableContext
+                    items={visibleColumns.map(col => col.id)}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {visibleColumns.map((column) => {
+                      if (column.id === 'select') {
+                        return (
+                          <AppleTableHead key="select" className="w-12">
+                            <Checkbox
+                              checked={isAllCurrentPageSelected}
+                              ref={(el) => {
+                                if (el) {
+                                  (el as any).indeterminate = isPartialSelection;
+                                }
+                              }}
+                              onCheckedChange={handleSelectAll}
+                            />
+                          </AppleTableHead>
+                        );
                       }
-                    }}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </AppleTableHead>
-                <AppleTableHead 
-                  className="cursor-pointer hover:bg-muted/50 w-24"
-                  onClick={() => handleSort('status')}
-                >
-                  <div className="flex items-center gap-2">
-                    Status
-                    {sortField === 'status' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </AppleTableHead>
-                <AppleTableHead className="w-48">
-                  Quick Remarks
-                </AppleTableHead>
-                <AppleTableHead className="w-32">
-                  Actions
-                </AppleTableHead>
-                <AppleTableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('firstName')}
-                >
-                  <div className="flex items-center gap-2">
-                    Name
-                    {sortField === 'firstName' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </AppleTableHead>
-                <AppleTableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('company')}
-                >
-                  <div className="flex items-center gap-2">
-                    Company
-                    {sortField === 'company' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </AppleTableHead>
-                <AppleTableHead>Contact</AppleTableHead>
-                <AppleTableHead>Category</AppleTableHead>
-                <AppleTableHead 
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleSort('createdAt')}
-                >
-                  <div className="flex items-center gap-2">
-                    Created
-                    {sortField === 'createdAt' && (
-                      sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-                    )}
-                  </div>
-                </AppleTableHead>
-              </AppleTableRow>
-            </AppleTableHeader>
-            <AppleTableBody>
-              {paginatedLeads.map((lead) => {
-                const category = getCategoryInfo(lead.categoryId);
-                
-                return (
+
+                      return (
+                        <DraggableTableHeader
+                          key={column.id}
+                          column={column}
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                          onSort={handleSort}
+                        >
+                          {column.label}
+                        </DraggableTableHeader>
+                      );
+                    })}
+                  </SortableContext>
+                </AppleTableRow>
+              </AppleTableHeader>
+              <AppleTableBody>
+                {paginatedLeads.map((lead) => (
                   <AppleTableRow 
                     key={lead.id}
                     className="group hover:bg-muted/50 cursor-pointer"
                     onClick={() => openLeadSidebar(lead)}
                   >
-                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedLeads.has(lead.id)}
-                        onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
-                      />
-                    </AppleTableCell>
-                    
-                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
-                      <QuickStatusEditor
-                        status={lead.status}
-                        onChange={(status) => handleStatusChange(lead.id, status)}
-                      />
-                    </AppleTableCell>
-                    
-                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
-                      <QuickRemarksCell
-                        remarks={lead.remarks || ''}
-                        onUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
-                      />
-                    </AppleTableCell>
-                    
-                    <AppleTableCell onClick={(e) => e.stopPropagation()}>
-                      <QuickActionsCell
-                        lead={lead}
-                        onEmailClick={() => {
-                          setSelectedLeadForEmail(lead);
-                          setShowEmailDialog(true);
-                        }}
-                        onViewDetails={() => openLeadSidebar(lead)}
-                        onDeleteLead={() => onDeleteLead(lead.id)}
-                      />
-                    </AppleTableCell>
-                    
-                    <AppleTableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-                          <AvatarFallback>
-                            {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">
-                            {lead.firstName} {lead.lastName}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {lead.title}
-                          </div>
-                        </div>
-                      </div>
-                    </AppleTableCell>
-                    
-                    <AppleTableCell>
-                      <div>
-                        <div className="font-medium">{lead.company}</div>
-                        <div className="flex gap-1 mt-1">
-                          <Badge variant="outline" className={getSizeColor(lead.companySize)}>
-                            {lead.companySize.replace(/\s*\([^)]*\)/, '')}
-                          </Badge>
-                        </div>
-                      </div>
-                    </AppleTableCell>
-                    
-                    <AppleTableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-3 w-3" />
-                          <span className="truncate max-w-[200px]">{lead.email}</span>
-                        </div>
-                        {lead.phone && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-3 w-3" />
-                            <span>{lead.phone}</span>
-                          </div>
-                        )}
-                      </div>
-                    </AppleTableCell>
-                    
-                    <AppleTableCell>
-                      <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
-                        <span className="text-sm">{category.name}</span>
-                      </div>
-                    </AppleTableCell>
-                    
-                    <AppleTableCell>
-                      <div className="text-sm text-muted-foreground">
-                        {format(lead.createdAt, 'MMM dd, yyyy')}
-                      </div>
-                    </AppleTableCell>
+                    {visibleColumns.map((column) => (
+                      <AppleTableCell 
+                        key={`${lead.id}-${column.id}`}
+                        className={column.width}
+                        onClick={column.id === 'select' || column.id === 'status' || column.id === 'remarks' || column.id === 'actions' ? (e) => e.stopPropagation() : undefined}
+                      >
+                        {renderColumnContent(column.id, lead)}
+                      </AppleTableCell>
+                    ))}
                   </AppleTableRow>
-                );
-              })}
-            </AppleTableBody>
-          </AppleTable>
+                ))}
+              </AppleTableBody>
+            </AppleTable>
+          </DndContext>
 
           {paginatedLeads.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
