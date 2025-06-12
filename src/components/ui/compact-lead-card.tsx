@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -86,7 +85,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             <Checkbox
               checked={isSelected}
               onCheckedChange={onSelect}
-              className="h-5 w-5 flex-shrink-0"
+              className="h-4 w-4 flex-shrink-0"
             />
           </div>
           
