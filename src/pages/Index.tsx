@@ -1,8 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
 import AppleLayout from '@/layouts/AppleLayout';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
@@ -23,8 +21,6 @@ const Index: React.FC<IndexProps> = () => {
   const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
   const [isBulkActionsOpen, setIsBulkActionsOpen] = useState(false);
   const isMobile = useIsMobile();
-  const router = useRouter();
-  const { data: session } = useSession();
   const { toast } = useToast();
 
   const fetcher = (url: string) => fetch(url).then(res => res.json());
@@ -32,7 +28,6 @@ const Index: React.FC<IndexProps> = () => {
   const { data: leadsData, error: leadsError, refetch: refetchLeads } = useQuery({
     queryKey: ['leads'],
     queryFn: () => fetcher('/api/leads'),
-    enabled: !!session,
   });
 
   const { data: categoriesData, error: categoriesError } = useQuery({
@@ -43,12 +38,6 @@ const Index: React.FC<IndexProps> = () => {
   const leads = leadsData?.data || [];
   const categories = categoriesData?.data || [];
   const isLoading = !leadsData && !leadsError;
-
-  useEffect(() => {
-    if (!session) {
-      router.push('/auth/signin');
-    }
-  }, [session, router]);
 
   const filteredLeads = leads.filter(lead => {
     const searchRegex = new RegExp(searchQuery, 'i');
@@ -241,18 +230,33 @@ const Index: React.FC<IndexProps> = () => {
             ) : (
               <LeadsDashboard 
                 leads={filteredLeads}
+                templates={[]}
                 categories={categories}
-                selectedLeads={selectedLeads}
-                onSelectLead={handleSelectLead}
-                onSelectAllLeads={handleSelectAllLeads}
-                onStatusChange={handleStatusChange}
-                onRemarksUpdate={handleRemarksUpdate}
-                onEmailClick={handleEmailClick}
-                onViewDetails={handleViewDetails}
+                importBatches={[]}
+                branding={{
+                  companyName: 'Xonect',
+                  companyLogo: '',
+                  companyWebsite: '',
+                  companyAddress: '',
+                  senderName: '',
+                  senderEmail: ''
+                }}
+                onUpdateLead={(leadId, updates) => {
+                  if (updates.status) {
+                    handleStatusChange(leadId, updates.status);
+                  }
+                  if (updates.remarks !== undefined) {
+                    handleRemarksUpdate(leadId, updates.remarks);
+                  }
+                }}
                 onDeleteLead={handleDeleteLead}
-                isBulkActionsOpen={isBulkActionsOpen}
-                setIsBulkActionsOpen={setIsBulkActionsOpen}
-                isLoading={isLoading}
+                onBulkUpdateStatus={(leadIds, status) => {
+                  leadIds.forEach(id => handleStatusChange(id, status));
+                }}
+                onBulkDelete={(leadIds) => {
+                  leadIds.forEach(id => handleDeleteLead(id));
+                }}
+                onSendEmail={handleEmailClick}
               />
             )}
           </div>
