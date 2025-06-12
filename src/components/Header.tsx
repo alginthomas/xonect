@@ -24,11 +24,16 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onAddLead }) =>
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-4 lg:px-6">
         {/* Left Section - Logo/Title */}
         <div className="flex items-center gap-4">
-          <h1 className="text-xl lg:text-2xl font-bold text-primary">Xonect</h1>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+              <span className="text-lg font-semibold text-primary-foreground">X</span>
+            </div>
+            <h1 className="text-xl lg:text-2xl font-semibold text-foreground">Xonect</h1>
+          </div>
         </div>
 
         {/* Center Section - Desktop Navigation */}
@@ -39,10 +44,10 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onAddLead }) =>
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "ghost"}
                 onClick={() => onTabChange(tab.id)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
                 }`}
               >
                 {tab.label}
@@ -52,13 +57,13 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onAddLead }) =>
         )}
 
         {/* Right Section - Actions and User */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           {/* Desktop Add Lead Button - Show on leads tab only */}
           {!isMobile && activeTab === 'leads' && onAddLead && (
             <Button
               onClick={onAddLead}
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 font-medium"
             >
               <Plus className="h-4 w-4" />
               Add Lead
