@@ -91,7 +91,6 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
         title: 'Email copied',
         description: `${lead.email} has been copied to clipboard.`,
       });
-      onEmailClick();
     } catch (error) {
       toast({
         title: 'Copy failed',

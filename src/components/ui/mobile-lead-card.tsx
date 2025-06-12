@@ -131,11 +131,6 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
       const body = encodeURIComponent(`Hi ${lead.firstName},\n\nI hope this email finds you well.\n\nBest regards`);
       window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
       
-      // Only call onEmailClick if provided - don't automatically track email
-      if (onEmailClick) {
-        onEmailClick();
-      }
-      
       toast({
         title: 'Email opened',
         description: 'Default email client has been opened.',
