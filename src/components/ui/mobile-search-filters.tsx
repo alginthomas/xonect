@@ -1,15 +1,8 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -17,14 +10,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { 
   Search, 
   Filter, 
   X,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Calendar,
+  Building2,
+  MapPin,
+  Users
 } from 'lucide-react';
+import type { LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { Category } from '@/types/category';
-import type { LeadStatus } from '@/types/lead';
 
 interface MobileSearchFiltersProps {
   searchQuery: string;
@@ -36,6 +41,17 @@ interface MobileSearchFiltersProps {
   categories: Category[];
   activeFiltersCount: number;
   onClearFilters: () => void;
+  // New filter props
+  selectedSeniority?: Seniority | 'all';
+  onSeniorityChange?: (seniority: Seniority | 'all') => void;
+  selectedCompanySize?: CompanySize | 'all';
+  onCompanySizeChange?: (size: CompanySize | 'all') => void;
+  selectedLocation?: string;
+  onLocationChange?: (location: string) => void;
+  selectedIndustry?: string;
+  onIndustryChange?: (industry: string) => void;
+  availableLocations?: string[];
+  availableIndustries?: string[];
 }
 
 export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
@@ -47,22 +63,37 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   onCategoryChange,
   categories,
   activeFiltersCount,
-  onClearFilters
+  onClearFilters,
+  selectedSeniority = 'all',
+  onSeniorityChange,
+  selectedCompanySize = 'all',
+  onCompanySizeChange,
+  selectedLocation = '',
+  onLocationChange,
+  selectedIndustry = '',
+  onIndustryChange,
+  availableLocations = [],
+  availableIndustries = []
 }) => {
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
-  const statusOptions: { value: LeadStatus | 'all'; label: string }[] = [
-    { value: 'all', label: 'All Status' },
-    { value: 'New', label: 'New' },
-    { value: 'Contacted', label: 'Contacted' },
-    { value: 'Qualified', label: 'Qualified' },
-    { value: 'Interested', label: 'Interested' },
-    { value: 'Not Interested', label: 'Not Interested' },
-    { value: 'Unresponsive', label: 'Unresponsive' },
-  ];
+  const handleClearAllFilters = () => {
+    onClearFilters();
+    if (onSeniorityChange) onSeniorityChange('all');
+    if (onCompanySizeChange) onCompanySizeChange('all');
+    if (onLocationChange) onLocationChange('');
+    if (onIndustryChange) onIndustryChange('');
+    setIsFilterSheetOpen(false);
+  };
+
+  const totalActiveFilters = activeFiltersCount + 
+    (selectedSeniority !== 'all' ? 1 : 0) +
+    (selectedCompanySize !== 'all' ? 1 : 0) +
+    (selectedLocation ? 1 : 0) +
+    (selectedIndustry ? 1 : 0);
 
   return (
-    <div className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border/50 p-4 space-y-3">
+    <div className="sticky top-0 z-40 bg-background border-b border-border/30 p-4 space-y-3">
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -70,136 +101,272 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
           placeholder="Search leads..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10 pr-4 h-11 bg-background"
+          className="pl-10 pr-4"
         />
         {searchQuery && (
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
             onClick={() => onSearchChange('')}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
           </Button>
         )}
       </div>
 
-      {/* Filter Controls */}
-      <div className="flex items-center gap-2">
-        <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
+      {/* Quick Filters Row */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <Select value={selectedStatus} onValueChange={onStatusChange}>
+          <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Status</SelectItem>
+            <SelectItem value="New">New</SelectItem>
+            <SelectItem value="Contacted">Contacted</SelectItem>
+            <SelectItem value="Qualified">Qualified</SelectItem>
+            <SelectItem value="Interested">Interested</SelectItem>
+            <SelectItem value="Not Interested">Not Interested</SelectItem>
+            <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <SelectTrigger className="w-32 h-8 text-xs">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map(category => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Advanced Filters Sheet */}
+        <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="sm" className="flex-shrink-0 h-9 relative">
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              Filters
-              {activeFiltersCount > 0 && (
-                <Badge 
-                  variant="secondary" 
-                  className="ml-2 h-5 w-5 text-xs p-0 flex items-center justify-center"
-                >
-                  {activeFiltersCount}
+            <Button variant="outline" size="sm" className="h-8 px-3 text-xs relative">
+              <SlidersHorizontal className="h-3 w-3 mr-1" />
+              More
+              {totalActiveFilters > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 w-4 p-0 text-xs">
+                  {totalActiveFilters}
                 </Badge>
               )}
             </Button>
           </SheetTrigger>
-          <SheetContent side="bottom" className="h-[60vh]">
-            <SheetHeader className="text-left mb-6">
-              <SheetTitle>Filter Leads</SheetTitle>
+          <SheetContent side="bottom" className="h-[80vh]">
+            <SheetHeader className="text-left">
+              <SheetTitle>Advanced Filters</SheetTitle>
+              <SheetDescription>
+                Refine your search with additional filters
+              </SheetDescription>
             </SheetHeader>
             
-            <div className="space-y-6">
-              {/* Status Filter */}
+            <div className="space-y-6 mt-6">
+              {/* Status & Category (repeated for convenience) */}
               <div className="space-y-3">
-                <label className="text-sm font-medium">Status</label>
-                <Select 
-                  value={selectedStatus} 
-                  onValueChange={(value) => onStatusChange(value as LeadStatus | 'all')}
-                >
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <h4 className="font-medium text-sm">Basic Filters</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Status</label>
+                    <Select value={selectedStatus} onValueChange={onStatusChange}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="New">New</SelectItem>
+                        <SelectItem value="Contacted">Contacted</SelectItem>
+                        <SelectItem value="Qualified">Qualified</SelectItem>
+                        <SelectItem value="Interested">Interested</SelectItem>
+                        <SelectItem value="Not Interested">Not Interested</SelectItem>
+                        <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Category</label>
+                    <Select value={selectedCategory} onValueChange={onCategoryChange}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {categories.map(category => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
-              {/* Category Filter */}
+              {/* Professional Filters */}
               <div className="space-y-3">
-                <label className="text-sm font-medium">Category</label>
-                <Select value={selectedCategory} onValueChange={onCategoryChange}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full" 
-                            style={{ backgroundColor: category.color }}
-                          />
-                          {category.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Professional Details
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  {onSeniorityChange && (
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Seniority</label>
+                      <Select value={selectedSeniority} onValueChange={onSeniorityChange}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Levels</SelectItem>
+                          <SelectItem value="Junior">Junior</SelectItem>
+                          <SelectItem value="Mid-level">Mid-level</SelectItem>
+                          <SelectItem value="Senior">Senior</SelectItem>
+                          <SelectItem value="Executive">Executive</SelectItem>
+                          <SelectItem value="C-level">C-level</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {onCompanySizeChange && (
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Company Size</label>
+                      <Select value={selectedCompanySize} onValueChange={onCompanySizeChange}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Sizes</SelectItem>
+                          <SelectItem value="Small (1-50)">Small (1-50)</SelectItem>
+                          <SelectItem value="Medium (51-200)">Medium (51-200)</SelectItem>
+                          <SelectItem value="Large (201-1000)">Large (201-1000)</SelectItem>
+                          <SelectItem value="Enterprise (1000+)">Enterprise (1000+)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Clear Filters */}
-              {activeFiltersCount > 0 && (
+              {/* Location & Industry Filters */}
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Company Details
+                </h4>
+                <div className="space-y-3">
+                  {onLocationChange && (
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Location</label>
+                      <Select value={selectedLocation} onValueChange={onLocationChange}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="All Locations" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Locations</SelectItem>
+                          {availableLocations.map(location => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  
+                  {onIndustryChange && (
+                    <div>
+                      <label className="text-xs text-muted-foreground mb-1 block">Industry</label>
+                      <Select value={selectedIndustry} onValueChange={onIndustryChange}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="All Industries" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Industries</SelectItem>
+                          {availableIndustries.map(industry => (
+                            <SelectItem key={industry} value={industry}>
+                              {industry}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 pt-4 border-t">
                 <Button 
                   variant="outline" 
-                  onClick={() => {
-                    onClearFilters();
-                    setIsFilterOpen(false);
-                  }}
-                  className="w-full h-11"
+                  onClick={handleClearAllFilters}
+                  className="flex-1"
                 >
-                  Clear All Filters
+                  Clear All
                 </Button>
-              )}
+                <Button 
+                  onClick={() => setIsFilterSheetOpen(false)}
+                  className="flex-1"
+                >
+                  Apply Filters
+                </Button>
+              </div>
             </div>
           </SheetContent>
         </Sheet>
 
-        {/* Active Filters */}
-        {activeFiltersCount > 0 && (
-          <div className="flex-1 flex items-center gap-2 overflow-x-auto">
-            {selectedStatus !== 'all' && (
-              <Badge variant="secondary" className="flex-shrink-0">
-                {selectedStatus}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-1 h-4 w-4 p-0"
-                  onClick={() => onStatusChange('all')}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-            {selectedCategory !== 'all' && (
-              <Badge variant="secondary" className="flex-shrink-0">
-                {categories.find(c => c.id === selectedCategory)?.name || 'Category'}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-1 h-4 w-4 p-0"
-                  onClick={() => onCategoryChange('all')}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
-          </div>
+        {/* Clear Filters Button */}
+        {totalActiveFilters > 0 && (
+          <Button variant="ghost" size="sm" onClick={handleClearAllFilters} className="h-8 px-2 text-xs">
+            <X className="h-3 w-3 mr-1" />
+            Clear
+          </Button>
         )}
       </div>
+
+      {/* Active Filters Display */}
+      {totalActiveFilters > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs text-muted-foreground">Active filters:</span>
+          {selectedStatus !== 'all' && (
+            <Badge variant="secondary" className="text-xs">
+              Status: {selectedStatus}
+            </Badge>
+          )}
+          {selectedCategory !== 'all' && (
+            <Badge variant="secondary" className="text-xs">
+              Category: {categories.find(c => c.id === selectedCategory)?.name}
+            </Badge>
+          )}
+          {selectedSeniority !== 'all' && (
+            <Badge variant="secondary" className="text-xs">
+              Seniority: {selectedSeniority}
+            </Badge>
+          )}
+          {selectedCompanySize !== 'all' && (
+            <Badge variant="secondary" className="text-xs">
+              Size: {selectedCompanySize}
+            </Badge>
+          )}
+          {selectedLocation && (
+            <Badge variant="secondary" className="text-xs">
+              Location: {selectedLocation}
+            </Badge>
+          )}
+          {selectedIndustry && (
+            <Badge variant="secondary" className="text-xs">
+              Industry: {selectedIndustry}
+            </Badge>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -14,7 +14,7 @@ import type { Lead } from '@/types/lead';
 
 interface QuickActionsCellProps {
   lead: Lead;
-  onEmailClick: () => void;
+  onEmailClick?: () => void;
   onViewDetails: () => void;
   onDeleteLead: () => void;
   className?: string;
@@ -47,7 +47,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         title: 'Email copied',
         description: `${lead.email} has been copied to clipboard.`,
       });
-      onEmailClick(); // Track the email action
+      // Don't call onEmailClick here - just copy the email
     } catch (error) {
       toast({
         title: 'Copy failed',
@@ -74,7 +74,10 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     }
 
     window.open(`mailto:${lead.email}`, '_self');
-    onEmailClick(); // Track the email action
+    // Only call onEmailClick if provided and user explicitly opens email app
+    if (onEmailClick) {
+      onEmailClick();
+    }
   };
 
   const openLinkedIn = () => {

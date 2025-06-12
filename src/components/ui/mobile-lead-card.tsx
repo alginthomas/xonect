@@ -51,7 +51,7 @@ interface MobileLeadCardProps {
   onSelect: (checked: boolean) => void;
   onStatusChange: (status: LeadStatus) => void;
   onRemarksUpdate: (remarks: string) => void;
-  onEmailClick: () => void;
+  onEmailClick?: () => void;
   onViewDetails: () => void;
   onDeleteLead: () => void;
 }
@@ -131,8 +131,10 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
       const body = encodeURIComponent(`Hi ${lead.firstName},\n\nI hope this email finds you well.\n\nBest regards`);
       window.open(`mailto:${lead.email}?subject=${subject}&body=${body}`, '_blank');
       
-      // Call the onEmailClick to track the email
-      onEmailClick();
+      // Only call onEmailClick if provided - don't automatically track email
+      if (onEmailClick) {
+        onEmailClick();
+      }
       
       toast({
         title: 'Email opened',
@@ -246,6 +248,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
+            {/* Call and View Buttons */}
             {lead.phone && (
               <Tooltip>
                 <TooltipTrigger asChild>

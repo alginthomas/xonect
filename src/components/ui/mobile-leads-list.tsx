@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { CompactLeadCard } from './compact-lead-card';
 import { MobileSearchFilters } from './mobile-search-filters';
@@ -19,7 +20,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
-import type { Lead, LeadStatus } from '@/types/lead';
+import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { Category } from '@/types/category';
 
 interface MobileLeadsListProps {
@@ -27,7 +28,7 @@ interface MobileLeadsListProps {
   categories: Category[];
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => void;
   onDeleteLead: (leadId: string) => void;
-  onEmailClick: (leadId: string) => void;
+  onEmailClick?: (leadId: string) => void;
   onViewDetails: (lead: Lead) => void;
   onBulkUpdateStatus: (leadIds: string[], status: LeadStatus) => void;
   onBulkDelete: (leadIds: string[]) => void;
@@ -46,10 +47,33 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedSeniority, setSelectedSeniority] = useState<Seniority | 'all'>('all');
+  const [selectedCompanySize, setSelectedCompanySize] = useState<CompanySize | 'all'>('all');
+  const [selectedLocation, setSelectedLocation] = useState('');
+  const [selectedIndustry, setSelectedIndustry] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'status'>('date');
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [leadsPerPage, setLeadsPerPage] = useState(10);
+
+  // Get unique locations and industries for filter options
+  const availableLocations = useMemo(() => {
+    const locations = leads
+      .map(lead => lead.location)
+      .filter(Boolean)
+      .filter((location, index, array) => array.indexOf(location) === index)
+      .sort();
+    return locations;
+  }, [leads]);
+
+  const availableIndustries = useMemo(() => {
+    const industries = leads
+      .map(lead => lead.industry)
+      .filter(Boolean)
+      .filter((industry, index, array) => array.indexOf(industry) === index)
+      .sort();
+    return industries;
+  }, [leads]);
 
   // Filter and sort leads
   const filteredAndSortedLeads = useMemo(() => {
@@ -63,8 +87,13 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
       
       const matchesStatus = selectedStatus === 'all' || lead.status === selectedStatus;
       const matchesCategory = selectedCategory === 'all' || lead.categoryId === selectedCategory;
+      const matchesSeniority = selectedSeniority === 'all' || lead.seniority === selectedSeniority;
+      const matchesCompanySize = selectedCompanySize === 'all' || lead.companySize === selectedCompanySize;
+      const matchesLocation = !selectedLocation || lead.location === selectedLocation;
+      const matchesIndustry = !selectedIndustry || lead.industry === selectedIndustry;
       
-      return matchesSearch && matchesStatus && matchesCategory;
+      return matchesSearch && matchesStatus && matchesCategory && 
+             matchesSeniority && matchesCompanySize && matchesLocation && matchesIndustry;
     });
 
     // Sort leads
@@ -81,7 +110,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     });
 
     return filtered;
-  }, [leads, searchQuery, selectedStatus, selectedCategory, sortBy]);
+  }, [leads, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, sortBy]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedLeads.length / leadsPerPage);
@@ -91,18 +120,26 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery, selectedStatus, selectedCategory, sortBy]);
+  }, [searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, sortBy]);
 
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (selectedStatus !== 'all') count++;
     if (selectedCategory !== 'all') count++;
+    if (selectedSeniority !== 'all') count++;
+    if (selectedCompanySize !== 'all') count++;
+    if (selectedLocation) count++;
+    if (selectedIndustry) count++;
     return count;
-  }, [selectedStatus, selectedCategory]);
+  }, [selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry]);
 
   const handleClearFilters = () => {
     setSelectedStatus('all');
     setSelectedCategory('all');
+    setSelectedSeniority('all');
+    setSelectedCompanySize('all');
+    setSelectedLocation('');
+    setSelectedIndustry('');
     setSearchQuery('');
   };
 
@@ -140,7 +177,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Search and Filters */}
+      {/* Enhanced Search and Filters */}
       <MobileSearchFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -151,6 +188,16 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         categories={categories}
         activeFiltersCount={activeFiltersCount}
         onClearFilters={handleClearFilters}
+        selectedSeniority={selectedSeniority}
+        onSeniorityChange={setSelectedSeniority}
+        selectedCompanySize={selectedCompanySize}
+        onCompanySizeChange={setSelectedCompanySize}
+        selectedLocation={selectedLocation}
+        onLocationChange={setSelectedLocation}
+        selectedIndustry={selectedIndustry}
+        onIndustryChange={setSelectedIndustry}
+        availableLocations={availableLocations}
+        availableIndustries={availableIndustries}
       />
 
       {/* Results Summary and Controls */}
