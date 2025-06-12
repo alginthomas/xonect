@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
-import { AppleLayout } from '@/layouts/AppleLayout';
+import AppleLayout from '@/layouts/AppleLayout';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { CSVImport } from '@/components/CSVImport';
@@ -57,13 +57,19 @@ const Index = () => {
         throw error;
       }
 
-      const leadsWithImportBatchIds = data.map(lead => ({
+      const leadsWithTransformedData = data.map(lead => ({
         ...lead,
-        categoryId: lead.category_id
+        categoryId: lead.category_id,
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        companySize: lead.company_size,
+        emailsSent: lead.emails_sent,
+        createdAt: new Date(lead.created_at),
+        updatedAt: new Date(lead.updated_at)
       }));
 
-      console.log('Fetched leads with import batch IDs:', leadsWithImportBatchIds.length);
-      return leadsWithImportBatchIds as Lead[];
+      console.log('Fetched leads:', leadsWithTransformedData.length);
+      return leadsWithTransformedData as Lead[];
     }
   });
 
@@ -77,7 +83,14 @@ const Index = () => {
         .order('name');
 
       if (error) throw error;
-      return data as Category[];
+      
+      const transformedCategories = data.map(category => ({
+        ...category,
+        createdAt: new Date(category.created_at),
+        updatedAt: new Date(category.updated_at)
+      }));
+      
+      return transformedCategories as Category[];
     }
   });
 
@@ -197,10 +210,24 @@ const Index = () => {
     setAddLeadDialogOpen(true);
   };
 
+  const handleNavigateToLeads = (filter?: any) => {
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'leads');
+    setSearchParams(newParams);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <AnalyticsDashboard leads={leads} />;
+        return (
+          <AnalyticsDashboard 
+            leads={leads} 
+            templates={[]}
+            categories={categories}
+            importBatches={[]}
+            onNavigateToLeads={handleNavigateToLeads}
+          />
+        );
       case 'leads':
         return (
           <>
@@ -211,7 +238,6 @@ const Index = () => {
               onDeleteLead={handleDeleteLead}
               onBulkUpdateStatus={handleBulkUpdateStatus}
               onBulkDelete={handleBulkDelete}
-              onAddLead={handleAddLead}
             />
             {/* Floating Action Button for mobile - only show on leads tab */}
             {isMobile && (
@@ -223,15 +249,47 @@ const Index = () => {
           </>
         );
       case 'import':
-        return <CSVImport onImportComplete={refetchLeads} />;
+        return (
+          <CSVImport 
+            onImportComplete={refetchLeads} 
+            categories={categories}
+            onCreateCategory={() => {}}
+          />
+        );
       case 'categories':
-        return <CategoryManager />;
+        return (
+          <CategoryManager 
+            categories={categories}
+            onCreateCategory={() => {}}
+            onUpdateCategory={() => {}}
+            onDeleteCategory={() => {}}
+          />
+        );
       case 'templates':
-        return <EmailTemplateBuilder />;
+        return (
+          <EmailTemplateBuilder 
+            onSaveTemplate={() => {}}
+            templates={[]}
+          />
+        );
       case 'settings':
-        return <ColumnSettings />;
+        return (
+          <ColumnSettings 
+            columns={[]}
+            onToggleVisibility={() => {}}
+            onReset={() => {}}
+          />
+        );
       default:
-        return <AnalyticsDashboard leads={leads} />;
+        return (
+          <AnalyticsDashboard 
+            leads={leads} 
+            templates={[]}
+            categories={categories}
+            importBatches={[]}
+            onNavigateToLeads={handleNavigateToLeads}
+          />
+        );
     }
   };
 
@@ -247,8 +305,8 @@ const Index = () => {
       </main>
 
       <AddLeadDialog
-        open={addLeadDialogOpen}
-        onOpenChange={setAddLeadDialogOpen}
+        isOpen={addLeadDialogOpen}
+        onClose={() => setAddLeadDialogOpen(false)}
         categories={categories}
         onLeadAdded={refetchLeads}
       />
