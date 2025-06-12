@@ -29,7 +29,7 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-3">
-        <Label htmlFor="signup-name" className="text-sm font-medium text-left block">
+        <Label htmlFor="signup-name" className="text-sm font-medium text-foreground/90 block">
           Full Name
         </Label>
         <Input
@@ -39,11 +39,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           value={fullName}
           onChange={(e) => onFullNameChange(e.target.value)}
           required
-          className="w-full text-left h-11"
+          className="w-full h-12"
         />
       </div>
       <div className="space-y-3">
-        <Label htmlFor="signup-email" className="text-sm font-medium text-left block">
+        <Label htmlFor="signup-email" className="text-sm font-medium text-foreground/90 block">
           Email
         </Label>
         <Input
@@ -53,11 +53,11 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           required
-          className="w-full text-left h-11"
+          className="w-full h-12"
         />
       </div>
       <div className="space-y-3">
-        <Label htmlFor="signup-password" className="text-sm font-medium text-left block">
+        <Label htmlFor="signup-password" className="text-sm font-medium text-foreground/90 block">
           Password
         </Label>
         <Input
@@ -68,12 +68,12 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
           onChange={(e) => onPasswordChange(e.target.value)}
           required
           minLength={6}
-          className="w-full text-left h-11"
+          className="w-full h-12"
         />
       </div>
       <Button 
         type="submit" 
-        className="w-full h-11 mt-8" 
+        className="w-full h-12 mt-8 rounded-xl font-medium text-base transition-all duration-200 apple-button" 
         disabled={loading}
       >
         {loading ? (

@@ -29,18 +29,28 @@ const AuthCard: React.FC<AuthCardProps> = ({
   onSignUp,
 }) => {
   return (
-    <Card className="bg-background/95 backdrop-blur-sm shadow-lg border-0">
-      <CardHeader className="space-y-2 pb-6">
-        <CardTitle className="text-2xl text-left font-semibold">Welcome</CardTitle>
-        <CardDescription className="text-left text-muted-foreground">
+    <Card className="bg-background/95 backdrop-blur-sm shadow-lg border-0 apple-blur apple-shadow-lg">
+      <CardHeader className="space-y-3 pb-6">
+        <CardTitle className="text-2xl text-center font-semibold tracking-tight">Welcome</CardTitle>
+        <CardDescription className="text-center text-muted-foreground">
           Sign in to your account or create a new one
         </CardDescription>
       </CardHeader>
-      <CardContent className="pb-8">
+      <CardContent className="pb-8 px-6">
         <Tabs defaultValue="signin" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Sign In</TabsTrigger>
-            <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Sign Up</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-8 h-12 p-1 bg-muted/50 rounded-xl">
+            <TabsTrigger 
+              value="signin" 
+              className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm"
+            >
+              Sign In
+            </TabsTrigger>
+            <TabsTrigger 
+              value="signup" 
+              className="h-10 rounded-lg font-medium transition-all duration-200 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm text-sm"
+            >
+              Sign Up
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin" className="space-y-0 mt-0">

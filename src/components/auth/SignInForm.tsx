@@ -25,7 +25,7 @@ const SignInForm: React.FC<SignInFormProps> = ({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-3">
-        <Label htmlFor="signin-email" className="text-sm font-medium text-left block">
+        <Label htmlFor="signin-email" className="text-sm font-medium text-foreground/90 block">
           Email
         </Label>
         <Input
@@ -35,11 +35,11 @@ const SignInForm: React.FC<SignInFormProps> = ({
           value={email}
           onChange={(e) => onEmailChange(e.target.value)}
           required
-          className="w-full text-left h-11"
+          className="w-full h-12"
         />
       </div>
       <div className="space-y-3">
-        <Label htmlFor="signin-password" className="text-sm font-medium text-left block">
+        <Label htmlFor="signin-password" className="text-sm font-medium text-foreground/90 block">
           Password
         </Label>
         <Input
@@ -49,12 +49,12 @@ const SignInForm: React.FC<SignInFormProps> = ({
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}
           required
-          className="w-full text-left h-11"
+          className="w-full h-12"
         />
       </div>
       <Button 
         type="submit" 
-        className="w-full h-11 mt-8" 
+        className="w-full h-12 mt-8 rounded-xl font-medium text-base transition-all duration-200 apple-button" 
         disabled={loading}
       >
         {loading ? (
