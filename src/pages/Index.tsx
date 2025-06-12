@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
-import useSWR from 'swr';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { useToast } from '@/hooks/use-toast';
@@ -28,11 +29,16 @@ const Index: React.FC<IndexProps> = () => {
 
   const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-  const { data: leadsData, error: leadsError, mutate: mutateLeads } = useSWR<{ data: Lead[] }>(
-    session ? '/api/leads' : null,
-    fetcher
-  );
-  const { data: categoriesData, error: categoriesError } = useSWR<{ data: Category[] }>('/api/categories', fetcher);
+  const { data: leadsData, error: leadsError, refetch: refetchLeads } = useQuery({
+    queryKey: ['leads'],
+    queryFn: () => fetcher('/api/leads'),
+    enabled: !!session,
+  });
+
+  const { data: categoriesData, error: categoriesError } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => fetcher('/api/categories'),
+  });
 
   const leads = leadsData?.data || [];
   const categories = categoriesData?.data || [];
@@ -86,19 +92,8 @@ const Index: React.FC<IndexProps> = () => {
         body: JSON.stringify({ status }),
       });
 
-      // Optimistically update the leads data
-      mutateLeads(async (cachedData) => {
-        if (!cachedData) return cachedData;
-
-        const updatedLeads = cachedData.data.map(lead => {
-          if (lead.id === leadId) {
-            return { ...lead, status };
-          }
-          return lead;
-        });
-
-        return { ...cachedData, data: updatedLeads };
-      }, false);
+      // Refetch leads data
+      refetchLeads();
 
       toast({
         title: 'Status updated',
@@ -123,19 +118,8 @@ const Index: React.FC<IndexProps> = () => {
         body: JSON.stringify({ remarks }),
       });
   
-      // Optimistically update the leads data
-      mutateLeads(async (cachedData) => {
-        if (!cachedData) return cachedData;
-  
-        const updatedLeads = cachedData.data.map(lead => {
-          if (lead.id === leadId) {
-            return { ...lead, remarks };
-          }
-          return lead;
-        });
-  
-        return { ...cachedData, data: updatedLeads };
-      }, false);
+      // Refetch leads data
+      refetchLeads();
   
       toast({
         title: 'Remarks updated',
@@ -160,19 +144,8 @@ const Index: React.FC<IndexProps> = () => {
         body: JSON.stringify({ emailsSent: { increment: 1 } }),
       });
 
-      // Optimistically update the leads data
-      mutateLeads(async (cachedData) => {
-        if (!cachedData) return cachedData;
-
-        const updatedLeads = cachedData.data.map(lead => {
-          if (lead.id === leadId) {
-            return { ...lead, emailsSent: (lead.emailsSent || 0) + 1 };
-          }
-          return lead;
-        });
-
-        return { ...cachedData, data: updatedLeads };
-      }, false);
+      // Refetch leads data
+      refetchLeads();
 
       toast({
         title: 'Email count updated',
@@ -200,17 +173,8 @@ const Index: React.FC<IndexProps> = () => {
         method: 'DELETE',
       });
 
-      // Optimistically update the leads data
-      mutateLeads(async (cachedData) => {
-        if (!cachedData) return cachedData;
-
-        const updatedLeads = {
-          ...cachedData,
-          data: cachedData.data.filter(lead => lead.id !== leadId),
-        };
-
-        return updatedLeads;
-      }, false);
+      // Refetch leads data
+      refetchLeads();
 
       toast({
         title: 'Lead deleted',
@@ -239,9 +203,9 @@ const Index: React.FC<IndexProps> = () => {
     return count;
   };
 
-  const refetchLeads = useCallback(() => {
-    mutateLeads();
-  }, [mutateLeads]);
+  const handleRefetchLeads = useCallback(() => {
+    refetchLeads();
+  }, [refetchLeads]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -343,7 +307,7 @@ const Index: React.FC<IndexProps> = () => {
       activeTab={activeTab} 
       onTabChange={setActiveTab}
       categories={categories}
-      onLeadAdded={refetchLeads}
+      onLeadAdded={handleRefetchLeads}
     >
       {renderContent()}
     </AppleLayout>
