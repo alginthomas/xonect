@@ -141,9 +141,9 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
   const category = getCategoryInfo(leadData.categoryId);
 
   return (
-    <div className="h-full bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border px-4 py-3">
+      <div className="flex-shrink-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border px-4 py-3">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -165,7 +165,7 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
       </div>
 
       {/* Hero Section */}
-      <div className="px-4 py-6 bg-gradient-to-b from-muted/30 to-background">
+      <div className="flex-shrink-0 px-4 py-6 bg-gradient-to-b from-muted/30 to-background">
         <div className="flex items-start gap-4 mb-4">
           <Avatar className="h-20 w-20 ring-4 ring-background shadow-lg">
             <AvatarImage src={leadData.photoUrl} alt={`${leadData.firstName} ${leadData.lastName}`} />
@@ -243,17 +243,19 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
         </div>
       </div>
 
-      {/* Content Tabs */}
-      <div className="flex-1 overflow-hidden">
-        <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <TabsList className="flex w-full mx-4 mt-4 h-auto p-1 bg-muted">
-            <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Overview</TabsTrigger>
-            <TabsTrigger value="contact" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Contact</TabsTrigger>
-            <TabsTrigger value="company" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Company</TabsTrigger>
-            <TabsTrigger value="activity" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Activity</TabsTrigger>
-          </TabsList>
+      {/* Content Tabs - Fixed height container */}
+      <div className="flex-1 flex flex-col min-h-0">
+        <Tabs defaultValue="overview" className="flex-1 flex flex-col min-h-0">
+          <div className="flex-shrink-0 px-4 mt-4">
+            <TabsList className="flex w-full h-auto p-1 bg-muted">
+              <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Overview</TabsTrigger>
+              <TabsTrigger value="contact" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Contact</TabsTrigger>
+              <TabsTrigger value="company" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Company</TabsTrigger>
+              <TabsTrigger value="activity" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Activity</TabsTrigger>
+            </TabsList>
+          </div>
 
-          <div className="flex-1 overflow-y-auto px-4 pb-24">
+          <div className="flex-1 overflow-y-auto px-4 pb-20">
             <TabsContent value="overview" className="space-y-4 mt-4">
               {/* Status Management */}
               <Card>
@@ -462,8 +464,8 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
         </Tabs>
       </div>
 
-      {/* Floating Action Bar */}
-      <div className="fixed bottom-4 left-4 right-4 z-50">
+      {/* Floating Action Bar - Fixed at bottom */}
+      <div className="flex-shrink-0 p-4">
         <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border border-border rounded-xl shadow-lg p-3">
           <div className="flex items-center justify-around gap-2">
             <Button
