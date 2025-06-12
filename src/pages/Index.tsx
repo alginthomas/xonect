@@ -61,6 +61,7 @@ const Index = () => {
     // If there's a batch parameter, set it as selected and go to dashboard
     if (batch) {
       setSelectedBatchId(batch);
+      console.log('Setting selected batch ID from URL:', batch);
       return 'dashboard';
     }
     
@@ -87,7 +88,7 @@ const Index = () => {
   // Handle tab changes and update URL
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Clear selected batch when changing tabs
+    // Clear selected batch when changing tabs unless staying on dashboard
     if (value !== 'dashboard') {
       setSelectedBatchId(null);
     }
@@ -145,8 +146,11 @@ const Index = () => {
           organizationWebsite: lead.organization_website || '',
           organizationFounded: lead.organization_founded,
           remarks: lead.remarks || '',
-          tags: lead.tags || []
+          tags: lead.tags || [],
+          importBatchId: lead.import_batch_id || undefined, // Add this field mapping
         }));
+        
+        console.log('Fetched leads with import batch IDs:', transformedLeads.filter(l => l.importBatchId).length);
         setLeads(transformedLeads);
       }
     } catch (error: any) {
@@ -563,11 +567,11 @@ const Index = () => {
 
   return (
     <AppleLayout>
-      <div className="space-y-8">
+      <div className="space-y-6 lg:space-y-8">
         {/* Page Header */}
         <div className="flex flex-col gap-2">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Lead Management</h1>
             <p className="text-muted-foreground">
               Manage your leads, track engagement, and grow your business.
             </p>
@@ -575,15 +579,17 @@ const Index = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <TabsList className="grid w-full sm:w-auto grid-cols-6 lg:grid-cols-6 bg-muted rounded-xl p-1">
-              <TabsTrigger value="dashboard" className="rounded-lg font-medium">Dashboard</TabsTrigger>
-              <TabsTrigger value="leads" className="rounded-lg font-medium">Leads</TabsTrigger>
-              <TabsTrigger value="import" className="rounded-lg font-medium">Import</TabsTrigger>
-              <TabsTrigger value="categories" className="rounded-lg font-medium">Categories</TabsTrigger>
-              <TabsTrigger value="templates" className="rounded-lg font-medium">Templates</TabsTrigger>
-              <TabsTrigger value="settings" className="rounded-lg font-medium">Settings</TabsTrigger>
-            </TabsList>
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="overflow-x-auto">
+              <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit">
+                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm">Dashboard</TabsTrigger>
+                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm">Leads</TabsTrigger>
+                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm">Import</TabsTrigger>
+                <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm">Categories</TabsTrigger>
+                <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm">Templates</TabsTrigger>
+                <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm">Settings</TabsTrigger>
+              </TabsList>
+            </div>
           </div>
 
           <TabsContent value="dashboard" className="space-y-6">

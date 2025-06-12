@@ -35,6 +35,7 @@ import { EmailDialog } from '@/components/EmailDialog';
 import { DraggableTableHeader } from '@/components/DraggableTableHeader';
 import { ColumnSettings } from '@/components/ColumnSettings';
 import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Search,
   Download,
@@ -47,6 +48,7 @@ import {
   ChevronLeft,
   ChevronRightIcon,
   Filter,
+  MoreVertical,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -122,6 +124,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   } = useColumnConfiguration();
   
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -156,8 +159,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
     // Filter by selected batch
     if (selectedBatchId) {
-      filtered = filtered.filter(lead => lead.importBatchId === selectedBatchId);
-      console.log('After batch filter:', filtered.length);
+      const selectedBatch = importBatches.find(b => b.id === selectedBatchId);
+      filtered = filtered.filter(lead => 
+        lead.importBatchId === selectedBatchId || 
+        (selectedBatch && lead.categoryId === selectedBatch.categoryId)
+      );
+      console.log('After batch filter:', filtered.length, 'leads found for batch:', selectedBatchId);
     }
 
     // Filter by search term
@@ -199,7 +206,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter]);
+  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, importBatches]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {
@@ -391,6 +398,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const isAllCurrentPageSelected = currentPageLeadIds.length > 0 && selectedCurrentPageCount === currentPageLeadIds.length;
   const isPartialSelection = selectedCurrentPageCount > 0 && selectedCurrentPageCount < currentPageLeadIds.length;
 
+  // Mobile-optimized column visibility
+  const mobileVisibleColumns = useMemo(() => {
+    if (!isMobile) return visibleColumns;
+    
+    // On mobile, show only essential columns
+    return visibleColumns.filter(col => 
+      ['select', 'name', 'status', 'actions'].includes(col.id)
+    );
+  }, [visibleColumns, isMobile]);
+
+  const activeColumns = isMobile ? mobileVisibleColumns : visibleColumns;
+
   // Render column content based on column id
   const renderColumnContent = (columnId: string, lead: Lead) => {
     switch (columnId) {
@@ -494,7 +513,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       case 'created':
         return (
           <div className="text-sm text-muted-foreground">
-            {format(lead.createdAt, 'MMM dd, yyyy')}
+            {format(lead.createdAt, 'MMM dd')}
           </div>
         );
       
@@ -503,24 +522,81 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
+  // Mobile-optimized render function for lead cards
+  const renderMobileLeadCard = (lead: Lead) => (
+    <Card key={lead.id} className="mb-4">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3 flex-1">
+            <Checkbox
+              checked={selectedLeads.has(lead.id)}
+              onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+            />
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
+              <AvatarFallback>
+                {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-sm truncate">
+                {lead.firstName} {lead.lastName}
+              </h3>
+              <p className="text-xs text-muted-foreground truncate">{lead.title}</p>
+              <p className="text-xs text-muted-foreground truncate">{lead.company}</p>
+            </div>
+          </div>
+          <QuickActionsCell
+            lead={lead}
+            onEmailClick={() => {
+              setSelectedLeadForEmail(lead);
+              setShowEmailDialog(true);
+            }}
+            onViewDetails={() => openLeadSidebar(lead)}
+            onDeleteLead={() => onDeleteLead(lead.id)}
+          />
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <QuickStatusEditor
+            status={lead.status}
+            onChange={(status) => handleStatusChange(lead.id, status)}
+          />
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            {lead.email && <Mail className="h-3 w-3" />}
+            {lead.phone && <Phone className="h-3 w-3" />}
+            <span>{format(lead.createdAt, 'MMM dd')}</span>
+          </div>
+        </div>
+        
+        <div className="mt-3">
+          <QuickRemarksCell
+            remarks={lead.remarks || ''}
+            onUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header and Actions */}
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
-              placeholder="Search leads by name, email, company..."
+              placeholder="Search leads..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
             />
           </div>
           
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 lg:flex gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full lg:w-40">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -534,7 +610,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-full lg:w-40">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -553,8 +629,40 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </SelectContent>
             </Select>
 
+            {!isMobile && (
+              <>
+                <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Data Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Leads</SelectItem>
+                    <SelectItem value="has-phone">Has Phone</SelectItem>
+                    <SelectItem value="has-email">Has Email</SelectItem>
+                    <SelectItem value="has-both">Has Both</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <ColumnSettings
+                  columns={visibleColumns}
+                  onToggleVisibility={toggleColumnVisibility}
+                  onReset={resetToDefault}
+                />
+              </>
+            )}
+
+            <Button onClick={handleExport} variant="outline" size="sm" className="col-span-2 lg:col-span-1">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile-specific filters */}
+        {isMobile && (
+          <div className="flex gap-2">
             <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="flex-1">
                 <SelectValue placeholder="Data Filter" />
               </SelectTrigger>
               <SelectContent>
@@ -565,27 +673,46 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </SelectContent>
             </Select>
 
-            <ColumnSettings
-              columns={visibleColumns}
-              onToggleVisibility={toggleColumnVisibility}
-              onReset={resetToDefault}
-            />
-
-            <Button onClick={handleExport} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>Column Settings</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {visibleColumns.filter(col => !col.fixed).map((column) => (
+                  <DropdownMenuItem
+                    key={column.id}
+                    className="flex items-center gap-2"
+                    onSelect={(e) => e.preventDefault()}
+                    onClick={() => toggleColumnVisibility(column.id)}
+                  >
+                    <Checkbox
+                      checked={column.visible}
+                      onCheckedChange={() => toggleColumnVisibility(column.id)}
+                    />
+                    <span>{column.label}</span>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={resetToDefault}>
+                  Reset to Default
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
+        )}
 
         {/* Bulk Actions */}
         {selectedLeads.size > 0 && (
-          <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-lg">
             <span className="text-sm font-medium">
               {selectedLeads.size} lead{selectedLeads.size > 1 ? 's' : ''} selected
             </span>
             
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -615,7 +742,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         )}
 
         {/* Pagination Controls */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Show</span>
             <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
@@ -632,7 +759,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             <span className="text-sm text-muted-foreground">per page</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <span className="text-sm text-muted-foreground">
               Showing {Math.min(startIndex + 1, filteredLeads.length)} to {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
             </span>
@@ -664,7 +791,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
         </div>
       </div>
 
-      {/* Results Summary with Draggable Table */}
+      {/* Results Summary with Responsive Layout */}
       <Card>
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-2">
@@ -682,78 +809,84 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <AppleTable>
-              <AppleTableHeader>
-                <AppleTableRow>
-                  <SortableContext
-                    items={visibleColumns.map(col => col.id)}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    {visibleColumns.map((column) => {
-                      if (column.id === 'select') {
-                        return (
-                          <AppleTableHead key="select" className="w-12">
-                            <Checkbox
-                              checked={isAllCurrentPageSelected}
-                              ref={(el) => {
-                                if (el) {
-                                  (el as any).indeterminate = isPartialSelection;
-                                }
-                              }}
-                              onCheckedChange={handleSelectAll}
-                            />
-                          </AppleTableHead>
-                        );
-                      }
-
-                      return (
-                        <DraggableTableHeader
-                          key={column.id}
-                          column={column}
-                          sortField={sortField}
-                          sortDirection={sortDirection}
-                          onSort={handleSort}
-                        >
-                          {column.label}
-                        </DraggableTableHeader>
-                      );
-                    })}
-                  </SortableContext>
-                </AppleTableRow>
-              </AppleTableHeader>
-              <AppleTableBody>
-                {paginatedLeads.map((lead) => (
-                  <AppleTableRow 
-                    key={lead.id}
-                    className="group hover:bg-muted/50 cursor-pointer"
-                    onClick={() => openLeadSidebar(lead)}
-                  >
-                    {visibleColumns.map((column) => (
-                      <AppleTableCell 
-                        key={`${lead.id}-${column.id}`}
-                        className={column.width}
-                        onClick={column.id === 'select' || column.id === 'status' || column.id === 'remarks' || column.id === 'actions' ? (e) => e.stopPropagation() : undefined}
-                      >
-                        {renderColumnContent(column.id, lead)}
-                      </AppleTableCell>
-                    ))}
-                  </AppleTableRow>
-                ))}
-              </AppleTableBody>
-            </AppleTable>
-          </DndContext>
-
-          {paginatedLeads.length === 0 && (
+          {paginatedLeads.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No leads found</h3>
               <p>Try adjusting your search criteria or filters.</p>
             </div>
+          ) : isMobile ? (
+            // Mobile Card Layout
+            <div className="space-y-4">
+              {paginatedLeads.map(renderMobileLeadCard)}
+            </div>
+          ) : (
+            // Desktop Table Layout
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <AppleTable>
+                <AppleTableHeader>
+                  <AppleTableRow>
+                    <SortableContext
+                      items={activeColumns.map(col => col.id)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {activeColumns.map((column) => {
+                        if (column.id === 'select') {
+                          return (
+                            <AppleTableHead key="select" className="w-12">
+                              <Checkbox
+                                checked={isAllCurrentPageSelected}
+                                ref={(el) => {
+                                  if (el) {
+                                    (el as any).indeterminate = isPartialSelection;
+                                  }
+                                }}
+                                onCheckedChange={handleSelectAll}
+                              />
+                            </AppleTableHead>
+                          );
+                        }
+
+                        return (
+                          <DraggableTableHeader
+                            key={column.id}
+                            column={column}
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                            onSort={handleSort}
+                          >
+                            {column.label}
+                          </DraggableTableHeader>
+                        );
+                      })}
+                    </SortableContext>
+                  </AppleTableRow>
+                </AppleTableHeader>
+                <AppleTableBody>
+                  {paginatedLeads.map((lead) => (
+                    <AppleTableRow 
+                      key={lead.id}
+                      className="group hover:bg-muted/50 cursor-pointer"
+                      onClick={() => openLeadSidebar(lead)}
+                    >
+                      {activeColumns.map((column) => (
+                        <AppleTableCell 
+                          key={`${lead.id}-${column.id}`}
+                          className={column.width}
+                          onClick={column.id === 'select' || column.id === 'status' || column.id === 'remarks' || column.id === 'actions' ? (e) => e.stopPropagation() : undefined}
+                        >
+                          {renderColumnContent(column.id, lead)}
+                        </AppleTableCell>
+                      ))}
+                    </AppleTableRow>
+                  ))}
+                </AppleTableBody>
+              </AppleTable>
+            </DndContext>
           )}
         </CardContent>
       </Card>

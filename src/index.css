@@ -116,6 +116,17 @@
   .apple-shadow-lg {
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
+
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    .apple-table {
+      overflow-x: auto;
+    }
+    
+    .apple-table table {
+      min-width: 600px;
+    }
+  }
 }
 
 @layer components {
@@ -133,5 +144,18 @@
 
   .apple-input {
     @apply bg-background border border-border rounded-lg px-4 py-3 text-sm font-medium placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+  }
+
+  /* Mobile responsiveness */
+  .mobile-scroll {
+    @apply overflow-x-auto;
+  }
+
+  .mobile-card {
+    @apply block lg:hidden;
+  }
+
+  .desktop-table {
+    @apply hidden lg:block;
   }
 }
