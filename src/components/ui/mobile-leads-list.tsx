@@ -1,6 +1,6 @@
 
 import React, { useState, useMemo } from 'react';
-import { EnhancedMobileLeadCard } from './enhanced-mobile-lead-card';
+import { CompactLeadCard } from './compact-lead-card';
 import { MobileSearchFilters } from './mobile-search-filters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -134,8 +134,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         onClearFilters={handleClearFilters}
       />
 
-      {/* Results Summary and Controls */}
-      <div className="px-4 py-3 bg-muted/30 border-b border-border/50">
+      {/* Results Summary and Controls - More compact */}
+      <div className="px-4 py-2 bg-muted/20 border-b border-border/30">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
@@ -154,41 +154,41 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="date">Sort by Date</SelectItem>
-              <SelectItem value="name">Sort by Name</SelectItem>
-              <SelectItem value="status">Sort by Status</SelectItem>
+              <SelectItem value="date">By Date</SelectItem>
+              <SelectItem value="name">By Name</SelectItem>
+              <SelectItem value="status">By Status</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
-        {/* Bulk Actions */}
+        {/* Bulk Actions - More compact */}
         {selectedLeads.size > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSelectAll}
-              className="h-8 px-2 text-xs"
+              className="h-7 px-2 text-xs"
             >
               {selectedLeads.size === filteredAndSortedLeads.length ? (
                 <CheckSquare className="h-3 w-3 mr-1" />
               ) : (
                 <Square className="h-3 w-3 mr-1" />
               )}
-              {selectedLeads.size === filteredAndSortedLeads.length ? 'Deselect All' : 'Select All'}
+              {selectedLeads.size === filteredAndSortedLeads.length ? 'Deselect' : 'Select All'}
             </Button>
             
             <Select onValueChange={(value) => handleBulkAction(value as LeadStatus)}>
-              <SelectTrigger className="w-auto h-8 text-xs">
-                <SelectValue placeholder="Update Status" />
+              <SelectTrigger className="w-auto h-7 text-xs">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="New">Mark as New</SelectItem>
-                <SelectItem value="Contacted">Mark as Contacted</SelectItem>
-                <SelectItem value="Qualified">Mark as Qualified</SelectItem>
-                <SelectItem value="Interested">Mark as Interested</SelectItem>
-                <SelectItem value="Not Interested">Mark as Not Interested</SelectItem>
-                <SelectItem value="Unresponsive">Mark as Unresponsive</SelectItem>
+                <SelectItem value="New">New</SelectItem>
+                <SelectItem value="Contacted">Contacted</SelectItem>
+                <SelectItem value="Qualified">Qualified</SelectItem>
+                <SelectItem value="Interested">Interested</SelectItem>
+                <SelectItem value="Not Interested">Not Interested</SelectItem>
+                <SelectItem value="Unresponsive">Unresponsive</SelectItem>
               </SelectContent>
             </Select>
             
@@ -196,7 +196,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
               variant="destructive"
               size="sm"
               onClick={() => handleBulkAction('delete')}
-              className="h-8 px-2 text-xs"
+              className="h-7 px-2 text-xs"
             >
               <Trash2 className="h-3 w-3 mr-1" />
               Delete
@@ -205,28 +205,28 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         )}
       </div>
 
-      {/* Leads List */}
-      <div className="flex-1 overflow-y-auto px-4 pb-20">
+      {/* Leads List - More compact spacing */}
+      <div className="flex-1 overflow-y-auto px-3 pb-20">
         {filteredAndSortedLeads.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <MessageSquare className="h-10 w-10 text-muted-foreground mb-3" />
             <h3 className="text-lg font-medium mb-2">No leads found</h3>
-            <p className="text-muted-foreground mb-4 max-w-sm">
+            <p className="text-muted-foreground mb-4 max-w-sm text-sm">
               {searchQuery || activeFiltersCount > 0 
-                ? 'Try adjusting your search or filters to find more leads.'
+                ? 'Try adjusting your search or filters.'
                 : 'Start by importing leads or adding them manually.'
               }
             </p>
             {(searchQuery || activeFiltersCount > 0) && (
-              <Button variant="outline" onClick={handleClearFilters}>
+              <Button variant="outline" onClick={handleClearFilters} size="sm">
                 Clear Filters
               </Button>
             )}
           </div>
         ) : (
-          <div className="space-y-0 pt-4">
+          <div className="space-y-0 pt-3">
             {filteredAndSortedLeads.map((lead) => (
-              <EnhancedMobileLeadCard
+              <CompactLeadCard
                 key={lead.id}
                 lead={lead}
                 categories={categories}

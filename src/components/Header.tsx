@@ -53,19 +53,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange, onAddLead }) =>
 
         {/* Right Section - Actions and User */}
         <div className="flex items-center gap-2">
-          {/* Add Lead Button - Show on mobile and when appropriate */}
-          {isMobile && onAddLead && (
-            <Button
-              onClick={onAddLead}
-              size="sm"
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden xs:inline">Add Lead</span>
-            </Button>
-          )}
-          
-          {/* Desktop Add Lead Button - Show on leads tab */}
+          {/* Desktop Add Lead Button - Show on leads tab only */}
           {!isMobile && activeTab === 'leads' && onAddLead && (
             <Button
               onClick={onAddLead}
