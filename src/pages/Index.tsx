@@ -567,32 +567,32 @@ const Index = () => {
 
   return (
     <AppleLayout>
-      <div className="space-y-6 lg:space-y-8">
-        {/* Page Header */}
+      <div className="space-y-4 lg:space-y-8">
+        {/* Page Header - Mobile Optimized */}
         <div className="flex flex-col gap-2">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold tracking-tight">Lead Management</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl lg:text-3xl font-bold tracking-tight">Lead Management</h1>
+            <p className="text-muted-foreground text-sm lg:text-base">
               Manage your leads, track engagement, and grow your business.
             </p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="overflow-x-auto">
+          <div className="flex flex-col gap-3 mb-4 lg:mb-6">
+            <div className="overflow-x-auto -mx-3 px-3 lg:mx-0 lg:px-0">
               <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6 bg-muted rounded-xl p-1 min-w-fit">
-                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm">Dashboard</TabsTrigger>
-                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm">Leads</TabsTrigger>
-                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm">Import</TabsTrigger>
-                <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm">Categories</TabsTrigger>
-                <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm">Templates</TabsTrigger>
-                <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm">Settings</TabsTrigger>
+                <TabsTrigger value="dashboard" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Dashboard</TabsTrigger>
+                <TabsTrigger value="leads" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Leads</TabsTrigger>
+                <TabsTrigger value="import" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Import</TabsTrigger>
+                <TabsTrigger value="categories" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Categories</TabsTrigger>
+                <TabsTrigger value="templates" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Templates</TabsTrigger>
+                <TabsTrigger value="settings" className="rounded-lg font-medium text-xs lg:text-sm px-2 lg:px-4">Settings</TabsTrigger>
               </TabsList>
             </div>
           </div>
 
-          <TabsContent value="dashboard" className="space-y-6">
+          <TabsContent value="dashboard" className="space-y-4 lg:space-y-6">
             <LeadsDashboard
               leads={leads}
               templates={templates}
@@ -608,11 +608,11 @@ const Index = () => {
             />
           </TabsContent>
 
-          <TabsContent value="leads" className="space-y-6">
+          <TabsContent value="leads" className="space-y-4 lg:space-y-6">
             <Card className="apple-card">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-xl">All Leads</CardTitle>
-                <CardDescription>
+              <CardHeader className="pb-3 lg:pb-4">
+                <CardTitle className="text-lg lg:text-xl">All Leads</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
                   View and manage all your leads in one place.
                 </CardDescription>
               </CardHeader>
@@ -634,7 +634,7 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="import" className="space-y-8">
+          <TabsContent value="import" className="space-y-6 lg:space-y-8">
             <div className="max-w-6xl mx-auto">
               <CSVImport 
                 categories={categories} 
@@ -642,7 +642,7 @@ const Index = () => {
                 onCreateCategory={handleCreateCategory}
               />
               
-              <div className="mt-12">
+              <div className="mt-8 lg:mt-12">
                 <ImportHistory 
                   leads={leads}
                   importBatches={importBatches}
@@ -654,11 +654,11 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="categories" className="space-y-6">
+          <TabsContent value="categories" className="space-y-4 lg:space-y-6">
             <Card className="apple-card">
               <CardHeader>
-                <CardTitle className="text-xl">Lead Categories</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg lg:text-xl">Lead Categories</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
                   Organize your leads with custom categories.
                 </CardDescription>
               </CardHeader>
@@ -673,11 +673,11 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="templates" className="space-y-6">
+          <TabsContent value="templates" className="space-y-4 lg:space-y-6">
             <Card className="apple-card">
               <CardHeader>
-                <CardTitle className="text-xl">Email Templates</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg lg:text-xl">Email Templates</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
                   Create and manage email templates for your campaigns.
                 </CardDescription>
               </CardHeader>
@@ -690,11 +690,11 @@ const Index = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
+          <TabsContent value="settings" className="space-y-4 lg:space-y-6">
             <Card className="apple-card">
               <CardHeader>
-                <CardTitle className="text-xl">Brand Settings</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg lg:text-xl">Brand Settings</CardTitle>
+                <CardDescription className="text-sm lg:text-base">
                   Customize your company branding for email communications.
                 </CardDescription>
               </CardHeader>

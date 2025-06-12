@@ -34,6 +34,10 @@ import { QuickActionsCell } from '@/components/QuickActionsCell';
 import { EmailDialog } from '@/components/EmailDialog';
 import { DraggableTableHeader } from '@/components/DraggableTableHeader';
 import { ColumnSettings } from '@/components/ColumnSettings';
+import { MobileFilterDrawer } from '@/components/ui/mobile-filter-drawer';
+import { MobilePagination } from '@/components/ui/mobile-pagination';
+import { MobileLeadCard } from '@/components/ui/mobile-lead-card';
+import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -49,6 +53,8 @@ import {
   ChevronRightIcon,
   Filter,
   MoreVertical,
+  Plus,
+  X,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -370,6 +376,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
+  const handleLoadMore = () => {
+    setCurrentPage(prev => prev + 1);
+  };
+
+  const clearAllFilters = () => {
+    setStatusFilter('all');
+    setCategoryFilter('all');
+    setDataAvailabilityFilter('all');
+    setSearchTerm('');
+  };
+
   const getBatchName = (batchId: string | undefined) => {
     if (!batchId) return 'Direct Entry';
     const batch = importBatches.find(b => b.id === batchId);
@@ -522,293 +539,171 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
-  // Mobile-optimized render function for lead cards
-  const renderMobileLeadCard = (lead: Lead) => (
-    <Card key={lead.id} className="mb-4">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3 flex-1">
-            <Checkbox
-              checked={selectedLeads.has(lead.id)}
-              onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
-            />
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-              <AvatarFallback>
-                {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium text-sm truncate">
-                {lead.firstName} {lead.lastName}
-              </h3>
-              <p className="text-xs text-muted-foreground truncate">{lead.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{lead.company}</p>
-            </div>
-          </div>
-          <QuickActionsCell
-            lead={lead}
-            onEmailClick={() => {
-              setSelectedLeadForEmail(lead);
-              setShowEmailDialog(true);
-            }}
-            onViewDetails={() => openLeadSidebar(lead)}
-            onDeleteLead={() => onDeleteLead(lead.id)}
-          />
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <QuickStatusEditor
-            status={lead.status}
-            onChange={(status) => handleStatusChange(lead.id, status)}
-          />
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            {lead.email && <Mail className="h-3 w-3" />}
-            {lead.phone && <Phone className="h-3 w-3" />}
-            <span>{format(lead.createdAt, 'MMM dd')}</span>
-          </div>
-        </div>
-        
-        <div className="mt-3">
-          <QuickRemarksCell
-            remarks={lead.remarks || ''}
-            onUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-
   return (
-    <div className="space-y-4 lg:space-y-6">
-      {/* Header and Actions */}
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search leads..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="grid grid-cols-2 lg:flex gap-2">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full lg:w-40">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                {allStatuses.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {status}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger className="w-full lg:w-40">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category.id} value={category.id}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-3 h-3 rounded-full" 
-                        style={{ backgroundColor: category.color }}
-                      />
-                      {category.name}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {!isMobile && (
-              <>
-                <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Data Filter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Leads</SelectItem>
-                    <SelectItem value="has-phone">Has Phone</SelectItem>
-                    <SelectItem value="has-email">Has Email</SelectItem>
-                    <SelectItem value="has-both">Has Both</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <ColumnSettings
-                  columns={visibleColumns}
-                  onToggleVisibility={toggleColumnVisibility}
-                  onReset={resetToDefault}
-                />
-              </>
-            )}
-
-            <Button onClick={handleExport} variant="outline" size="sm" className="col-span-2 lg:col-span-1">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-          </div>
+    <div className="space-y-3 lg:space-y-6">
+      {/* Mobile-optimized Search and Filters */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+          <Input
+            placeholder="Search leads..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-12 lg:h-10"
+          />
         </div>
-
-        {/* Mobile-specific filters */}
-        {isMobile && (
-          <div className="flex gap-2">
-            <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Data Filter" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Leads</SelectItem>
-                <SelectItem value="has-phone">Has Phone</SelectItem>
-                <SelectItem value="has-email">Has Email</SelectItem>
-                <SelectItem value="has-both">Has Both</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Column Settings</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {visibleColumns.filter(col => !col.fixed).map((column) => (
-                  <DropdownMenuItem
-                    key={column.id}
-                    className="flex items-center gap-2"
-                    onSelect={(e) => e.preventDefault()}
-                    onClick={() => toggleColumnVisibility(column.id)}
-                  >
-                    <Checkbox
-                      checked={column.visible}
-                      onCheckedChange={() => toggleColumnVisibility(column.id)}
-                    />
-                    <span>{column.label}</span>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={resetToDefault}>
-                  Reset to Default
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
-
-        {/* Bulk Actions */}
-        {selectedLeads.size > 0 && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 bg-muted rounded-lg">
-            <span className="text-sm font-medium">
-              {selectedLeads.size} lead{selectedLeads.size > 1 ? 's' : ''} selected
-            </span>
-            
-            <div className="flex flex-wrap gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Update Status
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
+        
+        <div className="flex flex-col sm:flex-row gap-2">
+          {isMobile ? (
+            <>
+              <MobileFilterDrawer
+                statusFilter={statusFilter}
+                categoryFilter={categoryFilter}
+                dataAvailabilityFilter={dataAvailabilityFilter}
+                categories={categories}
+                onStatusChange={setStatusFilter}
+                onCategoryChange={setCategoryFilter}
+                onDataAvailabilityChange={setDataAvailabilityFilter}
+                onClearFilters={clearAllFilters}
+              />
+              
+              <Button onClick={handleExport} variant="outline" size="sm" className="flex-1">
+                <Download className="h-4 w-4 mr-2" />
+                Export
+              </Button>
+            </>
+          ) : (
+            <>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
                   {allStatuses.map((status) => (
-                    <DropdownMenuItem key={status} onClick={() => handleBulkAction('status', status)}>
-                      Mark as {status}
-                    </DropdownMenuItem>
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
                   ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </SelectContent>
+              </Select>
 
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => handleBulkAction('delete')}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </div>
-          </div>
-        )}
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-        {/* Pagination Controls */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Show</span>
-            <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
-              <SelectTrigger className="w-20">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="25">25</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-                <SelectItem value="100">100</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground">per page</span>
-          </div>
+              <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Data Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Leads</SelectItem>
+                  <SelectItem value="has-phone">Has Phone</SelectItem>
+                  <SelectItem value="has-email">Has Email</SelectItem>
+                  <SelectItem value="has-both">Has Both</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              Showing {Math.min(startIndex + 1, filteredLeads.length)} to {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
-            </span>
-            
-            <div className="flex gap-1">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
+              <ColumnSettings
+                columns={visibleColumns}
+                onToggleVisibility={toggleColumnVisibility}
+                onReset={resetToDefault}
+              />
+
+              <Button onClick={handleExport} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Export
               </Button>
-              
-              <span className="flex items-center px-3 text-sm">
-                {currentPage} of {Math.max(1, Math.ceil(filteredLeads.length / itemsPerPage))}
-              </span>
-              
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))}
-                disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)}
-              >
-                <ChevronRightIcon className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Results Summary with Responsive Layout */}
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5" />
-            Leads Overview
+      {/* Bulk Actions - Mobile Optimized */}
+      {selectedLeads.size > 0 && (
+        <div className="flex flex-col gap-3 p-3 lg:p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {selectedLeads.size} lead{selectedLeads.size > 1 ? 's' : ''} selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedLeads(new Set())}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                  Update Status
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                {allStatuses.map((status) => (
+                  <DropdownMenuItem key={status} onClick={() => handleBulkAction('status', status)}>
+                    Mark as {status}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleBulkAction('delete')}
+              className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Results Overview */}
+      <Card className="apple-card">
+        <CardHeader className="pb-3 lg:pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg lg:text-xl">
+                <Users className="h-5 w-5" />
+                Leads Overview
+              </CardTitle>
+              <CardDescription className="mt-1">
+                {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} found
+                {selectedLeads.size > 0 && ` (${selectedLeads.size} selected)`}
+              </CardDescription>
+            </div>
+            
             {selectedBatchId && (
-              <Badge variant="secondary">
+              <Badge variant="secondary" className="self-start sm:self-center">
                 Batch: {getBatchName(selectedBatchId)}
               </Badge>
             )}
-          </CardTitle>
-          <CardDescription>
-            {filteredLeads.length} lead{filteredLeads.length !== 1 ? 's' : ''} found
-            {selectedLeads.size > 0 && ` (${selectedLeads.size} selected)`}
-          </CardDescription>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {paginatedLeads.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -817,8 +712,24 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             </div>
           ) : isMobile ? (
             // Mobile Card Layout
-            <div className="space-y-4">
-              {paginatedLeads.map(renderMobileLeadCard)}
+            <div className="space-y-3">
+              {paginatedLeads.map(lead => (
+                <MobileLeadCard
+                  key={lead.id}
+                  lead={lead}
+                  categories={categories}
+                  isSelected={selectedLeads.has(lead.id)}
+                  onSelect={(checked) => handleSelectLead(lead.id, checked)}
+                  onStatusChange={(status) => handleStatusChange(lead.id, status)}
+                  onRemarksUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
+                  onEmailClick={() => {
+                    setSelectedLeadForEmail(lead);
+                    setShowEmailDialog(true);
+                  }}
+                  onViewDetails={() => openLeadSidebar(lead)}
+                  onDeleteLead={() => onDeleteLead(lead.id)}
+                />
+              ))}
             </div>
           ) : (
             // Desktop Table Layout
@@ -888,8 +799,86 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </AppleTable>
             </DndContext>
           )}
+
+          {/* Mobile-optimized Pagination */}
+          {paginatedLeads.length > 0 && (
+            <>
+              {isMobile ? (
+                <MobilePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredLeads.length}
+                  onLoadMore={handleLoadMore}
+                  hasMore={currentPage < totalPages}
+                />
+              ) : (
+                // Desktop Pagination
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Show</span>
+                    <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span className="text-sm text-muted-foreground">per page</span>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Showing {Math.min(startIndex + 1, filteredLeads.length)} to {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
+                    </span>
+                    
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      
+                      <span className="flex items-center px-3 text-sm">
+                        {currentPage} of {Math.max(1, Math.ceil(filteredLeads.length / itemsPerPage))}
+                      </span>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))}
+                        disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)}
+                      >
+                        <ChevronRightIcon className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {/* Floating Action Button for Mobile */}
+      <FloatingActionButton
+        onClick={() => {
+          // Handle add lead action - could open a dialog or navigate
+          toast({
+            title: 'Add Lead',
+            description: 'Lead creation feature coming soon!',
+          });
+        }}
+        icon={<Plus className="h-5 w-5" />}
+        label="Add Lead"
+      />
 
       {/* Sidebar for Lead Details */}
       <LeadSidebar

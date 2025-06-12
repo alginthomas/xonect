@@ -117,7 +117,7 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
-  /* Mobile-specific styles */
+  /* Enhanced mobile responsiveness */
   @media (max-width: 768px) {
     .apple-table {
       overflow-x: auto;
@@ -126,6 +126,40 @@
     .apple-table table {
       min-width: 600px;
     }
+    
+    /* Mobile touch targets */
+    button, input, select, textarea {
+      min-height: 44px;
+    }
+    
+    /* Mobile font scaling */
+    html {
+      font-size: 16px;
+    }
+    
+    /* Improved tap targets */
+    .mobile-tap-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* Enhanced accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Focus indicators for better accessibility */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }
 
@@ -139,14 +173,14 @@
   }
 
   .apple-button {
-    @apply font-medium tracking-tight transition-all duration-200 ease-out;
+    @apply font-medium tracking-tight transition-all duration-200 ease-out mobile-tap-target;
   }
 
   .apple-input {
-    @apply bg-background border border-border rounded-lg px-4 py-3 text-sm font-medium placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200;
+    @apply bg-background border border-border rounded-lg px-4 py-3 text-sm font-medium placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 mobile-tap-target;
   }
 
-  /* Mobile responsiveness */
+  /* Mobile responsiveness improvements */
   .mobile-scroll {
     @apply overflow-x-auto;
   }
@@ -157,5 +191,46 @@
 
   .desktop-table {
     @apply hidden lg:block;
+  }
+
+  /* Mobile-specific improvements */
+  .mobile-filter-drawer {
+    @apply lg:hidden;
+  }
+
+  .mobile-pagination {
+    @apply lg:hidden;
+  }
+
+  .mobile-fab {
+    @apply lg:hidden fixed bottom-6 right-6 z-50;
+  }
+
+  /* Touch-friendly components */
+  .touch-friendly {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Improved spacing for mobile */
+  .mobile-spacing {
+    @apply space-y-3 lg:space-y-6;
+  }
+
+  .mobile-padding {
+    @apply p-3 lg:p-6;
+  }
+
+  /* Enhanced card layouts */
+  .mobile-lead-card {
+    @apply border border-border/50 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  /* Better visual hierarchy on mobile */
+  .mobile-text-hierarchy {
+    @apply text-sm lg:text-base;
+  }
+
+  .mobile-header-hierarchy {
+    @apply text-lg lg:text-xl;
   }
 }
