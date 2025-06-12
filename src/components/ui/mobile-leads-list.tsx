@@ -140,7 +140,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
 
       {/* Results Summary and Controls */}
       <div className="py-2 bg-muted/20 border-b border-border/30 px-0">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 py-[4px]">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">
               {filteredAndSortedLeads.length} lead{filteredAndSortedLeads.length !== 1 ? 's' : ''}

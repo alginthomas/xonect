@@ -71,7 +71,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     }
   };
   const totalActiveFilters = activeFiltersCount + (selectedSeniority !== 'all' ? 1 : 0) + (selectedCompanySize !== 'all' ? 1 : 0) + (selectedLocation ? 1 : 0) + (selectedIndustry ? 1 : 0);
-  return <div className="sticky top-0 z-40 bg-background border-b border-border/30 p-4 space-y-3 px-0">
+  return <div className="sticky top-0 z-40 bg-background border-b border-border/30 p-4 space-y-3 px-0 py-[6px]">
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -84,9 +84,9 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
       {/* Quick Filters Row - Horizontal Scrolling Container */}
       <div className="relative">
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex items-center gap-2 pb-2" style={{
+          <div style={{
           minWidth: 'max-content'
-        }}>
+        }} className="flex items-center gap-2 pb-2 py-[4px]">
             <Select value={selectedStatus} onValueChange={onStatusChange}>
               <SelectTrigger className="w-28 h-9 text-xs flex-shrink-0">
                 <SelectValue placeholder="Status" />
