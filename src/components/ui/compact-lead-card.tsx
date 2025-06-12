@@ -110,7 +110,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     >
       <div className="p-4">
         {/* Main content row with avatar and info */}
-        <div className="flex items-start gap-3 mb-3">
+        <div className="flex items-start gap-3 mb-4">
           {/* Selection checkbox */}
           <div onClick={handleCheckboxClick} className="pt-1">
             <Checkbox
@@ -129,16 +129,18 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </Avatar>
           
           {/* Lead info */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-base leading-tight mb-1">
+          <div className="flex-1 min-w-0 pr-2">
+            <h3 className="font-semibold text-base leading-tight mb-2">
               {lead.firstName} {lead.lastName}
             </h3>
-            <p className="text-sm text-muted-foreground mb-1">
-              {lead.company} • {lead.title}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {lead.email}
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-muted-foreground">
+                {lead.company} • {lead.title}
+              </p>
+              <p className="text-sm text-muted-foreground truncate">
+                {lead.email}
+              </p>
+            </div>
           </div>
 
           {/* More actions menu */}
@@ -167,9 +169,9 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </DropdownMenu>
         </div>
 
-        {/* Status and action buttons row */}
-        <div className="flex items-center justify-between pt-3 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2">
+        {/* Status section */}
+        <div className="pt-3 border-t border-border/30" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 mb-3">
             <span className="text-sm font-medium text-muted-foreground">Status:</span>
             <QuickStatusEditor
               status={lead.status}
@@ -177,24 +179,24 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             />
           </div>
           
-          {/* Action buttons positioned next to status */}
+          {/* Action buttons placed below status */}
           <div className="flex items-center gap-2">
             {/* Primary action button */}
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-3 hover:bg-primary/10"
+              className="h-8 px-3 hover:bg-primary/10 flex-1"
               onClick={handlePrimaryAction}
             >
               {lead.phone ? (
                 <>
-                  <Phone className="h-4 w-4 mr-1 text-primary" />
-                  <span className="text-xs">Call</span>
+                  <Phone className="h-4 w-4 mr-2 text-primary" />
+                  <span className="text-sm">Call</span>
                 </>
               ) : (
                 <>
-                  <Mail className="h-4 w-4 mr-1 text-primary" />
-                  <span className="text-xs">Email</span>
+                  <Mail className="h-4 w-4 mr-2 text-primary" />
+                  <span className="text-sm">Email</span>
                 </>
               )}
             </Button>
@@ -204,11 +206,11 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 px-3 hover:bg-blue-50"
+                className="h-8 px-3 hover:bg-blue-50 flex-1"
                 onClick={handleSecondaryAction}
               >
-                <Mail className="h-4 w-4 mr-1 text-blue-600" />
-                <span className="text-xs">Email</span>
+                <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                <span className="text-sm">Email</span>
               </Button>
             )}
           </div>
