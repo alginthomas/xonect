@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,7 +21,7 @@ import {
   MessageSquare
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
-import { useToast } from '@/hooks/use-toast';
+import { openEmailClient, copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -47,48 +48,38 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   onViewDetails,
   onDeleteLead
 }) => {
-  const { toast } = useToast();
-
   const handlePrimaryAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.phone) {
       // Primary action is call if phone exists
       window.open(`tel:${lead.phone}`, '_self');
     } else {
-      // Fallback to email - just copy email, don't change status
-      try {
-        await navigator.clipboard.writeText(lead.email);
-        toast({
-          title: 'Email copied',
-          description: `${lead.email} copied to clipboard.`,
-        });
-      } catch (error) {
-        toast({
-          title: 'Copy failed',
-          description: 'Failed to copy email.',
-          variant: 'destructive',
-        });
-      }
+      // Fallback to email with mail client
+      await openEmailClient({
+        to: lead.email,
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        company: lead.company,
+        title: lead.title
+      });
+      // Call the callback to update lead status
+      onEmailClick();
     }
   };
 
   const handleSecondaryAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.phone) {
-      // Secondary action is email if phone exists - just copy email, don't change status
-      try {
-        await navigator.clipboard.writeText(lead.email);
-        toast({
-          title: 'Email copied',
-          description: `${lead.email} copied to clipboard.`,
-        });
-      } catch (error) {
-        toast({
-          title: 'Copy failed',
-          description: 'Failed to copy email.',
-          variant: 'destructive',
-        });
-      }
+      // Secondary action is email if phone exists
+      await openEmailClient({
+        to: lead.email,
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        company: lead.company,
+        title: lead.title
+      });
+      // Call the callback to update lead status
+      onEmailClick();
     }
   };
 

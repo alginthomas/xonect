@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2, Copy, Linkedin, Globe } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { openEmailClient, copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead } from '@/types/lead';
 
 interface QuickActionsCellProps {
@@ -27,8 +27,6 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   onDeleteLead,
   className = ""
 }) => {
-  const { toast } = useToast();
-
   const handleClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
     action();
@@ -41,40 +39,19 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   };
 
   const copyEmail = async () => {
-    try {
-      await navigator.clipboard.writeText(lead.email);
-      toast({
-        title: 'Email copied',
-        description: `${lead.email} has been copied to clipboard.`,
-      });
-      // Don't call onEmailClick here - just copy the email
-    } catch (error) {
-      toast({
-        title: 'Copy failed',
-        description: 'Failed to copy email to clipboard.',
-        variant: 'destructive',
-      });
-    }
+    await copyEmailOnly(lead.email);
   };
 
   const emailLead = async () => {
-    // Copy email to clipboard first
-    try {
-      await navigator.clipboard.writeText(lead.email);
-      toast({
-        title: 'Email copied',
-        description: `${lead.email} has been copied to clipboard.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Copy failed',
-        description: 'Failed to copy email to clipboard.',
-        variant: 'destructive',
-      });
-    }
-
-    window.open(`mailto:${lead.email}`, '_self');
-    // Only call onEmailClick if provided and user explicitly opens email app
+    await openEmailClient({
+      to: lead.email,
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      company: lead.company,
+      title: lead.title
+    });
+    
+    // Call the callback to update lead status
     if (onEmailClick) {
       onEmailClick();
     }
@@ -94,13 +71,13 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {/* Quick Copy Email Button */}
+      {/* Quick Email Button */}
       <Button
         size="sm"
         variant="ghost"
         className="h-7 w-7 p-0"
-        onClick={(e) => handleClick(e, copyEmail)}
-        title="Copy Email"
+        onClick={(e) => handleClick(e, emailLead)}
+        title="Send Email"
       >
         <Mail className="h-3 w-3" />
       </Button>
@@ -170,7 +147,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onClick={() => emailLead()}>
             <Mail className="h-4 w-4 mr-2" />
-            Open Email App
+            Send Email
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => copyEmail()}>
             <Copy className="h-4 w-4 mr-2" />
