@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -247,11 +246,11 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
       {/* Content Tabs */}
       <div className="flex-1 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-4 mx-4 mt-4">
-            <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
-            <TabsTrigger value="contact" className="text-xs">Contact</TabsTrigger>
-            <TabsTrigger value="company" className="text-xs">Company</TabsTrigger>
-            <TabsTrigger value="activity" className="text-xs">Activity</TabsTrigger>
+          <TabsList className="flex w-full mx-4 mt-4 h-auto p-1 bg-muted">
+            <TabsTrigger value="overview" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Overview</TabsTrigger>
+            <TabsTrigger value="contact" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Contact</TabsTrigger>
+            <TabsTrigger value="company" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Company</TabsTrigger>
+            <TabsTrigger value="activity" className="flex-1 text-xs sm:text-sm px-2 py-2 min-w-0">Activity</TabsTrigger>
           </TabsList>
 
           <div className="flex-1 overflow-y-auto px-4 pb-24">
