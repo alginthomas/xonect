@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,8 @@ import {
   MoreHorizontal, 
   Eye, 
   Trash2,
-  MessageSquare
+  MessageSquare,
+  Check
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { copyEmailOnly } from '@/utils/emailUtils';
@@ -34,6 +35,7 @@ interface CompactLeadCardProps {
   onEmailClick: () => void;
   onViewDetails: () => void;
   onDeleteLead: () => void;
+  selectionMode?: boolean;
 }
 
 export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
@@ -45,8 +47,11 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   onRemarksUpdate,
   onEmailClick,
   onViewDetails,
-  onDeleteLead
+  onDeleteLead,
+  selectionMode = false
 }) => {
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+
   const handlePrimaryAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (lead.phone) {
@@ -65,29 +70,65 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   };
 
   const handleCardClick = () => {
-    onViewDetails();
+    if (selectionMode) {
+      onSelect(!isSelected);
+    } else {
+      onViewDetails();
+    }
   };
 
-  const handleCheckboxClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!selectionMode) {
+      const timer = setTimeout(() => {
+        // Trigger haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(50);
+        }
+        onSelect(true);
+      }, 500); // 500ms long press
+      setLongPressTimer(timer);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
   };
 
   return (
     <Card 
-      className="mb-4 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-xl overflow-hidden cursor-pointer"
+      className={`mb-4 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-xl overflow-hidden cursor-pointer ${
+        isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
+      }`}
       onClick={handleCardClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
     >
       <div className="p-5">
         {/* Main content row with avatar and info */}
         <div className="flex items-start gap-4 mb-4">
-          {/* Selection checkbox */}
-          <div onClick={handleCheckboxClick} className="pt-1">
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={onSelect}
-              className="h-3 w-3 flex-shrink-0"
-            />
-          </div>
+          {/* Selection indicator */}
+          {selectionMode && (
+            <div className="pt-1 flex-shrink-0">
+              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                isSelected 
+                  ? 'bg-primary border-primary text-primary-foreground' 
+                  : 'border-border bg-background'
+              }`}>
+                {isSelected && <Check className="h-3 w-3" />}
+              </div>
+            </div>
+          )}
           
           {/* Avatar */}
           <Avatar className="h-14 w-14 flex-shrink-0">

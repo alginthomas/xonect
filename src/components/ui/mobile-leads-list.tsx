@@ -5,7 +5,7 @@ import { MobileSearchFilters } from './mobile-search-filters';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowUpDown, CheckSquare, Square, Trash2, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpDown, CheckSquare, Square, Trash2, MessageSquare, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { Category } from '@/types/category';
 
@@ -41,6 +41,9 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [leadsPerPage, setLeadsPerPage] = useState(10);
+
+  // Selection mode is active when there are selected leads
+  const selectionMode = selectedLeads.size > 0;
 
   // Get unique locations and industries for filter options
   const availableLocations = useMemo(() => {
@@ -147,6 +150,10 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     }
   };
 
+  const handleClearSelection = () => {
+    setSelectedLeads(new Set());
+  };
+
   const handleBulkAction = (action: 'delete' | LeadStatus) => {
     const leadIds = Array.from(selectedLeads);
     if (action === 'delete') {
@@ -163,90 +170,66 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Enhanced Search and Filters */}
-      <MobileSearchFilters
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        categories={categories}
-        activeFiltersCount={activeFiltersCount}
-        onClearFilters={handleClearFilters}
-        selectedSeniority={selectedSeniority}
-        onSeniorityChange={setSelectedSeniority}
-        selectedCompanySize={selectedCompanySize}
-        onCompanySizeChange={setSelectedCompanySize}
-        selectedLocation={selectedLocation}
-        onLocationChange={setSelectedLocation}
-        selectedIndustry={selectedIndustry}
-        onIndustryChange={setSelectedIndustry}
-        availableLocations={availableLocations}
-        availableIndustries={availableIndustries}
-      />
+      {/* Enhanced Search and Filters - Hide in selection mode */}
+      {!selectionMode && (
+        <MobileSearchFilters
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          categories={categories}
+          activeFiltersCount={activeFiltersCount}
+          onClearFilters={handleClearFilters}
+          selectedSeniority={selectedSeniority}
+          onSeniorityChange={setSelectedSeniority}
+          selectedCompanySize={selectedCompanySize}
+          onCompanySizeChange={setSelectedCompanySize}
+          selectedLocation={selectedLocation}
+          onLocationChange={setSelectedLocation}
+          selectedIndustry={selectedIndustry}
+          onIndustryChange={setSelectedIndustry}
+          availableLocations={availableLocations}
+          availableIndustries={availableIndustries}
+        />
+      )}
 
-      {/* Results Summary and Controls */}
-      <div className="px-4 py-3 bg-muted/20 border-b border-border/30">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium">
-              {filteredAndSortedLeads.length} lead{filteredAndSortedLeads.length !== 1 ? 's' : ''}
-            </span>
-            {selectedLeads.size > 0 && (
-              <Badge variant="secondary" className="text-xs px-2 py-1">
+      {/* Selection mode header */}
+      {selectionMode && (
+        <div className="px-4 py-3 bg-primary/10 border-b border-primary/20">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearSelection}
+                className="h-9 w-9 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <span className="font-medium text-primary">
                 {selectedLeads.size} selected
-              </Badge>
-            )}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleSelectAll} 
+                className="h-9 px-3 text-xs"
+              >
+                {selectedLeads.size === paginatedLeads.length ? 'Deselect All' : 'Select All'}
+              </Button>
+            </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <Select value={leadsPerPage.toString()} onValueChange={(value) => setLeadsPerPage(parseInt(value))}>
-              <SelectTrigger className="w-18 h-9 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="5">5</SelectItem>
-                <SelectItem value="10">10</SelectItem>
-                <SelectItem value="20">20</SelectItem>
-                <SelectItem value="50">50</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
-              <SelectTrigger className="w-auto h-9 text-xs">
-                <ArrowUpDown className="h-3 w-3 mr-1" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">By Date</SelectItem>
-                <SelectItem value="name">By Name</SelectItem>
-                <SelectItem value="status">By Status</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        {/* Bulk Actions */}
-        {selectedLeads.size > 0 && (
-          <div className="flex items-center gap-3 flex-wrap">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleSelectAll} 
-              className="h-9 px-3 text-xs"
-            >
-              {selectedLeads.size === paginatedLeads.length ? (
-                <CheckSquare className="h-3 w-3 mr-2" />
-              ) : (
-                <Square className="h-3 w-3 mr-2" />
-              )}
-              {selectedLeads.size === paginatedLeads.length ? 'Deselect' : 'Select All'}
-            </Button>
-            
+          {/* Bulk Actions */}
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
             <Select onValueChange={(value) => handleBulkAction(value as LeadStatus)}>
               <SelectTrigger className="w-auto h-9 text-xs">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder="Change Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="New">New</SelectItem>
@@ -268,11 +251,50 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
               Delete
             </Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
+      {/* Results Summary and Controls - Hide in selection mode */}
+      {!selectionMode && (
+        <div className="px-4 py-3 bg-muted/20 border-b border-border/30">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {filteredAndSortedLeads.length} lead{filteredAndSortedLeads.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <Select value={leadsPerPage.toString()} onValueChange={(value) => setLeadsPerPage(parseInt(value))}>
+                <SelectTrigger className="w-18 h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as typeof sortBy)}>
+                <SelectTrigger className="w-auto h-9 text-xs">
+                  <ArrowUpDown className="h-3 w-3 mr-1" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">By Date</SelectItem>
+                  <SelectItem value="name">By Name</SelectItem>
+                  <SelectItem value="status">By Status</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pagination Controls - Hide in selection mode */}
+      {!selectionMode && totalPages > 1 && (
         <div className="px-4 py-3 border-b border-border/30 bg-background">
           <div className="flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
@@ -321,6 +343,13 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
           </div>
         ) : (
           <div className="space-y-4 pt-4">
+            {/* Instruction text for first-time users */}
+            {!selectionMode && selectedLeads.size === 0 && (
+              <div className="text-center py-4 text-sm text-muted-foreground">
+                Long press on a card to start selecting leads
+              </div>
+            )}
+            
             {paginatedLeads.map((lead) => (
               <CompactLeadCard
                 key={lead.id}
@@ -333,6 +362,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
                 onEmailClick={() => onEmailClick?.(lead.id)}
                 onViewDetails={() => onViewDetails(lead)}
                 onDeleteLead={() => onDeleteLead(lead.id)}
+                selectionMode={selectionMode}
               />
             ))}
           </div>
