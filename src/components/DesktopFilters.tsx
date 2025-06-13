@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ColumnSettings } from '@/components/ColumnSettings';
-import { Search, Download, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Search, Download, X, Filter } from 'lucide-react';
 import type { Category } from '@/types/category';
 import type { LeadStatus } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
@@ -67,9 +68,21 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
             </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <div className="relative">
+              <Button variant="outline" className="h-9 gap-2">
+                <Filter className="h-4 w-4" />
+                Filters
+                {activeFiltersCount > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
+                    {activeFiltersCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+
             <Select value={statusFilter} onValueChange={onStatusChange}>
-              <SelectTrigger className="w-36 h-9">
+              <SelectTrigger className="w-32 h-9">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -81,7 +94,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
             </Select>
 
             <Select value={categoryFilter} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-36 h-9">
+              <SelectTrigger className="w-32 h-9">
                 <SelectValue placeholder="Category" />
               </SelectTrigger>
               <SelectContent>
@@ -95,7 +108,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
             </Select>
 
             <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
-              <SelectTrigger className="w-36 h-9">
+              <SelectTrigger className="w-28 h-9">
                 <SelectValue placeholder="Data" />
               </SelectTrigger>
               <SelectContent>

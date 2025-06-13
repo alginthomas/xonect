@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -295,7 +294,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <Checkbox
             checked={selectedLeads.has(lead.id)}
             onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
-            className="h-2.5 w-2.5 font-normal"
+            className="h-4 w-4"
           />
         );
       case 'status':
@@ -494,7 +493,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                   }
                                 }}
                                 onCheckedChange={() => handleSelectAll(paginatedLeads)}
-                                className="h-3.5 w-3.5"
+                                className="h-4 w-4"
                               />
                             </AppleTableHead>
                           );
