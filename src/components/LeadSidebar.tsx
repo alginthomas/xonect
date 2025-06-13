@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CategoryCombobox } from '@/components/CategoryCombobox';
+import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import {
   Mail,
   Phone,
@@ -310,18 +311,11 @@ export const LeadSidebar: React.FC<LeadSidebarProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Status</Label>
-                  <Select value={lead.status} onValueChange={handleStatusChange}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {allStatuses.map((statusOption) => (
-                        <SelectItem key={statusOption} value={statusOption}>
-                          {statusOption}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <QuickStatusEditor
+                    status={lead.status}
+                    onChange={handleStatusChange}
+                    websiteUrl={lead.organizationWebsite}
+                  />
                 </div>
 
                 <div className="space-y-2">

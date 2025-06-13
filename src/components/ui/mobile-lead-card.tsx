@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -196,10 +197,6 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                   {lead.title} • {lead.company}
                 </p>
               </div>
-              
-              <Badge className={`text-xs px-2 py-0.5 font-medium ${getStatusColor(lead.status)}`}>
-                {lead.status}
-              </Badge>
             </div>
           </div>
         </div>
@@ -221,6 +218,17 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           <span className="text-xs text-muted-foreground flex-shrink-0">
             {format(lead.createdAt, 'MMM dd')}
           </span>
+        </div>
+
+        {/* Status and Website Section - Compact */}
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <span className="text-xs font-medium text-muted-foreground">Status:</span>
+          <QuickStatusEditor
+            status={lead.status}
+            onChange={onStatusChange}
+            websiteUrl={lead.organizationWebsite}
+            compact={true}
+          />
         </div>
 
         {/* Primary Actions - Left justified */}
@@ -374,15 +382,6 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
         {/* Collapsible Details */}
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
           <CollapsibleContent className="space-y-2 pt-2 border-t border-border/50 mt-2">
-            {/* Status Editor */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Status:</span>
-              <QuickStatusEditor
-                status={lead.status}
-                onChange={onStatusChange}
-              />
-            </div>
-
             {/* Category */}
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted-foreground">Category:</span>
