@@ -472,7 +472,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       setImporting(false);
     }
   };
-  return <div className="space-y-8 px-[60px] py-[24px]">
+  return <div className="space-y-8 px-[12px] py-0">
       {/* Hero Section */}
       <div className="text-center space-y-4 py-8">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">

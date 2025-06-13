@@ -110,7 +110,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
     return sum + (totalLeads > 0 ? successfulImports / totalLeads * 100 : 0);
   }, 0) / totalBatches) : 0;
   const activeCategories = new Set(filteredBatches.map(batch => batch.categoryId).filter(Boolean)).size;
-  return <div className="space-y-6 px-[24px] py-[40px]">
+  return <div className="space-y-6 px-[12px] py-[24px]">
       {/* Header Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
