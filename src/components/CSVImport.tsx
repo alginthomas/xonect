@@ -10,11 +10,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { CategoryCombobox } from './CategoryCombobox';
 import type { Lead } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
+
 interface CSVImportProps {
   onImportComplete: () => void;
   categories: Category[];
   onCreateCategory: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
+
 export const CSVImport: React.FC<CSVImportProps> = ({
   onImportComplete,
   categories,
@@ -32,6 +34,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const {
     user
   } = useAuth();
+
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -55,9 +58,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     result.push(current.trim());
     return result;
   };
+
   const normalizeHeader = (header: string): string => {
     return header.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/\s+/g, '');
   };
+
   const findColumnValue = (rowData: any, possibleNames: string[]): string => {
     for (const name of possibleNames) {
       const normalizedName = normalizeHeader(name);
@@ -69,11 +74,13 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     }
     return '';
   };
+
   const cleanPhoneNumber = (phone: string): string => {
     if (!phone) return '';
     const cleaned = phone.replace(/[^\d+]/g, '');
     return cleaned.replace(/^\++/, '+');
   };
+
   const cleanUrl = (url: string): string => {
     if (!url) return '';
     const cleanedUrl = url.trim().toLowerCase();
@@ -85,6 +92,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     }
     return url.trim();
   };
+
   const processFile = useCallback((selectedFile: File) => {
     if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
@@ -126,20 +134,24 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       });
     }
   }, [toast, categoryName]);
+
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
       processFile(selectedFile);
     }
   }, [processFile]);
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
   }, []);
+
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
   }, []);
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -155,10 +167,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       });
     }
   }, [processFile, toast]);
+
   const removeFile = useCallback(() => {
     setFile(null);
     setPreview([]);
   }, []);
+
   const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
     if (!employeeCount) return 'Small (1-50)';
     const numericMatch = employeeCount.match(/\d+/);
@@ -176,6 +190,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     if (sizeLower.includes('enterprise') || sizeLower.includes('corporate')) return 'Enterprise (1000+)';
     return 'Small (1-50)';
   };
+
   const categorizeSeniority = (title: string, seniorityField?: string): Lead['seniority'] => {
     if (seniorityField) {
       const seniorityLower = seniorityField.toLowerCase();
@@ -200,6 +215,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     }
     return 'Mid-level';
   };
+
   const calculateCompleteness = (lead: Partial<Lead>): number => {
     let score = 0;
     const requiredFields = ['firstName', 'lastName', 'email', 'company', 'title'];
@@ -213,14 +229,17 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     });
     return Math.min(100, score + Math.min(25, optionalScore));
   };
+
   const buildLocation = (city: string, state: string, country: string): string => {
     const parts = [city, state, country].filter(part => part && part.trim());
     return parts.join(', ');
   };
+
   const generateRandomColor = (): string => {
     const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
     return colors[Math.floor(Math.random() * colors.length)];
   };
+
   const handleImport = async () => {
     if (!file || !batchName.trim() || !user) {
       toast({
@@ -230,6 +249,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       });
       return;
     }
+
     setImporting(true);
     try {
       let selectedCategoryId: string | undefined;
@@ -240,26 +260,37 @@ export const CSVImport: React.FC<CSVImportProps> = ({
         if (existingCategory) {
           selectedCategoryId = existingCategory.id;
         } else {
-          // Create new category
+          // Create new category using the callback to properly update the parent state
           console.log('Creating new category:', categoryName);
-          const {
-            data: newCategory,
-            error: categoryError
-          } = await supabase.from('categories').insert([{
+          const categoryData = {
             name: categoryName.trim(),
             description: `Auto-created during import of ${file.name}`,
             color: generateRandomColor(),
-            criteria: {},
-            user_id: user.id
-          }]).select().single();
+            criteria: {}
+          };
+
+          // Call the parent's callback to create and update the local state
+          await onCreateCategory(categoryData);
+
+          // Find the newly created category in the updated categories list
+          // Note: We need to refetch or the parent will provide the updated category in the next render
+          const { data: newCategory, error: categoryError } = await supabase
+            .from('categories')
+            .select('*')
+            .eq('name', categoryData.name)
+            .eq('user_id', user.id)
+            .single();
+
           if (categoryError) {
-            console.error('Error creating category:', categoryError);
+            console.error('Error fetching created category:', categoryError);
             throw categoryError;
           }
+
           selectedCategoryId = newCategory.id;
           console.log('Created category with ID:', selectedCategoryId);
         }
       }
+
       const reader = new FileReader();
       reader.onload = async e => {
         const text = e.target?.result as string;
@@ -273,40 +304,47 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           setImporting(false);
           return;
         }
+
         const headers = parseCSVLine(lines[0]);
         console.log('Processing CSV with headers:', headers);
 
         // First, create the import batch
-        const {
-          data: importBatch,
-          error: batchError
-        } = await supabase.from('import_batches').insert([{
-          name: batchName,
-          category_id: selectedCategoryId,
-          source_file: file.name,
-          total_leads: lines.length - 1,
-          successful_imports: 0,
-          failed_imports: 0,
-          user_id: user.id,
-          metadata: {
-            headers,
-            processingTime: new Date().toISOString(),
-            categoryName: categoryName.trim() || undefined
-          }
-        }]).select().single();
+        const { data: importBatch, error: batchError } = await supabase
+          .from('import_batches')
+          .insert([{
+            name: batchName,
+            category_id: selectedCategoryId,
+            source_file: file.name,
+            total_leads: lines.length - 1,
+            successful_imports: 0,
+            failed_imports: 0,
+            user_id: user.id,
+            metadata: {
+              headers,
+              processingTime: new Date().toISOString(),
+              categoryName: categoryName.trim() || undefined
+            }
+          }])
+          .select()
+          .single();
+
         if (batchError) {
           console.error('Error creating import batch:', batchError);
           throw batchError;
         }
+
         console.log('Created import batch:', importBatch);
+
         const leadsToInsert = [];
         let failedImports = 0;
+
         lines.slice(1).forEach((line, index) => {
           const values = parseCSVLine(line);
           if (values.length === 0 || values.every(v => !v.trim())) {
             failedImports++;
             return;
           }
+
           const rawLead: any = {};
           headers.forEach((header, i) => {
             rawLead[header] = values[i] || '';
@@ -348,6 +386,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           // Business Metadata
           const employeeCount = findColumnValue(rawLead, ['estimated_num_employees']);
           const industry = findColumnValue(rawLead, ['industry']);
+
           if (!firstName && !lastName && !email) {
             console.log(`Skipping row ${index + 1}: Missing essential data`);
             failedImports++;
@@ -410,9 +449,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           if (leadData.department) tags.push('Department Known');
           if (leadData.organization_founded && new Date().getFullYear() - leadData.organization_founded <= 5) tags.push('New Company');
           leadData.tags = tags;
+
           leadsToInsert.push(leadData);
           console.log(`Processed lead ${index + 1}:`, leadData);
         });
+
         if (leadsToInsert.length === 0) {
           toast({
             title: "No valid leads found",
@@ -428,9 +469,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({
         let successfulImports = 0;
         for (let i = 0; i < leadsToInsert.length; i += batchSize) {
           const batch = leadsToInsert.slice(i, i + batchSize);
-          const {
-            error: leadsError
-          } = await supabase.from('leads').insert(batch);
+          const { error: leadsError } = await supabase
+            .from('leads')
+            .insert(batch);
+
           if (leadsError) {
             console.error('Error inserting leads batch:', leadsError);
             failedImports += batch.length;
@@ -440,12 +482,20 @@ export const CSVImport: React.FC<CSVImportProps> = ({
         }
 
         // Update the import batch with final counts
-        await supabase.from('import_batches').update({
-          successful_imports: successfulImports,
-          failed_imports: failedImports
-        }).eq('id', importBatch.id);
+        await supabase
+          .from('import_batches')
+          .update({
+            successful_imports: successfulImports,
+            failed_imports: failedImports
+          })
+          .eq('id', importBatch.id);
+
         console.log(`Successfully imported ${successfulImports} leads`);
-        const successMessage = categoryName.trim() && !categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase()) ? `Imported ${successfulImports} leads and created category "${categoryName}"` : `Imported ${successfulImports} leads successfully`;
+
+        const successMessage = categoryName.trim() && !categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase())
+          ? `Imported ${successfulImports} leads and created category "${categoryName}"`
+          : `Imported ${successfulImports} leads successfully`;
+
         toast({
           title: "Import successful",
           description: successMessage
@@ -472,10 +522,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       setImporting(false);
     }
   };
-  return <div className="space-y-8 px-[12px] py-0">
-      {/* Hero Section */}
-      
 
+  return (
+    <div className="space-y-8 px-[12px] py-0">
       {/* Import Form */}
       <Card className="apple-card">
         <CardHeader className="text-center pb-8">
@@ -493,13 +542,24 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="batch-name" className="text-sm font-semibold">Import Batch Name</Label>
-              <Input id="batch-name" value={batchName} onChange={e => setBatchName(e.target.value)} placeholder="e.g., Q4 Prospects - Tech Conference" className="h-12" />
+              <Input
+                id="batch-name"
+                value={batchName}
+                onChange={e => setBatchName(e.target.value)}
+                placeholder="e.g., Q4 Prospects - Tech Conference"
+                className="h-12"
+              />
               <p className="text-xs text-muted-foreground">Give your import batch a descriptive name</p>
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="category" className="text-sm font-semibold">Category</Label>
-              <CategoryCombobox categories={categories} value={categoryName} onChange={setCategoryName} placeholder="Select existing or type new category..." />
+              <CategoryCombobox
+                categories={categories}
+                value={categoryName}
+                onChange={setCategoryName}
+                placeholder="Select existing or type new category..."
+              />
               <p className="text-xs text-muted-foreground">
                 New categories will be created automatically during import
               </p>
@@ -510,7 +570,17 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           <div className="space-y-4">
             <Label className="text-sm font-semibold">CSV File Upload</Label>
             
-            {!file ? <div className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${isDragOver ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/20'}`} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            {!file ? (
+              <div
+                className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 ${
+                  isDragOver
+                    ? 'border-primary bg-primary/5 scale-[1.02]'
+                    : 'border-muted-foreground/25 hover:border-muted-foreground/50 hover:bg-muted/20'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <div className="flex flex-col items-center gap-6">
                   <div className="p-6 rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
                     <Upload className="h-12 w-12 text-primary" />
@@ -528,11 +598,19 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                     <label htmlFor="csv-file-input" className="cursor-pointer">
                       <Upload className="h-4 w-4 mr-2" />
                       Choose File
-                      <input id="csv-file-input" type="file" accept=".csv" onChange={handleFileChange} className="sr-only" />
+                      <input
+                        id="csv-file-input"
+                        type="file"
+                        accept=".csv"
+                        onChange={handleFileChange}
+                        className="sr-only"
+                      />
                     </label>
                   </Button>
                 </div>
-              </div> : <div className="border rounded-xl p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+              </div>
+            ) : (
+              <div className="border rounded-xl p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="p-3 rounded-lg bg-green-100 border border-green-200">
@@ -545,15 +623,22 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                       </p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={removeFile} className="text-green-600 hover:text-red-600 hover:bg-red-50">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    className="text-green-600 hover:text-red-600 hover:bg-red-50"
+                  >
                     <X className="h-5 w-5" />
                   </Button>
                 </div>
-              </div>}
+              </div>
+            )}
           </div>
 
           {/* Preview Section */}
-          {preview.length > 0 && <div className="space-y-4">
+          {preview.length > 0 && (
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-green-500" />
                 <h4 className="font-semibold text-green-900">File Preview</h4>
@@ -565,38 +650,59 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b bg-muted/50">
-                        {Object.keys(preview[0] || {}).slice(0, 6).map(key => <th key={key} className="text-left p-3 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">
+                        {Object.keys(preview[0] || {}).slice(0, 6).map(key => (
+                          <th key={key} className="text-left p-3 font-semibold text-xs uppercase tracking-wider whitespace-nowrap">
                             {key}
-                          </th>)}
-                        {Object.keys(preview[0] || {}).length > 6 && <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                          </th>
+                        ))}
+                        {Object.keys(preview[0] || {}).length > 6 && (
+                          <th className="text-left p-3 font-semibold text-xs uppercase tracking-wider text-muted-foreground">
                             +{Object.keys(preview[0] || {}).length - 6} more
-                          </th>}
+                          </th>
+                        )}
                       </tr>
                     </thead>
                     <tbody>
-                      {preview.map((row, i) => <tr key={i} className="border-b hover:bg-muted/20">
-                          {Object.values(row).slice(0, 6).map((value: any, j) => <td key={j} className="p-3 max-w-[120px] truncate font-medium">{value}</td>)}
-                          {Object.values(row).length > 6 && <td className="p-3 text-muted-foreground">...</td>}
-                        </tr>)}
+                      {preview.map((row, i) => (
+                        <tr key={i} className="border-b hover:bg-muted/20">
+                          {Object.values(row).slice(0, 6).map((value: any, j) => (
+                            <td key={j} className="p-3 max-w-[120px] truncate font-medium">{value}</td>
+                          ))}
+                          {Object.values(row).length > 6 && (
+                            <td className="p-3 text-muted-foreground">...</td>
+                          )}
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
-            </div>}
+            </div>
+          )}
 
           {/* Import Button */}
           <div className="pt-4">
-            <Button onClick={handleImport} disabled={!file || importing || !batchName.trim()} size="lg" className="w-full h-14 text-base font-semibold">
-              {importing ? <>
+            <Button
+              onClick={handleImport}
+              disabled={!file || importing || !batchName.trim()}
+              size="lg"
+              className="w-full h-14 text-base font-semibold"
+            >
+              {importing ? (
+                <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
                   Processing Import...
-                </> : <>
+                </>
+              ) : (
+                <>
                   <Database className="h-5 w-5 mr-3" />
                   Import Lead Database
-                </>}
+                </>
+              )}
             </Button>
           </div>
         </CardContent>
       </Card>
-    </div>;
+    </div>
+  );
 };
