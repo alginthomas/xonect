@@ -41,13 +41,15 @@ export const ColumnSettings: React.FC<ColumnSettingsProps> = ({
             key={column.id}
             className="flex items-center gap-2 cursor-pointer"
             onSelect={(e) => e.preventDefault()}
-            onClick={() => onToggleVisibility(column.id)}
           >
             <Checkbox
               checked={column.visible}
               onCheckedChange={() => onToggleVisibility(column.id)}
+              onClick={(e) => e.stopPropagation()}
             />
-            <span>{column.label}</span>
+            <span onClick={() => onToggleVisibility(column.id)} className="flex-1">
+              {column.label}
+            </span>
           </DropdownMenuItem>
         ))}
         
@@ -60,3 +62,6 @@ export const ColumnSettings: React.FC<ColumnSettingsProps> = ({
     </DropdownMenu>
   );
 };
+</DropdownMenuItem>
+
+The checkbox click events now work correctly by stopping event propagation and making the label text clickable as well.
