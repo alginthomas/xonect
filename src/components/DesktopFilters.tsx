@@ -30,10 +30,11 @@ interface DesktopFiltersProps {
   onResetColumns: () => void;
 }
 
-const allStatuses: LeadStatus[] = [
+// All available lead statuses
+const allLeadStatuses: LeadStatus[] = [
   'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
   'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
-  'Not Interested', 'Interested'
+  'Not Interested', 'Interested', 'Send Email'
 ];
 
 export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
@@ -118,7 +119,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  {allStatuses.map(status => (
+                  {allLeadStatuses.map(status => (
                     <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
                 </SelectContent>

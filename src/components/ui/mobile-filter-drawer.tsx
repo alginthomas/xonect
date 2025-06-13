@@ -27,6 +27,13 @@ interface MobileFilterDrawerProps {
   onClearFilters: () => void;
 }
 
+// All available lead statuses
+const allLeadStatuses: LeadStatus[] = [
+  'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
+  'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
+  'Not Interested', 'Interested', 'Send Email'
+];
+
 export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
   statusFilter,
   categoryFilter,
@@ -38,12 +45,6 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
   onClearFilters
 }) => {
   const [open, setOpen] = useState(false);
-
-  const allStatuses: LeadStatus[] = [
-    'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
-    'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
-    'Not Interested', 'Interested'
-  ];
 
   const getActiveFilterCount = () => {
     let count = 0;
@@ -103,7 +104,7 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    {allStatuses.map((status) => (
+                    {allLeadStatuses.map((status) => (
                       <SelectItem key={status} value={status}>
                         {status}
                       </SelectItem>

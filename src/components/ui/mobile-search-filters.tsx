@@ -36,6 +36,13 @@ interface MobileSearchFiltersProps {
   onDataFilterChange?: (filter: string) => void;
 }
 
+// All available lead statuses
+const allLeadStatuses: LeadStatus[] = [
+  'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
+  'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
+  'Not Interested', 'Interested', 'Send Email'
+];
+
 export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   searchQuery,
   onSearchChange,
@@ -123,12 +130,9 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Contacted">Contacted</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Interested">Interested</SelectItem>
-                <SelectItem value="Not Interested">Not Interested</SelectItem>
-                <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                {allLeadStatuses.map((status) => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -203,12 +207,9 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="all">All Status</SelectItem>
-                                  <SelectItem value="New">New</SelectItem>
-                                  <SelectItem value="Contacted">Contacted</SelectItem>
-                                  <SelectItem value="Qualified">Qualified</SelectItem>
-                                  <SelectItem value="Interested">Interested</SelectItem>
-                                  <SelectItem value="Not Interested">Not Interested</SelectItem>
-                                  <SelectItem value="Unresponsive">Unresponsive</SelectItem>
+                                  {allLeadStatuses.map((status) => (
+                                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                                  ))}
                                 </SelectContent>
                               </Select>
                             </div>
