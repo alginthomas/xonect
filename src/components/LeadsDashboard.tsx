@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -447,7 +448,116 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           importBatches={importBatches}
         />
         <CardContent className="pt-0">
-          {/* ... keep existing code (leads display logic) */}
+          {/* Desktop Table */}
+          {!isMobile && (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <AppleTable>
+                <AppleTableHeader>
+                  <AppleTableRow>
+                    <SortableContext
+                      items={activeColumns.map(col => col.id)}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {activeColumns.map((column) => (
+                        <DraggableTableHeader
+                          key={column.id}
+                          column={column}
+                          sortField={sortField}
+                          sortDirection={sortDirection}
+                          onSort={handleSort}
+                          isAllSelected={isAllCurrentPageSelected}
+                          isPartiallySelected={isPartialSelection}
+                          onSelectAll={(checked) => handleSelectAll(currentPageLeadIds, checked)}
+                        />
+                      ))}
+                    </SortableContext>
+                  </AppleTableRow>
+                </AppleTableHeader>
+                <AppleTableBody>
+                  {paginatedLeads.map((lead) => (
+                    <AppleTableRow
+                      key={lead.id}
+                      className={`cursor-pointer transition-colors ${
+                        selectedLeads.has(lead.id) ? 'bg-muted/50' : 'hover:bg-muted/30'
+                      }`}
+                    >
+                      {activeColumns.map((column) => (
+                        <AppleTableCell key={column.id} className="py-3">
+                          {renderColumnContent(column.id, lead)}
+                        </AppleTableCell>
+                      ))}
+                    </AppleTableRow>
+                  ))}
+                </AppleTableBody>
+              </AppleTable>
+            </DndContext>
+          )}
+
+          {/* Mobile Date Grouped Leads */}
+          {isMobile && (
+            <DateGroupedLeads
+              leads={paginatedLeads}
+              categories={categories}
+              selectedLeads={selectedLeads}
+              onSelectLead={handleSelectLead}
+              onLeadClick={openLeadSidebar}
+              onStatusChange={handleStatusChange}
+              onEmailClick={(lead) => {
+                setSelectedLeadForEmail(lead);
+                setShowEmailDialog(true);
+              }}
+            />
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 border-t border-border/30">
+              <div className="text-sm text-muted-foreground">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedLeads.length)} of {sortedLeads.length} leads
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm font-medium">
+                  {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8 w-8 p-0"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* No Results State */}
+          {sortedLeads.length === 0 && (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-medium mb-2">No leads found</h3>
+              <p className="text-muted-foreground">
+                {filteredLeads.length === 0 
+                  ? "Try adjusting your search or filters to find leads."
+                  : "All leads are filtered out by your current criteria."
+                }
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
