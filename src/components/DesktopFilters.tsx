@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ColumnSettings } from '@/components/ColumnSettings';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, X, Filter } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Search, Download, X, Filter, Settings, MoreHorizontal } from 'lucide-react';
 import type { Category } from '@/types/category';
 import type { LeadStatus } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
@@ -52,92 +53,168 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onToggleColumnVisibility,
   onResetColumns
 }) => {
+  const getActiveFilterChips = () => {
+    const chips = [];
+    if (statusFilter !== 'all') {
+      chips.push({ type: 'status', label: `Status: ${statusFilter}`, onRemove: () => onStatusChange('all') });
+    }
+    if (categoryFilter !== 'all') {
+      const category = categories.find(c => c.id === categoryFilter);
+      chips.push({ 
+        type: 'category', 
+        label: `Category: ${category?.name || 'Unknown'}`, 
+        onRemove: () => onCategoryChange('all') 
+      });
+    }
+    if (dataAvailabilityFilter !== 'all') {
+      const dataLabel = dataAvailabilityFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      chips.push({ 
+        type: 'data', 
+        label: `Data: ${dataLabel}`, 
+        onRemove: () => onDataAvailabilityChange('all') 
+      });
+    }
+    return chips;
+  };
+
+  const activeFilterChips = getActiveFilterChips();
+
   return (
-    <Card className="apple-card">
-      <CardContent className="pt-6">
+    <Card className="apple-card border-border/50">
+      <CardContent className="pt-6 space-y-4">
+        {/* Enhanced Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+          <Input
+            placeholder="🔍 Search leads by name, company, email, or phone..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-12 pr-4 h-12 text-base bg-muted/30 border-border/50 focus:bg-background focus:border-primary/50 transition-all duration-200"
+          />
+        </div>
+
+        {/* Filters and Actions Toolbar */}
         <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search leads..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-10"
-              />
+          {/* Filter Controls Section */}
+          <div className="flex flex-wrap items-center gap-3 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
+              
+              <Select value={statusFilter} onValueChange={onStatusChange}>
+                <SelectTrigger className="w-32 h-9 border-border/50">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  {allStatuses.map(status => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={categoryFilter} onValueChange={onCategoryChange}>
+                <SelectTrigger className="w-36 h-9 border-border/50">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
+                <SelectTrigger className="w-32 h-9 border-border/50">
+                  <SelectValue placeholder="Data" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Data</SelectItem>
+                  <SelectItem value="has-email">Has Email</SelectItem>
+                  <SelectItem value="has-phone">Has Phone</SelectItem>
+                  <SelectItem value="has-both">Has Both</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Filter Summary and Clear */}
+              {activeFiltersCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
+                    <Filter className="h-3 w-3 mr-1" />
+                    {activeFiltersCount} active
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClearFilters}
+                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-3 w-3 mr-1" />
+                    Clear
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-          
-          <div className="flex gap-2 items-center">
-            <div className="relative">
-              <Button variant="outline" className="h-9 gap-2">
-                <Filter className="h-4 w-4" />
-                Filters
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center">
-                    {activeFiltersCount}
-                  </Badge>
-                )}
-              </Button>
-            </div>
 
-            <Select value={statusFilter} onValueChange={onStatusChange}>
-              <SelectTrigger className="w-32 h-9">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Statuses</SelectItem>
-                {allStatuses.map(status => (
-                  <SelectItem key={status} value={status}>{status}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={categoryFilter} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-32 h-9">
-                <SelectValue placeholder="Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
-              <SelectTrigger className="w-28 h-9">
-                <SelectValue placeholder="Data" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Data</SelectItem>
-                <SelectItem value="has-email">Has Email</SelectItem>
-                <SelectItem value="has-phone">Has Phone</SelectItem>
-                <SelectItem value="has-both">Has Both</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* Actions Section */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground hidden lg:inline">Actions:</span>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-9 gap-2 border-border/50">
+                  <MoreHorizontal className="h-4 w-4" />
+                  <span className="hidden sm:inline">Actions</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={onExport} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Export to CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <ColumnSettings
               columns={columns}
               onToggleVisibility={onToggleColumnVisibility}
               onReset={onResetColumns}
             />
-
-            <Button variant="outline" onClick={onExport} className="h-9">
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </Button>
-
-            {activeFiltersCount > 0 && (
-              <Button variant="ghost" onClick={onClearFilters} className="h-9">
-                <X className="h-4 w-4 mr-2" />
-                Clear ({activeFiltersCount})
-              </Button>
-            )}
           </div>
         </div>
+
+        {/* Active Filter Chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
+            <span className="text-xs font-medium text-muted-foreground self-center">Active filters:</span>
+            {activeFilterChips.map((chip, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="bg-primary/5 border-primary/20 text-primary text-xs px-2 py-1 gap-1 hover:bg-primary/10 transition-colors"
+              >
+                {chip.label}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-4 w-4 p-0 hover:bg-primary/20 rounded-full"
+                  onClick={chip.onRemove}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </Badge>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

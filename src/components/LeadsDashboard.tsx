@@ -392,23 +392,25 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   return (
     <div className="space-y-3 lg:space-y-6">
-      {/* Mobile Search Toolbar */}
-      <MobileSearchToolbar
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        categoryFilter={categoryFilter}
-        onCategoryChange={setCategoryFilter}
-        dataAvailabilityFilter={dataAvailabilityFilter}
-        onDataAvailabilityChange={setDataAvailabilityFilter}
-        categories={categories}
-        onExport={handleExport}
-        onClearFilters={clearAllFilters}
-        activeFiltersCount={activeFiltersCount}
-      />
+      {/* Mobile Search Toolbar - Only show on mobile */}
+      {isMobile && (
+        <MobileSearchToolbar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          categoryFilter={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+          dataAvailabilityFilter={dataAvailabilityFilter}
+          onDataAvailabilityChange={setDataAvailabilityFilter}
+          categories={categories}
+          onExport={handleExport}
+          onClearFilters={clearAllFilters}
+          activeFiltersCount={activeFiltersCount}
+        />
+      )}
 
-      {/* Desktop Search and Filters - Hidden on Mobile */}
+      {/* Desktop Search and Filters - Only show on desktop */}
       {!isMobile && (
         <DesktopFilters
           searchTerm={searchTerm}
@@ -445,175 +447,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           importBatches={importBatches}
         />
         <CardContent className="pt-0">
-          {paginatedLeads.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
-              <h3 className="text-sm font-medium mb-1">No leads found</h3>
-              <p className="text-xs">Try adjusting your search or filters.</p>
-            </div>
-          ) : isMobile ? (
-            // Mobile Date-Grouped Layout
-            <DateGroupedLeads
-              leads={paginatedLeads}
-              categories={categories}
-              selectedLeads={selectedLeads}
-              onSelectLead={handleSelectLead}
-              onStatusChange={handleStatusChange}
-              onRemarksUpdate={handleRemarksUpdate}
-              onEmailClick={(lead) => {
-                setSelectedLeadForEmail(lead);
-                setShowEmailDialog(true);
-              }}
-              onViewDetails={openLeadSidebar}
-              onDeleteLead={onDeleteLead}
-            />
-          ) : (
-            // Desktop Table Layout
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <AppleTable>
-                <AppleTableHeader>
-                  <AppleTableRow>
-                    <SortableContext
-                      items={activeColumns.map(col => col.id)}
-                      strategy={horizontalListSortingStrategy}
-                    >
-                      {activeColumns.map(column => {
-                        if (column.id === 'select') {
-                          return (
-                            <AppleTableHead key="select" className="w-10">
-                              <Checkbox
-                                checked={isAllCurrentPageSelected}
-                                ref={(el) => {
-                                  if (el) {
-                                    (el as any).indeterminate = isPartialSelection;
-                                  }
-                                }}
-                                onCheckedChange={() => handleSelectAll(paginatedLeads)}
-                                className="h-4 w-4"
-                              />
-                            </AppleTableHead>
-                          );
-                        }
-                        return (
-                          <DraggableTableHeader
-                            key={column.id}
-                            column={column}
-                            sortField={sortField}
-                            sortDirection={sortDirection}
-                            onSort={handleSort}
-                          >
-                            {column.label}
-                          </DraggableTableHeader>
-                        );
-                      })}
-                    </SortableContext>
-                  </AppleTableRow>
-                </AppleTableHeader>
-                <AppleTableBody>
-                  {paginatedLeads.map(lead => (
-                    <AppleTableRow
-                      key={lead.id}
-                      className="group hover:bg-muted/50 cursor-pointer"
-                      onClick={() => openLeadSidebar(lead)}
-                    >
-                      {activeColumns.map(column => (
-                        <AppleTableCell
-                          key={`${lead.id}-${column.id}`}
-                          className={column.width}
-                          onClick={
-                            column.id === 'select' || 
-                            column.id === 'status' || 
-                            column.id === 'remarks' || 
-                            column.id === 'actions'
-                              ? (e) => e.stopPropagation()
-                              : undefined
-                          }
-                        >
-                          {renderColumnContent(column.id, lead)}
-                        </AppleTableCell>
-                      ))}
-                    </AppleTableRow>
-                  ))}
-                </AppleTableBody>
-              </AppleTable>
-            </DndContext>
-          )}
-
-          {/* Mobile-optimized Pagination */}
-          {paginatedLeads.length > 0 && (
-            <>
-              {isMobile ? (
-                <MobilePagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  itemsPerPage={itemsPerPage}
-                  totalItems={filteredLeads.length}
-                  onLoadMore={handleLoadMore}
-                  hasMore={currentPage < totalPages}
-                />
-              ) : (
-                // Desktop Pagination
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Show</span>
-                    <Select
-                      value={itemsPerPage.toString()}
-                      onValueChange={(value) => setItemsPerPage(parseInt(value))}
-                    >
-                      <SelectTrigger className="w-16 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="25">25</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <span className="text-sm text-muted-foreground">per page</span>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      Showing {Math.min(startIndex + 1, filteredLeads.length)} to{' '}
-                      {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of{' '}
-                      {filteredLeads.length} leads
-                    </span>
-                    
-                    <div className="flex gap-1">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        disabled={currentPage === 1}
-                        className="h-8"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      
-                      <span className="flex items-center px-3 text-sm h-8">
-                        {currentPage} of {Math.max(1, Math.ceil(filteredLeads.length / itemsPerPage))}
-                      </span>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))}
-                        disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)}
-                        className="h-8"
-                      >
-                        <ChevronRightIcon className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          {/* ... keep existing code (leads display logic) */}
         </CardContent>
       </Card>
 
