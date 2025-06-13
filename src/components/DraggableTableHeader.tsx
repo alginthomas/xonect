@@ -55,9 +55,12 @@ export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
       return (
         <Checkbox
           checked={isAllSelected}
-          ref={(el) => {
+          ref={(el: any) => {
             if (el) {
-              el.indeterminate = isPartiallySelected || false;
+              const buttonElement = el.querySelector('button');
+              if (buttonElement) {
+                (buttonElement as any).indeterminate = isPartiallySelected || false;
+              }
             }
           }}
           onCheckedChange={(checked) => onSelectAll(checked as boolean)}
