@@ -502,9 +502,19 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       className={`cursor-pointer transition-colors ${
                         selectedLeads.has(lead.id) ? 'bg-muted/50' : 'hover:bg-muted/30'
                       }`}
+                      onClick={() => openLeadSidebar(lead)}
                     >
                       {activeColumns.map((column) => (
-                        <AppleTableCell key={column.id} className="py-3">
+                        <AppleTableCell 
+                          key={column.id} 
+                          className="py-3"
+                          onClick={(e) => {
+                            // Prevent row click when clicking on interactive elements
+                            if (column.id === 'select' || column.id === 'status' || column.id === 'remarks' || column.id === 'actions') {
+                              e.stopPropagation();
+                            }
+                          }}
+                        >
                           {renderColumnContent(column.id, lead)}
                         </AppleTableCell>
                       ))}
