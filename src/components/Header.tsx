@@ -27,12 +27,6 @@ const Header: React.FC<HeaderProps> = ({
   }, {
     id: 'categories',
     label: 'Categories'
-  }, {
-    id: 'templates',
-    label: 'Templates'
-  }, {
-    id: 'settings',
-    label: 'Settings'
   }];
 
   return (

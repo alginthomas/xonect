@@ -11,8 +11,6 @@ import {
   User, 
   Download, 
   MessageSquare, 
-  Mail, 
-  Settings,
   LogOut
 } from 'lucide-react';
 
@@ -34,8 +32,6 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     { id: 'leads', label: 'Leads', icon: User },
     { id: 'import', label: 'Import', icon: Download },
     { id: 'categories', label: 'Categories', icon: MessageSquare },
-    { id: 'templates', label: 'Templates', icon: Mail },
-    { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
   const handleNavigation = (tabId: string) => {

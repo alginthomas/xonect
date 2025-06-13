@@ -14,10 +14,8 @@ import {
 import { 
   LayoutDashboard, 
   Users, 
-  Settings, 
   Upload,
-  FolderOpen,
-  Mail
+  FolderOpen
 } from 'lucide-react';
 
 const navigation = [
@@ -40,16 +38,6 @@ const navigation = [
     title: 'Categories',
     url: '/categories',
     icon: FolderOpen,
-  },
-  {
-    title: 'Templates',
-    url: '/templates',
-    icon: Mail,
-  },
-  {
-    title: 'Settings',
-    url: '/settings',
-    icon: Settings,
   },
 ];
 

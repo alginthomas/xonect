@@ -6,9 +6,7 @@ import {
   Home, 
   Users, 
   Upload, 
-  FolderOpen, 
-  Mail, 
-  Settings
+  FolderOpen
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -27,7 +25,6 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
     { id: 'leads', label: 'Leads', icon: Users },
     { id: 'import', label: 'Import', icon: Upload },
     { id: 'categories', label: 'Categories', icon: FolderOpen },
-    { id: 'templates', label: 'Templates', icon: Mail },
   ];
 
   return (
