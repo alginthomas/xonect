@@ -474,16 +474,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   };
   return <div className="space-y-8 px-[12px] py-0">
       {/* Hero Section */}
-      <div className="text-center space-y-4 py-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-          <Database className="h-8 w-8 text-primary" />
-        </div>
-        <h2 className="font-bold tracking-tight text-2xl">Import Lead Database</h2>
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          Upload your comprehensive lead CSV with personal details, contact info, organization data, and business metadata. 
-          Categories are created automatically if they don't exist.
-        </p>
-      </div>
+      
 
       {/* Import Form */}
       <Card className="apple-card">
