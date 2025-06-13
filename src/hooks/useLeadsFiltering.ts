@@ -1,4 +1,3 @@
-
 import { useMemo, useEffect } from 'react';
 import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
@@ -12,6 +11,7 @@ interface UseLeadsFilteringProps {
   statusFilter: string;
   categoryFilter: string;
   dataAvailabilityFilter: string;
+  countryFilter?: string;
   duplicatePhoneFilter?: string;
   sortField: string;
   sortDirection: 'asc' | 'desc';
@@ -26,6 +26,7 @@ export const useLeadsFiltering = ({
   statusFilter,
   categoryFilter,
   dataAvailabilityFilter,
+  countryFilter = 'all',
   duplicatePhoneFilter = 'all',
   sortField,
   sortDirection,
@@ -40,6 +41,7 @@ export const useLeadsFiltering = ({
       statusFilter,
       categoryFilter,
       dataAvailabilityFilter,
+      countryFilter,
       duplicatePhoneFilter
     });
     let filtered = leads;
@@ -79,6 +81,12 @@ export const useLeadsFiltering = ({
       console.log('After category filter:', filtered.length);
     }
 
+    // Filter by country
+    if (countryFilter !== 'all') {
+      filtered = filtered.filter(lead => lead.country === countryFilter);
+      console.log('After country filter:', filtered.length);
+    }
+
     // Filter by data availability
     if (dataAvailabilityFilter === 'has-phone') {
       filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '');
@@ -102,7 +110,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, duplicatePhoneFilter, importBatches]);
+  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter, importBatches]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {
@@ -124,7 +132,7 @@ export const useLeadsFiltering = ({
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, duplicatePhoneFilter, selectedBatchId, setCurrentPage]);
+  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter, selectedBatchId, setCurrentPage]);
 
   return {
     filteredLeads,

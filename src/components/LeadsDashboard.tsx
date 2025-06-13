@@ -26,7 +26,7 @@ import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
 import { useLeadsSelection } from '@/hooks/useLeadsSelection';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Mail, Phone, ChevronLeft, ChevronRightIcon, Plus, Users } from 'lucide-react';
+import { Mail, Phone, ChevronLeft, ChevronRightIcon, Plus, Users, Globe } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
@@ -81,6 +81,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setCategoryFilter,
     dataAvailabilityFilter,
     setDataAvailabilityFilter,
+    
+    countryFilter,
+    setCountryFilter,
     sortField,
     setSortField,
     sortDirection,
@@ -102,6 +105,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     statusFilter,
     categoryFilter,
     dataAvailabilityFilter,
+    countryFilter,
     duplicatePhoneFilter,
     sortField,
     sortDirection,
@@ -130,15 +134,16 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   // Drag and drop sensors
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
-  // Calculate active filters count including duplicate phone filter
+  // Calculate active filters count including country and duplicate phone filter
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (statusFilter !== 'all') count++;
     if (categoryFilter !== 'all') count++;
     if (dataAvailabilityFilter !== 'all') count++;
+    if (countryFilter !== 'all') count++;
     if (duplicatePhoneFilter !== 'all') count++;
     return count;
-  }, [statusFilter, categoryFilter, dataAvailabilityFilter, duplicatePhoneFilter]);
+  }, [statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter]);
 
   // Pagination
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
@@ -266,6 +271,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setStatusFilter('all');
     setCategoryFilter('all');
     setDataAvailabilityFilter('all');
+    setCountryFilter('all');
     setDuplicatePhoneFilter('all');
     setSearchTerm('');
   };
@@ -389,6 +395,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-3 w-3" />
                 <span>{lead.phone}</span>
+                {lead.country && (
+                  <div className="flex items-center gap-1">
+                    <Globe className="h-3 w-3" />
+                    <span className="text-xs">{lead.countryFlag} {lead.country}</span>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -446,9 +458,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           onCategoryChange={setCategoryFilter}
           dataAvailabilityFilter={dataAvailabilityFilter}
           onDataAvailabilityChange={setDataAvailabilityFilter}
+          countryFilter={countryFilter}
+          onCountryChange={setCountryFilter}
           duplicatePhoneFilter={duplicatePhoneFilter}
           onDuplicatePhoneChange={setDuplicatePhoneFilter}
           categories={categories}
+          leads={leads}
           onExport={handleExport}
           onClearFilters={clearAllFilters}
           activeFiltersCount={activeFiltersCount}

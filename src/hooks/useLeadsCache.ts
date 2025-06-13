@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 // Cache keys for localStorage
@@ -7,6 +6,7 @@ const CACHE_KEYS = {
   STATUS_FILTER: 'leads_status_filter',
   CATEGORY_FILTER: 'leads_category_filter',
   DATA_AVAILABILITY_FILTER: 'leads_data_availability_filter',
+  COUNTRY_FILTER: 'leads_country_filter',
   SORT_FIELD: 'leads_sort_field',
   SORT_DIRECTION: 'leads_sort_direction',
   CURRENT_PAGE: 'leads_current_page',
@@ -37,6 +37,7 @@ export const useLeadsCache = () => {
   const [statusFilter, setStatusFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.STATUS_FILTER, 'all'));
   const [categoryFilter, setCategoryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.CATEGORY_FILTER, 'all'));
   const [dataAvailabilityFilter, setDataAvailabilityFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, 'all'));
+  const [countryFilter, setCountryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.COUNTRY_FILTER, 'all'));
   const [sortField, setSortField] = useState<string>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
   const [currentPage, setCurrentPage] = useState(() => loadFromCache(CACHE_KEYS.CURRENT_PAGE, 1));
@@ -58,6 +59,10 @@ export const useLeadsCache = () => {
   useEffect(() => {
     saveToCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, dataAvailabilityFilter);
   }, [dataAvailabilityFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.COUNTRY_FILTER, countryFilter);
+  }, [countryFilter]);
 
   useEffect(() => {
     saveToCache(CACHE_KEYS.SORT_FIELD, sortField);
@@ -84,6 +89,8 @@ export const useLeadsCache = () => {
     setCategoryFilter,
     dataAvailabilityFilter,
     setDataAvailabilityFilter,
+    countryFilter,
+    setCountryFilter,
     sortField,
     setSortField,
     sortDirection,

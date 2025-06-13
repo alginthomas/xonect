@@ -1,4 +1,3 @@
-
 export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested' | 'Send Email';
 export type Seniority = 'Junior' | 'Mid-level' | 'Senior' | 'Executive' | 'C-level';
 export type CompanySize = 'Small (1-50)' | 'Medium (51-200)' | 'Large (201-1000)' | 'Enterprise (1000+)';
@@ -40,6 +39,10 @@ export interface Lead {
   remarks?: string;
   remarksHistory?: RemarkEntry[];
   activityLog?: ActivityEntry[];
+  // Client-side derived field for country detection
+  country?: string;
+  countryCode?: string;
+  countryFlag?: string;
 }
 
 export interface RemarkEntry {

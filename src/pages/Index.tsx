@@ -20,8 +20,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getCountryFromPhoneNumber } from '@/utils/phoneUtils';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
+
 interface BrandingData {
   companyName: string;
   companyLogo: string;
@@ -37,6 +39,7 @@ const safeDate = (dateString: string | null | undefined): Date => {
   const date = new Date(dateString);
   return isNaN(date.getTime()) ? new Date() : date;
 };
+
 export default function Index() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,13 +59,8 @@ export default function Index() {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isAddLeadDialogOpen, setIsAddLeadDialogOpen] = useState(false);
-  const {
-    toast
-  } = useToast();
-  const {
-    deleteBatch,
-    loading
-  } = useImportBatchOperations();
+  const { toast } = useToast();
+  const { deleteBatch, loading } = useImportBatchOperations();
 
   // Determine which tab should be active based on the current route
   const getActiveTab = () => {
@@ -108,9 +106,7 @@ export default function Index() {
     // Navigate to the new URL
     const newUrl = `/?${searchParams.toString()}`;
     console.log('Navigating to:', newUrl);
-    navigate(newUrl, {
-      replace: true
-    });
+    navigate(newUrl, { replace: true });
   };
 
   // Initialize active tab from URL on component mount and location changes
@@ -119,77 +115,90 @@ export default function Index() {
     console.log('Setting active tab from URL:', newActiveTab);
     setActiveTab(newActiveTab);
   }, [location.search]);
+
   useEffect(() => {
     fetchLeads();
     fetchTemplates();
     fetchCategories();
     fetchImportBatches();
   }, []);
+
   const fetchLeads = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('leads').select('*').order('created_at', {
-        ascending: false
-      });
+      const { data, error } = await supabase
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) {
         throw new Error(error.message);
       }
+
       if (data) {
         // Transform snake_case to camelCase and convert dates safely
-        const transformedLeads: Lead[] = data.map(lead => ({
-          id: lead.id,
-          firstName: lead.first_name,
-          lastName: lead.last_name,
-          email: lead.email,
-          company: lead.company,
-          title: lead.title,
-          phone: lead.phone || '',
-          linkedin: lead.linkedin || '',
-          status: lead.status,
-          createdAt: safeDate(lead.created_at),
-          categoryId: lead.category_id,
-          companySize: lead.company_size,
-          seniority: lead.seniority,
-          emailsSent: lead.emails_sent || 0,
-          lastContactDate: lead.last_contact_date ? safeDate(lead.last_contact_date) : undefined,
-          completenessScore: lead.completeness_score || 0,
-          industry: lead.industry || '',
-          location: lead.location || '',
-          department: lead.department || '',
-          personalEmail: lead.personal_email || '',
-          photoUrl: lead.photo_url || '',
-          twitterUrl: lead.twitter_url || '',
-          facebookUrl: lead.facebook_url || '',
-          organizationWebsite: lead.organization_website || '',
-          organizationFounded: lead.organization_founded,
-          remarks: lead.remarks || '',
-          tags: lead.tags || [],
-          importBatchId: lead.import_batch_id || undefined
-        }));
-        console.log('Fetched leads with import batch IDs:', transformedLeads.filter(l => l.importBatchId).length);
+        const transformedLeads: Lead[] = data.map(lead => {
+          // Get country information from phone number
+          const countryInfo = getCountryFromPhoneNumber(lead.phone || '');
+          
+          return {
+            id: lead.id,
+            firstName: lead.first_name,
+            lastName: lead.last_name,
+            email: lead.email,
+            company: lead.company,
+            title: lead.title,
+            phone: lead.phone || '',
+            linkedin: lead.linkedin || '',
+            status: lead.status,
+            createdAt: safeDate(lead.created_at),
+            categoryId: lead.category_id,
+            companySize: lead.company_size,
+            seniority: lead.seniority,
+            emailsSent: lead.emails_sent || 0,
+            lastContactDate: lead.last_contact_date ? safeDate(lead.last_contact_date) : undefined,
+            completenessScore: lead.completeness_score || 0,
+            industry: lead.industry || '',
+            location: lead.location || '',
+            department: lead.department || '',
+            personalEmail: lead.personal_email || '',
+            photoUrl: lead.photo_url || '',
+            twitterUrl: lead.twitter_url || '',
+            facebookUrl: lead.facebook_url || '',
+            organizationWebsite: lead.organization_website || '',
+            organizationFounded: lead.organization_founded,
+            remarks: lead.remarks || '',
+            tags: lead.tags || [],
+            importBatchId: lead.import_batch_id || undefined,
+            // Add country information
+            country: countryInfo?.name,
+            countryCode: countryInfo?.code,
+            countryFlag: countryInfo?.flag
+          };
+        });
+        
+        console.log('Fetched leads with country info:', transformedLeads.filter(l => l.country).length, 'have country data');
         setLeads(transformedLeads);
       }
     } catch (error: any) {
       toast({
         title: 'Error fetching leads',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const fetchTemplates = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('email_templates').select('*').order('created_at', {
-        ascending: false
-      });
+      const { data, error } = await supabase
+        .from('email_templates')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) {
         throw new Error(error.message);
       }
+
       if (data) {
         // Transform snake_case to camelCase and convert dates safely
         const transformedTemplates: EmailTemplate[] = data.map(template => ({
@@ -207,21 +216,22 @@ export default function Index() {
       toast({
         title: 'Error fetching email templates',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const fetchCategories = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('categories').select('*').order('created_at', {
-        ascending: false
-      });
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) {
         throw new Error(error.message);
       }
+
       if (data) {
         // Transform snake_case to camelCase and convert dates safely
         const transformedCategories: Category[] = data.map(category => ({
@@ -239,21 +249,22 @@ export default function Index() {
       toast({
         title: 'Error fetching categories',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const fetchImportBatches = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('import_batches').select('*').order('created_at', {
-        ascending: false
-      });
+      const { data, error } = await supabase
+        .from('import_batches')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       if (error) {
         throw new Error(error.message);
       }
+
       if (data) {
         // Transform snake_case to camelCase and convert dates safely
         const transformedBatches: ImportBatch[] = data.map(batch => ({
@@ -273,15 +284,21 @@ export default function Index() {
       toast({
         title: 'Error fetching import batches',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
     try {
       // Transform camelCase to snake_case for Supabase
       const supabaseUpdates: any = {};
       Object.keys(updates).forEach(key => {
+        // Skip client-side only fields
+        if (['country', 'countryCode', 'countryFlag'].includes(key)) {
+          return;
+        }
+        
         const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
         let value = updates[key as keyof Lead];
 
@@ -291,32 +308,52 @@ export default function Index() {
         }
         supabaseUpdates[snakeKey] = value;
       });
-      const {
-        error
-      } = await supabase.from('leads').update(supabaseUpdates).eq('id', leadId);
+
+      const { error } = await supabase
+        .from('leads')
+        .update(supabaseUpdates)
+        .eq('id', leadId);
+
       if (error) {
         throw new Error(error.message);
       }
-      setLeads(prevLeads => prevLeads.map(lead => lead.id === leadId ? {
-        ...lead,
-        ...updates
-      } : lead));
+
+      setLeads(prevLeads => prevLeads.map(lead => {
+        if (lead.id === leadId) {
+          const updatedLead = { ...lead, ...updates };
+          
+          // Re-derive country info if phone was updated
+          if (updates.phone !== undefined) {
+            const countryInfo = getCountryFromPhoneNumber(updates.phone || '');
+            updatedLead.country = countryInfo?.name;
+            updatedLead.countryCode = countryInfo?.code;
+            updatedLead.countryFlag = countryInfo?.flag;
+          }
+          
+          return updatedLead;
+        }
+        return lead;
+      }));
     } catch (error: any) {
       toast({
         title: 'Error updating lead',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleDeleteLead = async (leadId: string) => {
     try {
-      const {
-        error
-      } = await supabase.from('leads').delete().eq('id', leadId);
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .eq('id', leadId);
+
       if (error) {
         throw new Error(error.message);
       }
+
       setLeads(prevLeads => prevLeads.filter(lead => lead.id !== leadId));
       toast({
         title: 'Lead deleted',
@@ -326,49 +363,55 @@ export default function Index() {
       toast({
         title: 'Error deleting lead',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleBulkUpdateStatus = async (leadIds: string[], status: 'New' | 'Contacted' | 'Qualified' | 'Unqualified') => {
     try {
-      const {
-        error
-      } = await supabase.from('leads').update({
-        status
-      }).in('id', leadIds);
+      const { error } = await supabase
+        .from('leads')
+        .update({ status })
+        .in('id', leadIds);
+
       if (error) {
         throw new Error(error.message);
       }
-      setLeads(prevLeads => prevLeads.map(lead => leadIds.includes(lead.id) ? {
-        ...lead,
-        status
-      } : lead));
+
+      setLeads(prevLeads => prevLeads.map(lead => 
+        leadIds.includes(lead.id) ? { ...lead, status } : lead
+      ));
     } catch (error: any) {
       toast({
         title: 'Error updating leads',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleBulkDelete = async (leadIds: string[]) => {
     try {
-      const {
-        error
-      } = await supabase.from('leads').delete().in('id', leadIds);
+      const { error } = await supabase
+        .from('leads')
+        .delete()
+        .in('id', leadIds);
+
       if (error) {
         throw new Error(error.message);
       }
+
       setLeads(prevLeads => prevLeads.filter(lead => !leadIds.includes(lead.id)));
     } catch (error: any) {
       toast({
         title: 'Error deleting leads',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleSendEmail = async (leadId: string) => {
     // Update the lead to track email sent
     const lead = leads.find(l => l.id === leadId);
@@ -380,16 +423,20 @@ export default function Index() {
       });
     }
   };
+
   const handleViewDetails = (lead: Lead) => {
     navigate(`/lead/${lead.id}`);
   };
+
   const handleImportComplete = () => {
     fetchLeads();
     fetchImportBatches();
   };
+
   const handleBatchSelect = (batchId: string | null) => {
     setSelectedBatchId(batchId);
   };
+
   const handleDeleteBatch = async (batchId: string) => {
     const success = await deleteBatch(batchId);
     if (success) {
@@ -397,38 +444,40 @@ export default function Index() {
       fetchLeads(); // Refresh leads as they might be affected
     }
   };
+
   const handleViewBatchLeads = (batchId: string) => {
     setSelectedBatchId(batchId);
   };
+
   const handleCreateCategory = async (categoryData: Partial<Category>) => {
     try {
       // Get current user
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
           title: 'Authentication required',
           description: 'You must be logged in to create categories.',
-          variant: 'destructive'
+          variant: 'destructive',
         });
         return;
       }
-      const {
-        data,
-        error
-      } = await supabase.from('categories').insert([{
-        name: categoryData.name,
-        description: categoryData.description || '',
-        color: categoryData.color || '#3B82F6',
-        criteria: categoryData.criteria || {},
-        user_id: user.id // Add the user_id field
-      }]).select().single();
+
+      const { data, error } = await supabase
+        .from('categories')
+        .insert([{
+          name: categoryData.name,
+          description: categoryData.description || '',
+          color: categoryData.color || '#3B82F6',
+          criteria: categoryData.criteria || {},
+          user_id: user.id // Add the user_id field
+        }])
+        .select()
+        .single();
+
       if (error) {
         throw new Error(error.message);
       }
+
       if (data) {
         const transformedCategory: Category = {
           id: data.id,
@@ -449,66 +498,77 @@ export default function Index() {
       toast({
         title: 'Error creating category',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleUpdateCategory = async (categoryId: string, updates: Partial<Category>) => {
     try {
-      const {
-        error
-      } = await supabase.from('categories').update({
-        name: updates.name,
-        description: updates.description,
-        color: updates.color,
-        criteria: updates.criteria
-      }).eq('id', categoryId);
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: updates.name,
+          description: updates.description,
+          color: updates.color,
+          criteria: updates.criteria
+        })
+        .eq('id', categoryId);
+
       if (error) {
         throw new Error(error.message);
       }
-      setCategories(prev => prev.map(cat => cat.id === categoryId ? {
-        ...cat,
-        ...updates
-      } : cat));
+
+      setCategories(prev => prev.map(cat => 
+        cat.id === categoryId ? { ...cat, ...updates } : cat
+      ));
     } catch (error: any) {
       toast({
         title: 'Error updating category',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleDeleteCategory = async (categoryId: string) => {
     try {
-      const {
-        error
-      } = await supabase.from('categories').delete().eq('id', categoryId);
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('id', categoryId);
+
       if (error) {
         throw new Error(error.message);
       }
+
       setCategories(prev => prev.filter(cat => cat.id !== categoryId));
     } catch (error: any) {
       toast({
         title: 'Error deleting category',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleSaveTemplate = async (templateData: Partial<EmailTemplate>) => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('email_templates').insert([{
-        name: templateData.name,
-        subject: templateData.subject,
-        content: templateData.content,
-        variables: templateData.variables || []
-      }]).select().single();
+      const { data, error } = await supabase
+        .from('email_templates')
+        .insert([{
+          name: templateData.name,
+          subject: templateData.subject,
+          content: templateData.content,
+          variables: templateData.variables || []
+        }])
+        .select()
+        .single();
+
       if (error) {
         throw new Error(error.message);
       }
+
       if (data) {
         const transformedTemplate: EmailTemplate = {
           id: data.id,
@@ -525,10 +585,11 @@ export default function Index() {
       toast({
         title: 'Error saving template',
         description: error.message,
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
+
   const handleSaveBranding = async (brandingData: BrandingData) => {
     setBranding(brandingData);
     toast({
@@ -536,6 +597,7 @@ export default function Index() {
       description: 'Your branding settings have been updated.'
     });
   };
+
   const handleNavigateToLeads = (filter?: any) => {
     console.log('Navigate to leads with filter:', filter);
 
@@ -549,31 +611,50 @@ export default function Index() {
         }
       });
     }
+
     const newUrl = `/?${searchParams.toString()}`;
     console.log('Navigating to leads:', newUrl);
-    navigate(newUrl, {
-      replace: true
-    });
+    navigate(newUrl, { replace: true });
     setActiveTab('leads');
   };
+
   const handleAddLead = () => {
     setIsAddLeadDialogOpen(true);
   };
+
   const handleLeadAdded = () => {
     fetchLeads();
   };
+
   const renderContent = () => {
-    return <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
+    return (
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full h-full">
         <TabsContent value="dashboard" className={isMobile ? "h-full px-4 pt-4" : "space-y-6 lg:space-y-8"}>
-          <AnalyticsDashboard leads={leads} templates={templates} categories={categories} importBatches={importBatches} onNavigateToLeads={handleNavigateToLeads} />
+          <AnalyticsDashboard 
+            leads={leads} 
+            templates={templates} 
+            categories={categories} 
+            importBatches={importBatches} 
+            onNavigateToLeads={handleNavigateToLeads} 
+          />
         </TabsContent>
 
         <TabsContent value="leads" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
-          {isMobile ?
-        // Mobile Leads View - Full height
-        <MobileLeadsList leads={leads} categories={categories} onUpdateLead={handleUpdateLead} onDeleteLead={handleDeleteLead} onEmailClick={handleSendEmail} onViewDetails={handleViewDetails} onBulkUpdateStatus={handleBulkUpdateStatus} onBulkDelete={handleBulkDelete} /> :
-        // Desktop Leads View - Card layout
-        <Card className="apple-card">
+          {isMobile ? (
+            // Mobile Leads View - Full height
+            <MobileLeadsList 
+              leads={leads} 
+              categories={categories} 
+              onUpdateLead={handleUpdateLead} 
+              onDeleteLead={handleDeleteLead} 
+              onEmailClick={handleSendEmail} 
+              onViewDetails={handleViewDetails} 
+              onBulkUpdateStatus={handleBulkUpdateStatus} 
+              onBulkDelete={handleBulkDelete} 
+            />
+          ) : (
+            // Desktop Leads View - Card layout
+            <Card className="apple-card">
               <CardHeader className="pb-4 lg:pb-6">
                 <CardTitle className="text-lg lg:text-xl">All Leads</CardTitle>
                 <CardDescription className="text-sm lg:text-base">
@@ -581,41 +662,78 @@ export default function Index() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-3 lg:px-6">
-                <LeadsDashboard leads={leads} templates={templates} categories={categories} importBatches={importBatches} branding={branding} onUpdateLead={handleUpdateLead} onDeleteLead={handleDeleteLead} onBulkUpdateStatus={handleBulkUpdateStatus} onBulkDelete={handleBulkDelete} onSendEmail={handleSendEmail} selectedBatchId={selectedBatchId} />
+                <LeadsDashboard 
+                  leads={leads} 
+                  templates={templates} 
+                  categories={categories} 
+                  importBatches={importBatches} 
+                  branding={branding} 
+                  onUpdateLead={handleUpdateLead} 
+                  onDeleteLead={handleDeleteLead} 
+                  onBulkUpdateStatus={handleBulkUpdateStatus} 
+                  onBulkDelete={handleBulkDelete} 
+                  onSendEmail={handleSendEmail} 
+                  selectedBatchId={selectedBatchId} 
+                />
               </CardContent>
-            </Card>}
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="import" className={isMobile ? "h-full" : "space-y-8 lg:space-y-10"}>
-          {isMobile ?
-        // Mobile-optimized import page with proper padding
-        <div className="h-full flex flex-col bg-background">
+          {isMobile ? (
+            // Mobile-optimized import page with proper padding
+            <div className="h-full flex flex-col bg-background">
               <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
                 <div className="space-y-6">
-                  
-                  
-                  <CSVImport categories={categories} onImportComplete={handleImportComplete} onCreateCategory={handleCreateCategory} />
+                  <CSVImport 
+                    categories={categories} 
+                    onImportComplete={handleImportComplete} 
+                    onCreateCategory={handleCreateCategory}
+                    existingLeads={leads}
+                    importBatches={importBatches}
+                  />
                   
                   <div className="pt-6">
-                    <ImportHistory leads={leads} importBatches={importBatches} categories={categories} onDeleteBatch={handleDeleteBatch} onViewBatchLeads={handleViewBatchLeads} />
+                    <ImportHistory 
+                      leads={leads} 
+                      importBatches={importBatches} 
+                      categories={categories} 
+                      onDeleteBatch={handleDeleteBatch} 
+                      onViewBatchLeads={handleViewBatchLeads} 
+                    />
                   </div>
                 </div>
               </div>
-            </div> :
-        // Desktop import page
-        <div className="max-w-full">
-              <CSVImport categories={categories} onImportComplete={handleImportComplete} onCreateCategory={handleCreateCategory} />
+            </div>
+          ) : (
+            // Desktop import page
+            <div className="max-w-full">
+              <CSVImport 
+                categories={categories} 
+                onImportComplete={handleImportComplete} 
+                onCreateCategory={handleCreateCategory}
+                existingLeads={leads}
+                importBatches={importBatches}
+              />
               
               <div className="mt-10 lg:mt-12">
-                <ImportHistory leads={leads} importBatches={importBatches} categories={categories} onDeleteBatch={handleDeleteBatch} onViewBatchLeads={handleViewBatchLeads} />
+                <ImportHistory 
+                  leads={leads} 
+                  importBatches={importBatches} 
+                  categories={categories} 
+                  onDeleteBatch={handleDeleteBatch} 
+                  onViewBatchLeads={handleViewBatchLeads} 
+                />
               </div>
-            </div>}
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="categories" className={isMobile ? "h-full" : "space-y-6 lg:space-y-8"}>
-          {isMobile ?
-        // Mobile-optimized categories page with proper padding
-        <div className="h-full flex flex-col bg-background">
+          {isMobile ? (
+            // Mobile-optimized categories page with proper padding
+            <div className="h-full flex flex-col bg-background">
               <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
                 <div className="space-y-6">
                   <div className="text-center py-6">
@@ -626,12 +744,18 @@ export default function Index() {
                     </p>
                   </div>
                   
-                  <CategoryManager categories={categories} onCreateCategory={handleCreateCategory} onUpdateCategory={handleUpdateCategory} onDeleteCategory={handleDeleteCategory} />
+                  <CategoryManager 
+                    categories={categories} 
+                    onCreateCategory={handleCreateCategory} 
+                    onUpdateCategory={handleUpdateCategory} 
+                    onDeleteCategory={handleDeleteCategory} 
+                  />
                 </div>
               </div>
-            </div> :
-        // Desktop categories page
-        <Card className="apple-card">
+            </div>
+          ) : (
+            // Desktop categories page
+            <Card className="apple-card">
               <CardHeader>
                 <CardTitle className="text-lg lg:text-xl">Lead Categories</CardTitle>
                 <CardDescription className="text-sm lg:text-base">
@@ -639,9 +763,15 @@ export default function Index() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <CategoryManager categories={categories} onCreateCategory={handleCreateCategory} onUpdateCategory={handleUpdateCategory} onDeleteCategory={handleDeleteCategory} />
+                <CategoryManager 
+                  categories={categories} 
+                  onCreateCategory={handleCreateCategory} 
+                  onUpdateCategory={handleUpdateCategory} 
+                  onDeleteCategory={handleDeleteCategory} 
+                />
               </CardContent>
-            </Card>}
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="templates" className={isMobile ? "h-full px-4 pt-4 pb-6" : "space-y-6 lg:space-y-8"}>
@@ -671,22 +801,48 @@ export default function Index() {
             </CardContent>
           </Card>
         </TabsContent>
-      </Tabs>;
+      </Tabs>
+    );
   };
-  return <AppleLayout activeTab={activeTab} onTabChange={handleTabChange}>
+
+  return (
+    <AppleLayout activeTab={activeTab} onTabChange={handleTabChange}>
       {/* Desktop content */}
-      {!isMobile && <div className="space-y-6">
+      {!isMobile && (
+        <div className="space-y-6">
           {renderContent()}
-        </div>}
+        </div>
+      )}
 
       {/* Mobile content - with proper padding */}
-      {isMobile && <div className="flex flex-col h-full bg-background">
-          {activeTab === 'leads' ? <>
-              <MobileLeadsList leads={leads} categories={categories} onUpdateLead={handleUpdateLead} onDeleteLead={handleDeleteLead} onEmailClick={handleSendEmail} onViewDetails={handleViewDetails} onBulkUpdateStatus={handleBulkUpdateStatus} onBulkDelete={handleBulkDelete} />
+      {isMobile && (
+        <div className="flex flex-col h-full bg-background">
+          {activeTab === 'leads' ? (
+            <>
+              <MobileLeadsList 
+                leads={leads} 
+                categories={categories} 
+                onUpdateLead={handleUpdateLead} 
+                onDeleteLead={handleDeleteLead} 
+                onEmailClick={handleSendEmail} 
+                onViewDetails={handleViewDetails} 
+                onBulkUpdateStatus={handleBulkUpdateStatus} 
+                onBulkDelete={handleBulkDelete} 
+              />
               <FloatingActionButton onClick={handleAddLead} />
-            </> : renderContent()}
-        </div>}
+            </>
+          ) : (
+            renderContent()
+          )}
+        </div>
+      )}
 
-      <AddLeadDialog isOpen={isAddLeadDialogOpen} onClose={() => setIsAddLeadDialogOpen(false)} categories={categories} onLeadAdded={handleLeadAdded} />
-    </AppleLayout>;
+      <AddLeadDialog 
+        isOpen={isAddLeadDialogOpen} 
+        onClose={() => setIsAddLeadDialogOpen(false)} 
+        categories={categories} 
+        onLeadAdded={handleLeadAdded} 
+      />
+    </AppleLayout>
+  );
 }

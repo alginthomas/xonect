@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ColumnSettings } from '@/components/ColumnSettings';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, ArrowUp, X, Filter, Settings, MoreHorizontal, Phone } from 'lucide-react';
+import { Search, ArrowUp, X, Filter, Settings, MoreHorizontal, Phone, Globe } from 'lucide-react';
+import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { Category } from '@/types/category';
-import type { LeadStatus } from '@/types/lead';
+import type { LeadStatus, Lead } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
 
 interface DesktopFiltersProps {
@@ -21,9 +21,12 @@ interface DesktopFiltersProps {
   onCategoryChange: (value: string) => void;
   dataAvailabilityFilter: string;
   onDataAvailabilityChange: (value: string) => void;
+  countryFilter?: string;
+  onCountryChange?: (value: string) => void;
   duplicatePhoneFilter?: string;
   onDuplicatePhoneChange?: (value: string) => void;
   categories: Category[];
+  leads: Lead[];
   onExport: () => void;
   onClearFilters: () => void;
   activeFiltersCount: number;
@@ -48,9 +51,12 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onCategoryChange,
   dataAvailabilityFilter,
   onDataAvailabilityChange,
+  countryFilter = 'all',
+  onCountryChange,
   duplicatePhoneFilter = 'all',
   onDuplicatePhoneChange,
   categories,
+  leads,
   onExport,
   onClearFilters,
   activeFiltersCount,
@@ -58,6 +64,9 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onToggleColumnVisibility,
   onResetColumns
 }) => {
+  // Get unique countries from leads
+  const availableCountries = getUniqueCountriesFromLeads(leads);
+
   const getActiveFilterChips = () => {
     const chips = [];
     if (statusFilter !== 'all') {
@@ -79,6 +88,13 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
         onRemove: () => onDataAvailabilityChange('all') 
       });
     }
+    if (countryFilter !== 'all' && onCountryChange) {
+      chips.push({ 
+        type: 'country', 
+        label: `Country: ${countryFilter}`, 
+        onRemove: () => onCountryChange('all') 
+      });
+    }
     if (duplicatePhoneFilter !== 'all' && onDuplicatePhoneChange) {
       const phoneLabel = duplicatePhoneFilter === 'unique-only' ? 'Unique Phone Only' : 'Duplicates Only';
       chips.push({ 
@@ -92,8 +108,10 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
 
   const activeFilterChips = getActiveFilterChips();
 
-  // Calculate total active filters including duplicate phone filter
-  const totalActiveFilters = activeFiltersCount + (duplicatePhoneFilter !== 'all' ? 1 : 0);
+  // Calculate total active filters including country and duplicate phone filter
+  const totalActiveFilters = activeFiltersCount + 
+    (countryFilter !== 'all' ? 1 : 0) + 
+    (duplicatePhoneFilter !== 'all' ? 1 : 0);
 
   return (
     <Card className="apple-card border-border/50">
@@ -159,6 +177,27 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Country Filter */}
+              {onCountryChange && availableCountries.length > 0 && (
+                <Select value={countryFilter} onValueChange={onCountryChange}>
+                  <SelectTrigger className="w-40 h-9 border-border/50">
+                    <Globe className="h-3 w-3 mr-2" />
+                    <SelectValue placeholder="Country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Countries</SelectItem>
+                    {availableCountries.map(country => (
+                      <SelectItem key={country.code} value={country.name}>
+                        <div className="flex items-center gap-2">
+                          <span>{country.flag}</span>
+                          <span>{country.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
                 <SelectTrigger className="w-32 h-9 border-border/50">
