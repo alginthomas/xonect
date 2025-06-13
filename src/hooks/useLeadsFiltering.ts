@@ -2,6 +2,7 @@
 import { useMemo, useEffect } from 'react';
 import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
+import { filterDuplicatePhoneNumbers, getLeadsWithDuplicatePhones } from '@/utils/phoneDeduplication';
 
 interface UseLeadsFilteringProps {
   leads: Lead[];
@@ -11,6 +12,7 @@ interface UseLeadsFilteringProps {
   statusFilter: string;
   categoryFilter: string;
   dataAvailabilityFilter: string;
+  duplicatePhoneFilter?: string;
   sortField: string;
   sortDirection: 'asc' | 'desc';
   setCurrentPage: (page: number) => void;
@@ -24,6 +26,7 @@ export const useLeadsFiltering = ({
   statusFilter,
   categoryFilter,
   dataAvailabilityFilter,
+  duplicatePhoneFilter = 'all',
   sortField,
   sortDirection,
   setCurrentPage
@@ -36,7 +39,8 @@ export const useLeadsFiltering = ({
       searchTerm,
       statusFilter,
       categoryFilter,
-      dataAvailabilityFilter
+      dataAvailabilityFilter,
+      duplicatePhoneFilter
     });
     let filtered = leads;
 
@@ -87,9 +91,18 @@ export const useLeadsFiltering = ({
       );
     }
 
+    // Filter by duplicate phone numbers
+    if (duplicatePhoneFilter === 'unique-only') {
+      filtered = filterDuplicatePhoneNumbers(filtered);
+      console.log('After duplicate phone filter (unique only):', filtered.length);
+    } else if (duplicatePhoneFilter === 'duplicates-only') {
+      filtered = getLeadsWithDuplicatePhones(filtered);
+      console.log('After duplicate phone filter (duplicates only):', filtered.length);
+    }
+
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, importBatches]);
+  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, duplicatePhoneFilter, importBatches]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {
@@ -111,7 +124,7 @@ export const useLeadsFiltering = ({
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, selectedBatchId, setCurrentPage]);
+  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, duplicatePhoneFilter, selectedBatchId, setCurrentPage]);
 
   return {
     filteredLeads,

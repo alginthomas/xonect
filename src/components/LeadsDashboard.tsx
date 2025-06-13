@@ -91,6 +91,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setItemsPerPage
   } = useLeadsCache();
 
+  // Add duplicate phone filter state
+  const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState('all');
+
   const { filteredLeads, sortedLeads } = useLeadsFiltering({
     leads,
     importBatches,
@@ -99,6 +102,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     statusFilter,
     categoryFilter,
     dataAvailabilityFilter,
+    duplicatePhoneFilter,
     sortField,
     sortDirection,
     setCurrentPage
@@ -126,14 +130,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   // Drag and drop sensors
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
 
-  // Calculate active filters count
+  // Calculate active filters count including duplicate phone filter
   const activeFiltersCount = useMemo(() => {
     let count = 0;
     if (statusFilter !== 'all') count++;
     if (categoryFilter !== 'all') count++;
     if (dataAvailabilityFilter !== 'all') count++;
+    if (duplicatePhoneFilter !== 'all') count++;
     return count;
-  }, [statusFilter, categoryFilter, dataAvailabilityFilter]);
+  }, [statusFilter, categoryFilter, dataAvailabilityFilter, duplicatePhoneFilter]);
 
   // Pagination
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
@@ -261,6 +266,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setStatusFilter('all');
     setCategoryFilter('all');
     setDataAvailabilityFilter('all');
+    setDuplicatePhoneFilter('all');
     setSearchTerm('');
   };
 
@@ -440,6 +446,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           onCategoryChange={setCategoryFilter}
           dataAvailabilityFilter={dataAvailabilityFilter}
           onDataAvailabilityChange={setDataAvailabilityFilter}
+          duplicatePhoneFilter={duplicatePhoneFilter}
+          onDuplicatePhoneChange={setDuplicatePhoneFilter}
           categories={categories}
           onExport={handleExport}
           onClearFilters={clearAllFilters}

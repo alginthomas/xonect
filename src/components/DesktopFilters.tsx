@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ColumnSettings } from '@/components/ColumnSettings';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, ArrowUp, X, Filter, Settings, MoreHorizontal } from 'lucide-react';
+import { Search, ArrowUp, X, Filter, Settings, MoreHorizontal, Phone } from 'lucide-react';
 import type { Category } from '@/types/category';
 import type { LeadStatus } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
@@ -21,6 +21,8 @@ interface DesktopFiltersProps {
   onCategoryChange: (value: string) => void;
   dataAvailabilityFilter: string;
   onDataAvailabilityChange: (value: string) => void;
+  duplicatePhoneFilter?: string;
+  onDuplicatePhoneChange?: (value: string) => void;
   categories: Category[];
   onExport: () => void;
   onClearFilters: () => void;
@@ -46,6 +48,8 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onCategoryChange,
   dataAvailabilityFilter,
   onDataAvailabilityChange,
+  duplicatePhoneFilter = 'all',
+  onDuplicatePhoneChange,
   categories,
   onExport,
   onClearFilters,
@@ -75,10 +79,21 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
         onRemove: () => onDataAvailabilityChange('all') 
       });
     }
+    if (duplicatePhoneFilter !== 'all' && onDuplicatePhoneChange) {
+      const phoneLabel = duplicatePhoneFilter === 'unique-only' ? 'Unique Phone Only' : 'Duplicates Only';
+      chips.push({ 
+        type: 'phone', 
+        label: `Phone: ${phoneLabel}`, 
+        onRemove: () => onDuplicatePhoneChange('all') 
+      });
+    }
     return chips;
   };
 
   const activeFilterChips = getActiveFilterChips();
+
+  // Calculate total active filters including duplicate phone filter
+  const totalActiveFilters = activeFiltersCount + (duplicatePhoneFilter !== 'all' ? 1 : 0);
 
   return (
     <Card className="apple-card border-border/50">
@@ -157,12 +172,27 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                 </SelectContent>
               </Select>
 
+              {/* Duplicate Phone Filter */}
+              {onDuplicatePhoneChange && (
+                <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
+                  <SelectTrigger className="w-40 h-9 border-border/50">
+                    <Phone className="h-3 w-3 mr-2" />
+                    <SelectValue placeholder="Phone Filter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Phone Numbers</SelectItem>
+                    <SelectItem value="unique-only">Unique Phone Only</SelectItem>
+                    <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
               {/* Filter Summary and Clear */}
-              {activeFiltersCount > 0 && (
+              {totalActiveFilters > 0 && (
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
                     <Filter className="h-3 w-3 mr-1" />
-                    {activeFiltersCount} active
+                    {totalActiveFilters} active
                   </Badge>
                   <Button
                     variant="ghost"

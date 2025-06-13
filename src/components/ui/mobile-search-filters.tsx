@@ -186,7 +186,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                   <SheetHeader className="text-left">
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
-                      Refine your search with additional filters
+                      Refine your search with additional filters including phone duplicates
                     </SheetDescription>
                   </SheetHeader>
                 </div>

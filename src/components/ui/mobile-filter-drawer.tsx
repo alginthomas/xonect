@@ -12,7 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Filter, X } from 'lucide-react';
+import { Filter, X, Phone } from 'lucide-react';
 import type { Category } from '@/types/category';
 import type { LeadStatus } from '@/types/lead';
 
@@ -20,10 +20,12 @@ interface MobileFilterDrawerProps {
   statusFilter: string;
   categoryFilter: string;
   dataAvailabilityFilter: string;
+  duplicatePhoneFilter?: string;
   categories: Category[];
   onStatusChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onDataAvailabilityChange: (value: string) => void;
+  onDuplicatePhoneChange?: (value: string) => void;
   onClearFilters: () => void;
 }
 
@@ -38,10 +40,12 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
   statusFilter,
   categoryFilter,
   dataAvailabilityFilter,
+  duplicatePhoneFilter = 'all',
   categories,
   onStatusChange,
   onCategoryChange,
   onDataAvailabilityChange,
+  onDuplicatePhoneChange,
   onClearFilters
 }) => {
   const [open, setOpen] = useState(false);
@@ -51,6 +55,7 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
     if (statusFilter !== 'all') count++;
     if (categoryFilter !== 'all') count++;
     if (dataAvailabilityFilter !== 'all') count++;
+    if (duplicatePhoneFilter !== 'all') count++;
     return count;
   };
 
@@ -87,7 +92,7 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
               )}
             </SheetTitle>
             <SheetDescription>
-              Filter your leads by status, category, and data availability
+              Filter your leads by status, category, data availability, and phone duplicates
             </SheetDescription>
           </SheetHeader>
         </div>
@@ -152,6 +157,36 @@ export const MobileFilterDrawer: React.FC<MobileFilterDrawerProps> = ({
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Duplicate Phone Filter */}
+              {onDuplicatePhoneChange && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    Phone Number Duplicates
+                  </label>
+                  <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="All Phone Numbers" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Phone Numbers</SelectItem>
+                      <SelectItem value="unique-only">
+                        <div className="flex flex-col">
+                          <span>Unique Phone Only</span>
+                          <span className="text-xs text-muted-foreground">Best lead per phone number</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="duplicates-only">
+                        <div className="flex flex-col">
+                          <span>Duplicates Only</span>
+                          <span className="text-xs text-muted-foreground">Show leads with duplicate phones</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {/* Extra padding for better scrolling */}
               <div className="h-20" />
