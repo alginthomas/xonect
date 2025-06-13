@@ -11,7 +11,6 @@ import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { Category } from '@/types/category';
 import type { LeadStatus, Lead } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
-
 interface DesktopFiltersProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
@@ -36,12 +35,7 @@ interface DesktopFiltersProps {
 }
 
 // All available lead statuses
-const allLeadStatuses: LeadStatus[] = [
-  'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
-  'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
-  'Not Interested', 'Interested', 'Send Email'
-];
-
+const allLeadStatuses: LeadStatus[] = ['New', 'Contacted', 'Opened', 'Clicked', 'Replied', 'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 'Not Interested', 'Interested', 'Send Email'];
 export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   searchTerm,
   onSearchChange,
@@ -66,77 +60,63 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
 }) => {
   // Get unique countries from leads
   const availableCountries = getUniqueCountriesFromLeads(leads);
-
   const getActiveFilterChips = () => {
     const chips = [];
     if (statusFilter !== 'all') {
-      chips.push({ type: 'status', label: `Status: ${statusFilter}`, onRemove: () => onStatusChange('all') });
+      chips.push({
+        type: 'status',
+        label: `Status: ${statusFilter}`,
+        onRemove: () => onStatusChange('all')
+      });
     }
     if (categoryFilter !== 'all') {
       const category = categories.find(c => c.id === categoryFilter);
-      chips.push({ 
-        type: 'category', 
-        label: `Category: ${category?.name || 'Unknown'}`, 
-        onRemove: () => onCategoryChange('all') 
+      chips.push({
+        type: 'category',
+        label: `Category: ${category?.name || 'Unknown'}`,
+        onRemove: () => onCategoryChange('all')
       });
     }
     if (dataAvailabilityFilter !== 'all') {
       const dataLabel = dataAvailabilityFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
-      chips.push({ 
-        type: 'data', 
-        label: `Data: ${dataLabel}`, 
-        onRemove: () => onDataAvailabilityChange('all') 
+      chips.push({
+        type: 'data',
+        label: `Data: ${dataLabel}`,
+        onRemove: () => onDataAvailabilityChange('all')
       });
     }
     if (countryFilter !== 'all' && onCountryChange) {
-      chips.push({ 
-        type: 'country', 
-        label: `Country: ${countryFilter}`, 
-        onRemove: () => onCountryChange('all') 
+      chips.push({
+        type: 'country',
+        label: `Country: ${countryFilter}`,
+        onRemove: () => onCountryChange('all')
       });
     }
     if (duplicatePhoneFilter !== 'all' && onDuplicatePhoneChange) {
       const phoneLabel = duplicatePhoneFilter === 'unique-only' ? 'Unique Phone Only' : 'Duplicates Only';
-      chips.push({ 
-        type: 'phone', 
-        label: `Phone: ${phoneLabel}`, 
-        onRemove: () => onDuplicatePhoneChange('all') 
+      chips.push({
+        type: 'phone',
+        label: `Phone: ${phoneLabel}`,
+        onRemove: () => onDuplicatePhoneChange('all')
       });
     }
     return chips;
   };
-
   const activeFilterChips = getActiveFilterChips();
 
   // Calculate total active filters including country and duplicate phone filter
-  const totalActiveFilters = activeFiltersCount + 
-    (countryFilter !== 'all' ? 1 : 0) + 
-    (duplicatePhoneFilter !== 'all' ? 1 : 0);
-
-  return (
-    <Card className="apple-card border-border/50">
+  const totalActiveFilters = activeFiltersCount + (countryFilter !== 'all' ? 1 : 0) + (duplicatePhoneFilter !== 'all' ? 1 : 0);
+  return <Card className="apple-card border-border/50">
       <CardContent className="pt-6 space-y-4">
         {/* Enhanced Search Bar */}
         <div className="relative group">
           <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
             <Search className="text-muted-foreground h-5 w-5 group-focus-within:text-primary transition-colors duration-200" />
           </div>
-          <Input
-            placeholder="Search leads by name, company, email, or phone..."
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-12 pr-4 h-14 text-base bg-gradient-to-r from-background/80 to-muted/20 border border-border/30 rounded-2xl shadow-sm backdrop-blur-sm focus:bg-background focus:border-primary/40 focus:shadow-lg focus:shadow-primary/10 transition-all duration-300 ease-out placeholder:text-muted-foreground/60 hover:border-border/50 hover:shadow-md font-medium"
-          />
-          {searchTerm && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onSearchChange('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200"
-            >
+          <Input placeholder="Search leads by name, company, email, or phone..." value={searchTerm} onChange={e => onSearchChange(e.target.value)} className="pl-12 pr-4 h-14 text-base bg-gradient-to-r from-background/80 to-muted/20 border border-border/30 rounded-2xl shadow-sm backdrop-blur-sm focus:bg-background focus:border-primary/40 focus:shadow-lg focus:shadow-primary/10 transition-all duration-300 ease-out placeholder:text-muted-foreground/60 hover:border-border/50 hover:shadow-md font-medium" />
+          {searchTerm && <Button variant="ghost" size="sm" onClick={() => onSearchChange('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200">
               <X className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          )}
+            </Button>}
         </div>
 
         {/* Filters and Actions Toolbar */}
@@ -144,7 +124,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
           {/* Filter Controls Section */}
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
+              
               
               <Select value={statusFilter} onValueChange={onStatusChange}>
                 <SelectTrigger className="w-32 h-9 border-border/50">
@@ -152,9 +132,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  {allLeadStatuses.map(status => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
-                  ))}
+                  {allLeadStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
                 </SelectContent>
               </Select>
 
@@ -164,40 +142,33 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map(category => (
-                    <SelectItem key={category.id} value={category.id}>
+                  {categories.map(category => <SelectItem key={category.id} value={category.id}>
                       <div className="flex items-center gap-2">
-                        <div 
-                          className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: category.color }}
-                        />
+                        <div className="w-3 h-3 rounded-full" style={{
+                      backgroundColor: category.color
+                    }} />
                         {category.name}
                       </div>
-                    </SelectItem>
-                  ))}
+                    </SelectItem>)}
                 </SelectContent>
               </Select>
 
               {/* Country Filter */}
-              {onCountryChange && availableCountries.length > 0 && (
-                <Select value={countryFilter} onValueChange={onCountryChange}>
+              {onCountryChange && availableCountries.length > 0 && <Select value={countryFilter} onValueChange={onCountryChange}>
                   <SelectTrigger className="w-40 h-9 border-border/50">
                     <Globe className="h-3 w-3 mr-2" />
                     <SelectValue placeholder="Country" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Countries</SelectItem>
-                    {availableCountries.map(country => (
-                      <SelectItem key={country.code} value={country.name}>
+                    {availableCountries.map(country => <SelectItem key={country.code} value={country.name}>
                         <div className="flex items-center gap-2">
                           <span>{country.flag}</span>
                           <span>{country.name}</span>
                         </div>
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
-                </Select>
-              )}
+                </Select>}
 
               <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
                 <SelectTrigger className="w-32 h-9 border-border/50">
@@ -212,8 +183,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
               </Select>
 
               {/* Duplicate Phone Filter */}
-              {onDuplicatePhoneChange && (
-                <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
+              {onDuplicatePhoneChange && <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
                   <SelectTrigger className="w-40 h-9 border-border/50">
                     <Phone className="h-3 w-3 mr-2" />
                     <SelectValue placeholder="Phone Filter" />
@@ -223,33 +193,25 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                     <SelectItem value="unique-only">Unique Phone Only</SelectItem>
                     <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
                   </SelectContent>
-                </Select>
-              )}
+                </Select>}
 
               {/* Filter Summary and Clear */}
-              {totalActiveFilters > 0 && (
-                <div className="flex items-center gap-2">
+              {totalActiveFilters > 0 && <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 font-medium">
                     <Filter className="h-3 w-3 mr-1" />
                     {totalActiveFilters} active
                   </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClearFilters}
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                  >
+                  <Button variant="ghost" size="sm" onClick={onClearFilters} className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground">
                     <X className="h-3 w-3 mr-1" />
                     Clear
                   </Button>
-                </div>
-              )}
+                </div>}
             </div>
           </div>
 
           {/* Actions Section */}
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground hidden lg:inline">Actions:</span>
+            
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -266,38 +228,20 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <ColumnSettings
-              columns={columns}
-              onToggleVisibility={onToggleColumnVisibility}
-              onReset={onResetColumns}
-            />
+            <ColumnSettings columns={columns} onToggleVisibility={onToggleColumnVisibility} onReset={onResetColumns} />
           </div>
         </div>
 
         {/* Active Filter Chips */}
-        {activeFilterChips.length > 0 && (
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
+        {activeFilterChips.length > 0 && <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
             <span className="text-xs font-medium text-muted-foreground self-center">Active filters:</span>
-            {activeFilterChips.map((chip, index) => (
-              <Badge
-                key={index}
-                variant="outline"
-                className="bg-primary/5 border-primary/20 text-primary text-xs px-2 py-1 gap-1 hover:bg-primary/10 transition-colors"
-              >
+            {activeFilterChips.map((chip, index) => <Badge key={index} variant="outline" className="bg-primary/5 border-primary/20 text-primary text-xs px-2 py-1 gap-1 hover:bg-primary/10 transition-colors">
                 {chip.label}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-4 w-4 p-0 hover:bg-primary/20 rounded-full"
-                  onClick={chip.onRemove}
-                >
+                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-primary/20 rounded-full" onClick={chip.onRemove}>
                   <X className="h-3 w-3" />
                 </Button>
-              </Badge>
-            ))}
-          </div>
-        )}
+              </Badge>)}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
