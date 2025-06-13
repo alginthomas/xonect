@@ -62,6 +62,3 @@ export const ColumnSettings: React.FC<ColumnSettingsProps> = ({
     </DropdownMenu>
   );
 };
-</DropdownMenuItem>
-
-The checkbox click events now work correctly by stopping event propagation and making the label text clickable as well.
