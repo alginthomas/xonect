@@ -546,8 +546,32 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t border-border/30">
-              <div className="text-sm text-muted-foreground">
-                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedLeads.length)} of {sortedLeads.length} leads
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, sortedLeads.length)} of {sortedLeads.length} leads
+                </div>
+                {!isMobile && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Show:</span>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1); // Reset to first page when changing page size
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
