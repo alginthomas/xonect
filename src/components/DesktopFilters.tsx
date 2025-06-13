@@ -83,14 +83,26 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
     <Card className="apple-card border-border/50">
       <CardContent className="pt-6 space-y-4">
         {/* Enhanced Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" />
+        <div className="relative group">
+          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 z-10">
+            <Search className="text-muted-foreground h-5 w-5 group-focus-within:text-primary transition-colors duration-200" />
+          </div>
           <Input
-            placeholder="🔍 Search leads by name, company, email, or phone..."
+            placeholder="Search leads by name, company, email, or phone..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-12 pr-4 h-12 text-base bg-muted/30 border-border/50 focus:bg-background focus:border-primary/50 transition-all duration-200"
+            className="pl-12 pr-4 h-14 text-base bg-gradient-to-r from-background/80 to-muted/20 border border-border/30 rounded-2xl shadow-sm backdrop-blur-sm focus:bg-background focus:border-primary/40 focus:shadow-lg focus:shadow-primary/10 transition-all duration-300 ease-out placeholder:text-muted-foreground/60 hover:border-border/50 hover:shadow-md font-medium"
           />
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onSearchChange('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 rounded-full hover:bg-muted/80 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-200"
+            >
+              <X className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          )}
         </div>
 
         {/* Filters and Actions Toolbar */}
