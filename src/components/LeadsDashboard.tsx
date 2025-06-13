@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   DndContext,
@@ -86,6 +87,37 @@ interface LeadsDashboardProps {
   onCreateCategory?: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
 
+// Cache keys for localStorage
+const CACHE_KEYS = {
+  SEARCH_TERM: 'leads_search_term',
+  STATUS_FILTER: 'leads_status_filter',
+  CATEGORY_FILTER: 'leads_category_filter',
+  DATA_AVAILABILITY_FILTER: 'leads_data_availability_filter',
+  SORT_FIELD: 'leads_sort_field',
+  SORT_DIRECTION: 'leads_sort_direction',
+  CURRENT_PAGE: 'leads_current_page',
+  ITEMS_PER_PAGE: 'leads_items_per_page',
+};
+
+// Cache utilities
+const saveToCache = (key: string, value: any) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.warn('Failed to save to cache:', error);
+  }
+};
+
+const loadFromCache = (key: string, defaultValue: any) => {
+  try {
+    const cached = localStorage.getItem(key);
+    return cached ? JSON.parse(cached) : defaultValue;
+  } catch (error) {
+    console.warn('Failed to load from cache:', error);
+    return defaultValue;
+  }
+};
+
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   leads,
   templates,
@@ -100,18 +132,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   selectedBatchId,
   onCreateCategory
 }) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [dataAvailabilityFilter, setDataAvailabilityFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState(() => loadFromCache(CACHE_KEYS.SEARCH_TERM, ''));
+  const [statusFilter, setStatusFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.STATUS_FILTER, 'all'));
+  const [categoryFilter, setCategoryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.CATEGORY_FILTER, 'all'));
+  const [dataAvailabilityFilter, setDataAvailabilityFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, 'all'));
   const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-  const [sortField, setSortField] = useState<string>('createdAt');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(() => {
-    const saved = localStorage.getItem('leadsPerPage');
-    return saved ? parseInt(saved) : 25;
-  });
+  const [sortField, setSortField] = useState<string>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
+  const [currentPage, setCurrentPage] = useState(() => loadFromCache(CACHE_KEYS.CURRENT_PAGE, 1));
+  const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 25));
   
   // Sidebar state
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -139,9 +168,37 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     useSensor(KeyboardSensor)
   );
 
-  // Persist items per page setting
+  // Cache state changes
   useEffect(() => {
-    localStorage.setItem('leadsPerPage', itemsPerPage.toString());
+    saveToCache(CACHE_KEYS.SEARCH_TERM, searchTerm);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.STATUS_FILTER, statusFilter);
+  }, [statusFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.CATEGORY_FILTER, categoryFilter);
+  }, [categoryFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, dataAvailabilityFilter);
+  }, [dataAvailabilityFilter]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SORT_FIELD, sortField);
+  }, [sortField]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.SORT_DIRECTION, sortDirection);
+  }, [sortDirection]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.CURRENT_PAGE, currentPage);
+  }, [currentPage]);
+
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.ITEMS_PER_PAGE, itemsPerPage);
   }, [itemsPerPage]);
 
   // All available statuses for filtering
@@ -445,6 +502,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <Checkbox
             checked={selectedLeads.has(lead.id)}
             onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+            className="h-3.5 w-3.5"
           />
         );
       
@@ -586,8 +644,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               
               <div className="flex gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by status" />
+                  <SelectTrigger className="w-36 h-9">
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Statuses</SelectItem>
@@ -598,8 +656,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 </Select>
 
                 <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by category" />
+                  <SelectTrigger className="w-36 h-9">
+                    <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
@@ -610,8 +668,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 </Select>
 
                 <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Data availability" />
+                  <SelectTrigger className="w-36 h-9">
+                    <SelectValue placeholder="Data" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Data</SelectItem>
@@ -627,13 +685,13 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   onReset={resetToDefault}
                 />
 
-                <Button variant="outline" onClick={handleExport}>
+                <Button variant="outline" onClick={handleExport} className="h-9">
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
 
                 {activeFiltersCount > 0 && (
-                  <Button variant="ghost" onClick={clearAllFilters}>
+                  <Button variant="ghost" onClick={clearAllFilters} className="h-9">
                     <X className="h-4 w-4 mr-2" />
                     Clear ({activeFiltersCount})
                   </Button>
@@ -754,7 +812,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                       {activeColumns.map((column) => {
                         if (column.id === 'select') {
                           return (
-                            <AppleTableHead key="select" className="w-12">
+                            <AppleTableHead key="select" className="w-10">
                               <Checkbox
                                 checked={isAllCurrentPageSelected}
                                 ref={(el) => {
@@ -763,6 +821,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                                   }
                                 }}
                                 onCheckedChange={handleSelectAll}
+                                className="h-3.5 w-3.5"
                               />
                             </AppleTableHead>
                           );
@@ -824,7 +883,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Show</span>
                     <Select value={itemsPerPage.toString()} onValueChange={(value) => setItemsPerPage(parseInt(value))}>
-                      <SelectTrigger className="w-20">
+                      <SelectTrigger className="w-16 h-8">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -848,11 +907,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         size="sm"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
+                        className="h-8"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       
-                      <span className="flex items-center px-3 text-sm">
+                      <span className="flex items-center px-3 text-sm h-8">
                         {currentPage} of {Math.max(1, Math.ceil(filteredLeads.length / itemsPerPage))}
                       </span>
                       
@@ -861,6 +921,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         size="sm"
                         onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))}
                         disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)}
+                        className="h-8"
                       >
                         <ChevronRightIcon className="h-4 w-4" />
                       </Button>
