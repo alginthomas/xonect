@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -170,123 +171,102 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
 
   return (
     <Card className="mb-2 shadow-sm border-border/50 bg-card hover:shadow-md transition-shadow duration-200">
-      <CardContent className="p-3">
-        {/* Compact Header Section */}
-        <div className="flex items-start gap-3 mb-2">
+      <CardContent className="p-4">
+        {/* Header Section */}
+        <div className="flex items-start gap-3 mb-3">
           <Checkbox
             checked={isSelected}
             onCheckedChange={onSelect}
             className="mt-0.5 h-4 w-4 rounded-full aspect-square data-[state=checked]:bg-primary data-[state=checked]:border-primary"
           />
           
-          <Avatar className="h-10 w-10 flex-shrink-0">
+          <Avatar className="h-12 w-12 flex-shrink-0">
             <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-            <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+            <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
               {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
             </AvatarFallback>
           </Avatar>
           
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2 mb-1">
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm leading-tight mb-0.5 truncate text-left">
+                <h3 className="font-semibold text-base leading-tight mb-1 truncate text-left">
                   {lead.firstName} {lead.lastName}
                 </h3>
-                <p className="text-xs text-muted-foreground leading-tight truncate text-left">
+                <p className="text-sm text-muted-foreground leading-tight mb-1 truncate text-left">
                   {lead.title} • {lead.company}
+                </p>
+                <p className="text-xs text-muted-foreground leading-tight truncate text-left">
+                  {lead.email}
                 </p>
               </div>
               
-              <Badge className={`text-xs px-2 py-0.5 font-medium ${getStatusColor(lead.status)}`}>
-                {lead.status}
-              </Badge>
+              <span className="text-xs text-muted-foreground flex-shrink-0">
+                {format(lead.createdAt, 'MMM dd')}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Contact Info and Actions Row - Left aligned */}
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1 text-xs text-muted-foreground min-w-0 flex-1">
-            <Mail className="h-3 w-3 flex-shrink-0" />
-            <span className="truncate">{lead.email}</span>
-            {lead.phone && (
-              <>
-                <span className="mx-1">•</span>
-                <Phone className="h-3 w-3 flex-shrink-0" />
-                <span className="flex-shrink-0">{lead.phone}</span>
-              </>
-            )}
-          </div>
-          
-          <span className="text-xs text-muted-foreground flex-shrink-0">
-            {format(lead.createdAt, 'MMM dd')}
-          </span>
+        {/* Status and Website Row */}
+        <div className="mb-3">
+          <QuickStatusEditor
+            status={lead.status}
+            onChange={onStatusChange}
+            websiteUrl={lead.organizationWebsite}
+            showWebsiteButton={true}
+            compact={true}
+          />
         </div>
 
-        {/* Primary Actions - Left justified */}
-        <div className="flex items-center justify-between gap-2">
+        {/* Action Buttons Row */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 flex-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-10 text-sm font-medium justify-center"
+              onClick={callLead}
+              disabled={!lead.phone}
+            >
+              <Phone className="h-4 w-4 mr-2 text-blue-600" />
+              Call
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 h-10 text-sm font-medium justify-center"
+              onClick={copyEmail}
+            >
+              <Mail className="h-4 w-4 mr-2 text-blue-600" />
+              Copy Email
+            </Button>
+          </div>
+
           <div className="flex items-center gap-2">
+            {/* View Details */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-3 hover:bg-primary/10 text-xs justify-start"
-                  onClick={emailLead}
-                >
-                  <Mail className="h-3 w-3 mr-1" />
-                  Email
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Send Email</p>
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Call and View Buttons */}
-            {lead.phone && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-3 hover:bg-green-50 text-xs justify-start"
-                    onClick={callLead}
-                  >
-                    <Phone className="h-3 w-3 mr-1" />
-                    Call
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Call Lead</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-3 hover:bg-blue-50 text-xs justify-start"
+                  className="h-10 w-10 p-0"
                   onClick={onViewDetails}
                 >
-                  <Eye className="h-3 w-3 mr-1" />
-                  View
+                  <Eye className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
                 <p>View Details</p>
               </TooltipContent>
             </Tooltip>
-          </div>
 
-          <div className="flex items-center gap-2">
             {/* Expand/Collapse */}
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0"
               onClick={() => setIsExpanded(!isExpanded)}
             >
               {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -295,7 +275,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
             {/* More Actions */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -344,7 +324,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
 
         {/* Remarks Editor - Only when editing */}
         {isEditingRemarks && (
-          <div className="mt-3 space-y-2">
+          <div className="mb-3 space-y-2">
             <Textarea
               value={remarksText}
               onChange={(e) => setRemarksText(e.target.value)}
@@ -364,47 +344,38 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
           </div>
         )}
 
-        {/* Show existing remarks if not editing - Left aligned */}
+        {/* Show existing remarks if not editing */}
         {lead.remarks && !isEditingRemarks && (
-          <div className="mt-2 p-2 bg-muted/30 rounded text-xs text-muted-foreground text-left">
+          <div className="mb-3 p-2 bg-muted/30 rounded text-xs text-muted-foreground text-left">
             {lead.remarks}
           </div>
         )}
 
         {/* Collapsible Details */}
         <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-          <CollapsibleContent className="space-y-2 pt-2 border-t border-border/50 mt-2">
-            {/* Status Editor */}
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Status:</span>
-              <QuickStatusEditor
-                status={lead.status}
-                onChange={onStatusChange}
-              />
-            </div>
-
+          <CollapsibleContent className="space-y-3 pt-3 border-t border-border/50">
             {/* Category */}
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-muted-foreground">Category:</span>
+              <span className="text-sm font-medium text-muted-foreground">Category:</span>
               <div className="flex items-center gap-1">
                 <div 
                   className="w-2 h-2 rounded-full" 
                   style={{ backgroundColor: category.color }}
                 />
-                <span className="text-xs">{category.name}</span>
+                <span className="text-sm">{category.name}</span>
               </div>
             </div>
 
             {/* LinkedIn and Website Links */}
             {(lead.linkedin || lead.organizationWebsite) && (
-              <div className="space-y-1">
+              <div className="space-y-2">
                 {lead.linkedin && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">LinkedIn:</span>
+                    <span className="text-sm font-medium text-muted-foreground">LinkedIn:</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-xs justify-start"
+                      className="h-8 px-2 text-sm justify-start"
                       onClick={openLinkedIn}
                     >
                       <Linkedin className="h-3 w-3 mr-1" />
@@ -414,11 +385,11 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 )}
                 {lead.organizationWebsite && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">Website:</span>
+                    <span className="text-sm font-medium text-muted-foreground">Website:</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-xs justify-start"
+                      className="h-8 px-2 text-sm justify-start"
                       onClick={openWebsite}
                     >
                       <Globe className="h-3 w-3 mr-1" />
@@ -429,8 +400,8 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
               </div>
             )}
 
-            {/* Additional Details - Left aligned */}
-            <div className="space-y-1 text-xs text-muted-foreground">
+            {/* Additional Details */}
+            <div className="space-y-1 text-sm text-muted-foreground">
               {lead.companySize && (
                 <div className="flex justify-between">
                   <span>Company Size:</span>
@@ -457,7 +428,7 @@ export const MobileLeadCard: React.FC<MobileLeadCardProps> = ({
                 variant="outline"
                 size="sm"
                 onClick={() => setIsEditingRemarks(true)}
-                className="w-full h-8 text-xs justify-center"
+                className="w-full h-8 text-sm justify-center"
               >
                 <Edit3 className="h-3 w-3 mr-1" />
                 {lead.remarks ? 'Edit Remarks' : 'Add Remarks'}

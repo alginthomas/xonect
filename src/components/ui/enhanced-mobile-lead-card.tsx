@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -171,15 +172,11 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
                   {lead.company}
                 </p>
               </div>
-              
-              <Badge className={`text-xs px-3 py-1 font-medium rounded-full ${getStatusColor(lead.status)}`}>
-                {lead.status}
-              </Badge>
             </div>
           </div>
         </div>
 
-        {/* Contact Info Row - Left aligned */}
+        {/* Contact Info Row */}
         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
           <div className="flex items-center gap-1 flex-1 min-w-0">
             <Mail className="h-4 w-4 flex-shrink-0" />
@@ -193,34 +190,44 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           )}
         </div>
 
-        {/* Primary Actions - Left justified */}
+        {/* Status and Website Row - Matching Reference Design */}
+        <div className="mb-4">
+          <QuickStatusEditor
+            status={lead.status}
+            onChange={onStatusChange}
+            websiteUrl={lead.organizationWebsite}
+            showWebsiteButton={true}
+            compact={true}
+          />
+        </div>
+
+        {/* Primary Action Buttons */}
         <div className="flex items-center gap-3 mb-4">
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
-            className="flex-1 h-10 font-medium justify-start"
-            onClick={copyEmail}
+            className="flex-1 h-12 font-medium justify-center"
+            onClick={callLead}
+            disabled={!lead.phone}
           >
-            <Mail className="h-4 w-4 mr-2" />
-            Copy Email
+            <Phone className="h-4 w-4 mr-2 text-blue-600" />
+            Call
           </Button>
 
-          {lead.phone && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-10 font-medium justify-start"
-              onClick={callLead}
-            >
-              <Phone className="h-4 w-4 mr-2" />
-              Call
-            </Button>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1 h-12 font-medium justify-center"
+            onClick={copyEmail}
+          >
+            <Mail className="h-4 w-4 mr-2 text-blue-600" />
+            Copy Email
+          </Button>
 
           <Button
             variant="ghost"
             size="sm"
-            className="h-10 px-4"
+            className="h-12 px-4"
             onClick={onViewDetails}
           >
             <Eye className="h-4 w-4" />
@@ -228,7 +235,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-10 w-10 p-0">
+              <Button variant="ghost" size="sm" className="h-12 w-12 p-0">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -258,16 +265,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </DropdownMenu>
         </div>
 
-        {/* Status Editor - Left aligned */}
-        <div className="flex items-center justify-between mb-4 p-3 bg-muted/30 rounded-lg">
-          <span className="text-sm font-medium text-foreground">Status:</span>
-          <QuickStatusEditor
-            status={lead.status}
-            onChange={onStatusChange}
-          />
-        </div>
-
-        {/* Remarks Section - Left aligned */}
+        {/* Remarks Section */}
         {isEditingRemarks && (
           <div className="mb-4 space-y-3">
             <Textarea
@@ -289,7 +287,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </div>
         )}
 
-        {/* Show existing remarks - Left aligned */}
+        {/* Show existing remarks */}
         {lead.remarks && !isEditingRemarks && (
           <div className="mb-4 p-3 bg-muted/30 rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -319,7 +317,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-3 pt-3">
-            {/* Category - Left aligned */}
+            {/* Category */}
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
               <span className="text-sm font-medium">Category:</span>
               <div className="flex items-center gap-2">
@@ -331,7 +329,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
               </div>
             </div>
 
-            {/* Additional Details - Left aligned */}
+            {/* Additional Details */}
             {(lead.companySize || lead.seniority || lead.lastContactDate) && (
               <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
                 <h4 className="text-sm font-medium mb-2 text-left">Additional Information</h4>
@@ -358,7 +356,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </CollapsibleContent>
         </Collapsible>
 
-        {/* Meta Information - Left aligned */}
+        {/* Meta Information */}
         <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between text-xs text-muted-foreground">
           <span>Added {format(lead.createdAt, 'MMM dd, yyyy')}</span>
           {lead.emailsSent > 0 && (
