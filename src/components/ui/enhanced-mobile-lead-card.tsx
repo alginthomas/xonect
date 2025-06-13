@@ -30,7 +30,8 @@ import {
   X,
   Linkedin,
   Globe,
-  MessageSquare
+  MessageSquare,
+  Clock
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -80,6 +81,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
       case 'Interested': return 'bg-purple-500 text-white';
       case 'Not Interested': return 'bg-red-500 text-white';
       case 'Unresponsive': return 'bg-gray-500 text-white';
+      case 'Send Email': return 'bg-pink-500 text-white';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -125,11 +127,23 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
   };
 
   const saveRemarks = () => {
+    // Create timestamped entry
+    const timestamp = new Date();
+    const newEntry = {
+      id: crypto.randomUUID(),
+      text: remarksText,
+      timestamp
+    };
+    
+    // Update remarks history
+    const updatedHistory = [...(lead.remarksHistory || []), newEntry];
+    
+    // Call the update function with both remarks and history
     onRemarksUpdate(remarksText);
     setIsEditingRemarks(false);
     toast({
       title: 'Remarks updated',
-      description: 'Lead remarks have been saved successfully.',
+      description: 'Lead remarks have been saved with timestamp.',
     });
   };
 
@@ -289,7 +303,7 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
           </div>
         )}
 
-        {/* Show existing remarks - Left aligned */}
+        {/* Show existing remarks with timestamp - Left aligned */}
         {lead.remarks && !isEditingRemarks && (
           <div className="mb-4 p-3 bg-muted/30 rounded-lg">
             <div className="flex items-center justify-between mb-2">
@@ -303,7 +317,15 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
                 <Edit3 className="h-3 w-3" />
               </Button>
             </div>
-            <p className="text-sm text-muted-foreground text-left">{lead.remarks}</p>
+            <p className="text-sm text-muted-foreground text-left mb-2">{lead.remarks}</p>
+            {lead.remarksHistory && lead.remarksHistory.length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>
+                  Last updated: {format(lead.remarksHistory[lead.remarksHistory.length - 1].timestamp, 'MMM dd, yyyy HH:mm')}
+                </span>
+              </div>
+            )}
           </div>
         )}
 

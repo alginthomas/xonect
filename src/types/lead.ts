@@ -1,5 +1,5 @@
 
-export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested';
+export type LeadStatus = 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested' | 'Send Email';
 export type Seniority = 'Junior' | 'Mid-level' | 'Senior' | 'Executive' | 'C-level';
 export type CompanySize = 'Small (1-50)' | 'Medium (51-200)' | 'Large (201-1000)' | 'Enterprise (1000+)';
 
@@ -38,6 +38,13 @@ export interface Lead {
   categoryId?: string;
   importBatchId?: string;
   remarks?: string;
+  remarksHistory?: RemarkEntry[];
+}
+
+export interface RemarkEntry {
+  id: string;
+  text: string;
+  timestamp: Date;
 }
 
 export interface EmailTemplate {

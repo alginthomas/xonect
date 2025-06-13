@@ -3,29 +3,43 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Save, X, Edit3 } from 'lucide-react';
+import { MessageSquare, Save, X, Edit3, Clock } from 'lucide-react';
+import { format } from 'date-fns';
+import type { RemarkEntry } from '@/types/lead';
 
 interface QuickRemarksCellProps {
   remarks: string;
-  onUpdate: (remarks: string) => void;
+  remarksHistory?: RemarkEntry[];
+  onUpdate: (remarks: string, remarksHistory: RemarkEntry[]) => void;
   className?: string;
 }
 
 export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   remarks,
+  remarksHistory = [],
   onUpdate,
   className = ""
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(remarks || '');
+  const [editValue, setEditValue] = useState('');
 
   const handleSave = () => {
-    onUpdate(editValue);
+    if (!editValue.trim()) return;
+
+    const newEntry: RemarkEntry = {
+      id: crypto.randomUUID(),
+      text: editValue.trim(),
+      timestamp: new Date()
+    };
+
+    const updatedHistory = [...remarksHistory, newEntry];
+    onUpdate(editValue.trim(), updatedHistory);
+    setEditValue('');
     setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditValue(remarks || '');
+    setEditValue('');
     setIsEditing(false);
   };
 
@@ -71,6 +85,14 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
             <p className="text-xs text-muted-foreground line-clamp-2">
               {remarks}
             </p>
+            {remarksHistory.length > 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                <Clock className="h-2 w-2 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">
+                  {format(remarksHistory[remarksHistory.length - 1].timestamp, 'MMM dd, HH:mm')}
+                </span>
+              </div>
+            )}
           </div>
           <Edit3 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>

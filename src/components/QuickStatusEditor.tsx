@@ -28,6 +28,7 @@ export const QuickStatusEditor: React.FC<QuickStatusEditorProps> = ({
       case 'Unresponsive': return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
       case 'Not Interested': return 'bg-slate-100 text-slate-800 hover:bg-slate-200';
       case 'Interested': return 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200';
+      case 'Send Email': return 'bg-pink-100 text-pink-800 hover:bg-pink-200';
       default: return 'bg-gray-100 text-gray-800 hover:bg-gray-200';
     }
   };
@@ -35,7 +36,7 @@ export const QuickStatusEditor: React.FC<QuickStatusEditorProps> = ({
   const allStatuses: LeadStatus[] = [
     'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
     'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
-    'Not Interested', 'Interested'
+    'Not Interested', 'Interested', 'Send Email'
   ];
 
   return (

@@ -20,7 +20,8 @@ import {
   Calendar,
   User,
   Save,
-  Edit3
+  Edit3,
+  Clock
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -166,18 +167,30 @@ export default function LeadDetails() {
     if (!lead) return;
 
     try {
+      // Create timestamped entry
+      const newEntry = {
+        id: crypto.randomUUID(),
+        text: remarks,
+        timestamp: new Date()
+      };
+      
+      const updatedHistory = [...(lead.remarksHistory || []), newEntry];
+
       const { error } = await supabase
         .from('leads')
-        .update({ remarks })
+        .update({ 
+          remarks,
+          remarks_history: updatedHistory
+        })
         .eq('id', lead.id);
 
       if (error) throw error;
 
-      setLead({ ...lead, remarks });
+      setLead({ ...lead, remarks, remarksHistory: updatedHistory });
       setIsEditingRemarks(false);
       toast({
         title: 'Remarks saved',
-        description: 'Lead remarks have been updated.',
+        description: 'Lead remarks have been updated with timestamp.',
       });
     } catch (error: any) {
       toast({
@@ -202,6 +215,7 @@ export default function LeadDetails() {
       case 'Interested': return 'bg-purple-500 text-white';
       case 'Not Interested': return 'bg-red-500 text-white';
       case 'Unresponsive': return 'bg-gray-500 text-white';
+      case 'Send Email': return 'bg-pink-500 text-white';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -362,7 +376,7 @@ export default function LeadDetails() {
             </CardContent>
           </Card>
 
-          {/* Remarks */}
+          {/* Remarks with Timestamp */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -377,7 +391,7 @@ export default function LeadDetails() {
                     onClick={() => setIsEditingRemarks(true)}
                   >
                     <Edit3 className="h-4 w-4 mr-2" />
-                    Edit
+                    {lead?.remarks ? 'Add New' : 'Add'}
                   </Button>
                 )}
               </div>
@@ -400,7 +414,7 @@ export default function LeadDetails() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setRemarks(lead.remarks || '');
+                        setRemarks('');
                         setIsEditingRemarks(false);
                       }}
                     >
@@ -409,9 +423,40 @@ export default function LeadDetails() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  {lead.remarks || 'No remarks added yet.'}
-                </p>
+                <div className="space-y-4">
+                  {lead?.remarks && (
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-2">{lead.remarks}</p>
+                      {lead.remarksHistory && lead.remarksHistory.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            Last updated: {format(lead.remarksHistory[lead.remarksHistory.length - 1].timestamp, 'MMM dd, yyyy HH:mm')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Remarks History */}
+                  {lead?.remarksHistory && lead.remarksHistory.length > 1 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Previous Remarks</h4>
+                      {lead.remarksHistory.slice(0, -1).reverse().map((entry, index) => (
+                        <div key={entry.id} className="p-2 bg-muted/20 rounded text-sm">
+                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                            <span>{format(entry.timestamp, 'MMM dd, yyyy HH:mm')}</span>
+                          </div>
+                          <p>{entry.text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {!lead?.remarks && (
+                    <p className="text-sm text-muted-foreground">No remarks added yet.</p>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
