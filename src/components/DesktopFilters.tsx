@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ColumnSettings } from '@/components/ColumnSettings';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Search, Download, X, Filter, Settings, MoreHorizontal } from 'lucide-react';
+import { Search, ArrowUp, X, Filter, Settings, MoreHorizontal } from 'lucide-react';
 import type { Category } from '@/types/category';
 import type { LeadStatus } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
@@ -178,7 +178,7 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={onExport} className="gap-2">
-                  <Download className="h-4 w-4" />
+                  <ArrowUp className="h-4 w-4" />
                   Export to CSV
                 </DropdownMenuItem>
               </DropdownMenuContent>
