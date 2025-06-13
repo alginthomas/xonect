@@ -39,12 +39,23 @@ export interface Lead {
   importBatchId?: string;
   remarks?: string;
   remarksHistory?: RemarkEntry[];
+  activityLog?: ActivityEntry[];
 }
 
 export interface RemarkEntry {
   id: string;
   text: string;
   timestamp: Date;
+}
+
+export interface ActivityEntry {
+  id: string;
+  type: 'status_change' | 'remark_added' | 'email_sent' | 'contact_attempt';
+  description: string;
+  oldValue?: string;
+  newValue?: string;
+  timestamp: Date;
+  userId?: string;
 }
 
 export interface EmailTemplate {

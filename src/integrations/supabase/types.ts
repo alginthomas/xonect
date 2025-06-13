@@ -237,6 +237,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          activity_log: Json | null
           category_id: string | null
           company: string
           company_size: Database["public"]["Enums"]["company_size_category"]
@@ -260,6 +261,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           remarks: string | null
+          remarks_history: Json | null
           seniority: Database["public"]["Enums"]["seniority_level"]
           status: Database["public"]["Enums"]["lead_status"]
           tags: string[] | null
@@ -269,6 +271,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          activity_log?: Json | null
           category_id?: string | null
           company: string
           company_size?: Database["public"]["Enums"]["company_size_category"]
@@ -292,6 +295,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           remarks?: string | null
+          remarks_history?: Json | null
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
@@ -301,6 +305,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          activity_log?: Json | null
           category_id?: string | null
           company?: string
           company_size?: Database["public"]["Enums"]["company_size_category"]
@@ -324,6 +329,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           remarks?: string | null
+          remarks_history?: Json | null
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
@@ -405,6 +411,7 @@ export type Database = {
         | "Unresponsive"
         | "Not Interested"
         | "Interested"
+        | "Send Email"
       seniority_level:
         | "Junior"
         | "Mid-level"
@@ -545,6 +552,7 @@ export const Constants = {
         "Unresponsive",
         "Not Interested",
         "Interested",
+        "Send Email",
       ],
       seniority_level: [
         "Junior",

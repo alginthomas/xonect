@@ -21,7 +21,8 @@ import {
   User,
   Save,
   Edit3,
-  Clock
+  Clock,
+  Activity
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -29,7 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { MobileLeadDetails } from '@/components/ui/mobile-lead-details';
-import type { Lead, LeadStatus } from '@/types/lead';
+import type { Lead, LeadStatus, ActivityEntry, RemarkEntry } from '@/types/lead';
 import type { Category } from '@/types/category';
 
 export default function LeadDetails() {
@@ -90,6 +91,14 @@ export default function LeadDetails() {
           remarks: data.remarks || '',
           tags: data.tags || [],
           importBatchId: data.import_batch_id || undefined,
+          remarksHistory: data.remarks_history ? data.remarks_history.map((entry: any) => ({
+            ...entry,
+            timestamp: new Date(entry.timestamp)
+          })) : [],
+          activityLog: data.activity_log ? data.activity_log.map((entry: any) => ({
+            ...entry,
+            timestamp: new Date(entry.timestamp)
+          })) : [],
         };
         
         setLead(transformedLead);
@@ -138,21 +147,40 @@ export default function LeadDetails() {
     }
   };
 
-  const handleStatusChange = async (status: LeadStatus) => {
+  const handleStatusChange = async (newStatus: LeadStatus) => {
     if (!lead) return;
 
+    const oldStatus = lead.status;
+    if (oldStatus === newStatus) return;
+
     try {
+      // Create activity log entry
+      const activityEntry: ActivityEntry = {
+        id: crypto.randomUUID(),
+        type: 'status_change',
+        description: `Status changed from ${oldStatus} to ${newStatus}`,
+        oldValue: oldStatus,
+        newValue: newStatus,
+        timestamp: new Date()
+      };
+
+      const updatedActivityLog = [...(lead.activityLog || []), activityEntry];
+
       const { error } = await supabase
         .from('leads')
-        .update({ status })
+        .update({ 
+          status: newStatus,
+          activity_log: updatedActivityLog,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', lead.id);
 
       if (error) throw error;
 
-      setLead({ ...lead, status });
+      setLead({ ...lead, status: newStatus, activityLog: updatedActivityLog });
       toast({
         title: 'Status updated',
-        description: `Lead status updated to ${status}`,
+        description: `Lead status updated to ${newStatus}`,
       });
     } catch (error: any) {
       toast({
@@ -167,26 +195,44 @@ export default function LeadDetails() {
     if (!lead) return;
 
     try {
-      // Create timestamped entry
-      const newEntry = {
+      // Create timestamped remark entry
+      const remarkEntry: RemarkEntry = {
         id: crypto.randomUUID(),
         text: remarks,
         timestamp: new Date()
       };
       
-      const updatedHistory = [...(lead.remarksHistory || []), newEntry];
+      const updatedRemarksHistory = [...(lead.remarksHistory || []), remarkEntry];
+
+      // Create activity log entry
+      const activityEntry: ActivityEntry = {
+        id: crypto.randomUUID(),
+        type: 'remark_added',
+        description: `Remark added: ${remarks.substring(0, 50)}${remarks.length > 50 ? '...' : ''}`,
+        newValue: remarks,
+        timestamp: new Date()
+      };
+
+      const updatedActivityLog = [...(lead.activityLog || []), activityEntry];
 
       const { error } = await supabase
         .from('leads')
         .update({ 
           remarks,
-          remarks_history: updatedHistory
+          remarks_history: updatedRemarksHistory,
+          activity_log: updatedActivityLog,
+          updated_at: new Date().toISOString()
         })
         .eq('id', lead.id);
 
       if (error) throw error;
 
-      setLead({ ...lead, remarks, remarksHistory: updatedHistory });
+      setLead({ 
+        ...lead, 
+        remarks, 
+        remarksHistory: updatedRemarksHistory,
+        activityLog: updatedActivityLog 
+      });
       setIsEditingRemarks(false);
       toast({
         title: 'Remarks saved',
@@ -414,7 +460,7 @@ export default function LeadDetails() {
                       variant="outline"
                       size="sm"
                       onClick={() => {
-                        setRemarks('');
+                        setRemarks(lead?.remarks || '');
                         setIsEditingRemarks(false);
                       }}
                     >
@@ -442,7 +488,7 @@ export default function LeadDetails() {
                   {lead?.remarksHistory && lead.remarksHistory.length > 1 && (
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium">Previous Remarks</h4>
-                      {lead.remarksHistory.slice(0, -1).reverse().map((entry, index) => (
+                      {lead.remarksHistory.slice(0, -1).reverse().map((entry) => (
                         <div key={entry.id} className="p-2 bg-muted/20 rounded text-sm">
                           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
                             <span>{format(entry.timestamp, 'MMM dd, yyyy HH:mm')}</span>
@@ -460,6 +506,38 @@ export default function LeadDetails() {
               )}
             </CardContent>
           </Card>
+
+          {/* Activity Log */}
+          {lead?.activityLog && lead.activityLog.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Activity History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {lead.activityLog.slice().reverse().map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                      <div className="flex-shrink-0 mt-1">
+                        {activity.type === 'status_change' && <Badge variant="outline" className="text-xs">Status</Badge>}
+                        {activity.type === 'remark_added' && <Badge variant="outline" className="text-xs">Remark</Badge>}
+                        {activity.type === 'email_sent' && <Badge variant="outline" className="text-xs">Email</Badge>}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm">{activity.description}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <Clock className="h-3 w-3" />
+                          <span>{format(activity.timestamp, 'MMM dd, yyyy HH:mm')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}

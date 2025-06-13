@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -31,12 +32,13 @@ import {
   Linkedin,
   Globe,
   MessageSquare,
-  Clock
+  Clock,
+  Activity
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import type { Lead, LeadStatus } from '@/types/lead';
+import type { Lead, LeadStatus, ActivityEntry, RemarkEntry } from '@/types/lead';
 import type { Category } from '@/types/category';
 
 interface EnhancedMobileLeadCardProps {
@@ -45,7 +47,7 @@ interface EnhancedMobileLeadCardProps {
   isSelected: boolean;
   onSelect: (checked: boolean) => void;
   onStatusChange: (status: LeadStatus) => void;
-  onRemarksUpdate: (remarks: string) => void;
+  onRemarksUpdate: (remarks: string, remarksHistory: RemarkEntry[], activityLog: ActivityEntry[]) => void;
   onEmailClick: () => void;
   onViewDetails: () => void;
   onDeleteLead: () => void;
@@ -127,19 +129,29 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
   };
 
   const saveRemarks = () => {
-    // Create timestamped entry
-    const timestamp = new Date();
-    const newEntry = {
+    // Create timestamped remark entry
+    const remarkEntry: RemarkEntry = {
       id: crypto.randomUUID(),
       text: remarksText,
-      timestamp
+      timestamp: new Date()
     };
     
     // Update remarks history
-    const updatedHistory = [...(lead.remarksHistory || []), newEntry];
+    const updatedRemarksHistory = [...(lead.remarksHistory || []), remarkEntry];
     
-    // Call the update function with both remarks and history
-    onRemarksUpdate(remarksText);
+    // Create activity log entry
+    const activityEntry: ActivityEntry = {
+      id: crypto.randomUUID(),
+      type: 'remark_added',
+      description: `Remark added: ${remarksText.substring(0, 50)}${remarksText.length > 50 ? '...' : ''}`,
+      newValue: remarksText,
+      timestamp: new Date()
+    };
+
+    const updatedActivityLog = [...(lead.activityLog || []), activityEntry];
+    
+    // Call the update function with remarks, history, and activity log
+    onRemarksUpdate(remarksText, updatedRemarksHistory, updatedActivityLog);
     setIsEditingRemarks(false);
     toast({
       title: 'Remarks updated',
@@ -374,6 +386,40 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
                     <span className="text-muted-foreground">Last Contact:</span>
                     <span>{format(lead.lastContactDate, 'MMM dd, yyyy')}</span>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Activity Log */}
+            {lead.activityLog && lead.activityLog.length > 0 && (
+              <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                <h4 className="text-sm font-medium mb-2 text-left flex items-center gap-2">
+                  <Activity className="h-4 w-4" />
+                  Recent Activity
+                </h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {lead.activityLog.slice().reverse().slice(0, 3).map((activity) => (
+                    <div key={activity.id} className="text-xs">
+                      <div className="flex items-start gap-2">
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {activity.type === 'status_change' ? 'Status' : 
+                           activity.type === 'remark_added' ? 'Remark' : 'Email'}
+                        </Badge>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-left">{activity.description}</p>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                            <Clock className="h-2 w-2" />
+                            <span>{format(activity.timestamp, 'MMM dd, HH:mm')}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {lead.activityLog.length > 3 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    +{lead.activityLog.length - 3} more activities
+                  </p>
                 )}
               </div>
             )}
