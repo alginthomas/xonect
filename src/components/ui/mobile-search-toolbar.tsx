@@ -80,7 +80,7 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
               >
                 <Filter className="h-4 w-4" />
                 {activeFiltersCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs bg-primary">
+                  <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 text-xs bg-primary border-2 border-background flex items-center justify-center font-medium min-w-[20px]">
                     {activeFiltersCount}
                   </Badge>
                 )}
