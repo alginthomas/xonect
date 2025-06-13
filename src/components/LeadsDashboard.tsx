@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -287,6 +286,25 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const isAllCurrentPageSelected = currentPageLeadIds.length > 0 && selectedCurrentPageCount === currentPageLeadIds.length;
   const isPartialSelection = selectedCurrentPageCount > 0 && selectedCurrentPageCount < currentPageLeadIds.length;
 
+  // Fixed handleSelectAll function to match useLeadsSelection expectations
+  const handleSelectAllCurrentPage = (checked: boolean) => {
+    if (checked) {
+      // Select all current page leads
+      currentPageLeadIds.forEach(id => {
+        if (!selectedLeads.has(id)) {
+          handleSelectLead(id, true);
+        }
+      });
+    } else {
+      // Deselect all current page leads
+      currentPageLeadIds.forEach(id => {
+        if (selectedLeads.has(id)) {
+          handleSelectLead(id, false);
+        }
+      });
+    }
+  };
+
   // Render column content based on column id
   const renderColumnContent = (columnId: string, lead: Lead) => {
     switch (columnId) {
@@ -471,7 +489,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                           onSort={handleSort}
                           isAllSelected={isAllCurrentPageSelected}
                           isPartiallySelected={isPartialSelection}
-                          onSelectAll={(checked) => handleSelectAll(currentPageLeadIds, checked)}
+                          onSelectAll={handleSelectAllCurrentPage}
                         />
                       ))}
                     </SortableContext>
@@ -504,12 +522,14 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               categories={categories}
               selectedLeads={selectedLeads}
               onSelectLead={handleSelectLead}
-              onLeadClick={openLeadSidebar}
+              onViewDetails={openLeadSidebar}
               onStatusChange={handleStatusChange}
+              onRemarksUpdate={handleRemarksUpdate}
               onEmailClick={(lead) => {
                 setSelectedLeadForEmail(lead);
                 setShowEmailDialog(true);
               }}
+              onDeleteLead={onDeleteLead}
             />
           )}
 

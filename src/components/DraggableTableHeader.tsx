@@ -3,6 +3,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AppleTableHead } from '@/components/ui/apple-table';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
@@ -12,7 +13,9 @@ interface DraggableTableHeaderProps {
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
   onSort?: (field: string) => void;
-  children: React.ReactNode;
+  isAllSelected?: boolean;
+  isPartiallySelected?: boolean;
+  onSelectAll?: (checked: boolean) => void;
 }
 
 export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
@@ -20,7 +23,9 @@ export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
   sortField,
   sortDirection,
   onSort,
-  children
+  isAllSelected,
+  isPartiallySelected,
+  onSelectAll
 }) => {
   const {
     attributes,
@@ -45,6 +50,24 @@ export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
     }
   };
 
+  const renderColumnContent = () => {
+    if (column.id === 'select' && onSelectAll) {
+      return (
+        <Checkbox
+          checked={isAllSelected}
+          ref={(el) => {
+            if (el) {
+              el.indeterminate = isPartiallySelected || false;
+            }
+          }}
+          onCheckedChange={(checked) => onSelectAll(checked as boolean)}
+          className="h-4 w-4"
+        />
+      );
+    }
+    return column.label;
+  };
+
   return (
     <AppleTableHead
       ref={setNodeRef}
@@ -55,7 +78,7 @@ export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
         isDragging && 'opacity-50 z-50',
         'relative group'
       )}
-      onClick={handleSort}
+      onClick={column.sortable ? handleSort : undefined}
     >
       <div className="flex items-center gap-2">
         {!column.fixed && (
@@ -69,7 +92,7 @@ export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
         )}
         
         <div className="flex items-center gap-2 flex-1">
-          {children}
+          {renderColumnContent()}
           {column.sortable && sortField === column.id && (
             sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
           )}
