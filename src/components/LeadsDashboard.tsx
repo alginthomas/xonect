@@ -1,14 +1,13 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+
+import React, { useState, useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableHead, AppleTableRow, AppleTableCell } from '@/components/ui/apple-table';
 import { LeadSidebar } from '@/components/LeadSidebar';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
@@ -16,19 +15,25 @@ import { QuickRemarksCell } from '@/components/QuickRemarksCell';
 import { QuickActionsCell } from '@/components/QuickActionsCell';
 import { EmailDialog } from '@/components/EmailDialog';
 import { DraggableTableHeader } from '@/components/DraggableTableHeader';
-import { ColumnSettings } from '@/components/ColumnSettings';
 import { MobilePagination } from '@/components/ui/mobile-pagination';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { DateGroupedLeads } from '@/components/ui/date-grouped-leads';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
+import { DesktopFilters } from '@/components/DesktopFilters';
+import { BulkActionsBar } from '@/components/BulkActionsBar';
+import { ResultsOverview } from '@/components/ResultsOverview';
 import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
+import { useLeadsCache } from '@/hooks/useLeadsCache';
+import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
+import { useLeadsSelection } from '@/hooks/useLeadsSelection';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Search, Download, Users, Mail, Phone, Trash2, ChevronUp, ChevronDown, ChevronLeft, ChevronRightIcon, Filter, MoreVertical, Plus, X } from 'lucide-react';
+import { Mail, Phone, ChevronLeft, ChevronRightIcon, Plus, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
+
 interface BrandingData {
   companyName: string;
   companyLogo: string;
@@ -37,6 +42,7 @@ interface BrandingData {
   senderName: string;
   senderEmail: string;
 }
+
 interface LeadsDashboardProps {
   leads: Lead[];
   templates: EmailTemplate[];
@@ -52,35 +58,6 @@ interface LeadsDashboardProps {
   onCreateCategory?: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
 
-// Cache keys for localStorage
-const CACHE_KEYS = {
-  SEARCH_TERM: 'leads_search_term',
-  STATUS_FILTER: 'leads_status_filter',
-  CATEGORY_FILTER: 'leads_category_filter',
-  DATA_AVAILABILITY_FILTER: 'leads_data_availability_filter',
-  SORT_FIELD: 'leads_sort_field',
-  SORT_DIRECTION: 'leads_sort_direction',
-  CURRENT_PAGE: 'leads_current_page',
-  ITEMS_PER_PAGE: 'leads_items_per_page'
-};
-
-// Cache utilities
-const saveToCache = (key: string, value: any) => {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (error) {
-    console.warn('Failed to save to cache:', error);
-  }
-};
-const loadFromCache = (key: string, defaultValue: any) => {
-  try {
-    const cached = localStorage.getItem(key);
-    return cached ? JSON.parse(cached) : defaultValue;
-  } catch (error) {
-    console.warn('Failed to load from cache:', error);
-    return defaultValue;
-  }
-};
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   leads,
   templates,
@@ -95,25 +72,41 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   selectedBatchId,
   onCreateCategory
 }) => {
-  const [searchTerm, setSearchTerm] = useState(() => loadFromCache(CACHE_KEYS.SEARCH_TERM, ''));
-  const [statusFilter, setStatusFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.STATUS_FILTER, 'all'));
-  const [categoryFilter, setCategoryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.CATEGORY_FILTER, 'all'));
-  const [dataAvailabilityFilter, setDataAvailabilityFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, 'all'));
-  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());
-  const [sortField, setSortField] = useState<string>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
-  const [currentPage, setCurrentPage] = useState(() => loadFromCache(CACHE_KEYS.CURRENT_PAGE, 1));
-  const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 25));
+  // Hooks
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    dataAvailabilityFilter,
+    setDataAvailabilityFilter,
+    sortField,
+    setSortField,
+    sortDirection,
+    setSortDirection,
+    currentPage,
+    setCurrentPage,
+    itemsPerPage,
+    setItemsPerPage
+  } = useLeadsCache();
 
-  // Sidebar state
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false);
+  const { filteredLeads, sortedLeads } = useLeadsFiltering({
+    leads,
+    importBatches,
+    selectedBatchId,
+    searchTerm,
+    statusFilter,
+    categoryFilter,
+    dataAvailabilityFilter,
+    sortField,
+    sortDirection,
+    setCurrentPage
+  });
 
-  // Email dialog state
-  const [selectedLeadForEmail, setSelectedLeadForEmail] = useState<Lead | null>(null);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const { selectedLeads, handleSelectAll, handleSelectLead, clearSelection } = useLeadsSelection();
 
-  // Column configuration
   const {
     columns,
     visibleColumns,
@@ -121,42 +114,18 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     toggleColumnVisibility,
     resetToDefault
   } = useColumnConfiguration();
-  const {
-    toast
-  } = useToast();
+
+  const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Local state
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [selectedLeadForEmail, setSelectedLeadForEmail] = useState<Lead | null>(null);
+  const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   // Drag and drop sensors
   const sensors = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor));
-
-  // Cache state changes
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SEARCH_TERM, searchTerm);
-  }, [searchTerm]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.STATUS_FILTER, statusFilter);
-  }, [statusFilter]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.CATEGORY_FILTER, categoryFilter);
-  }, [categoryFilter]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, dataAvailabilityFilter);
-  }, [dataAvailabilityFilter]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SORT_FIELD, sortField);
-  }, [sortField]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.SORT_DIRECTION, sortDirection);
-  }, [sortDirection]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.CURRENT_PAGE, currentPage);
-  }, [currentPage]);
-  useEffect(() => {
-    saveToCache(CACHE_KEYS.ITEMS_PER_PAGE, itemsPerPage);
-  }, [itemsPerPage]);
-
-  // All available statuses for filtering
-  const allStatuses: LeadStatus[] = ['New', 'Contacted', 'Opened', 'Clicked', 'Replied', 'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 'Not Interested', 'Interested'];
 
   // Calculate active filters count
   const activeFiltersCount = useMemo(() => {
@@ -167,80 +136,20 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     return count;
   }, [statusFilter, categoryFilter, dataAvailabilityFilter]);
 
-  // Filter leads based on batch selection and other filters
-  const filteredLeads = useMemo(() => {
-    console.log('Filtering leads:', {
-      totalLeads: leads.length,
-      selectedBatchId,
-      searchTerm,
-      statusFilter,
-      categoryFilter,
-      dataAvailabilityFilter
-    });
-    let filtered = leads;
-
-    // Filter by selected batch
-    if (selectedBatchId) {
-      const selectedBatch = importBatches.find(b => b.id === selectedBatchId);
-      filtered = filtered.filter(lead => lead.importBatchId === selectedBatchId || selectedBatch && lead.categoryId === selectedBatch.categoryId);
-      console.log('After batch filter:', filtered.length, 'leads found for batch:', selectedBatchId);
-    }
-
-    // Filter by search term
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase().trim();
-      filtered = filtered.filter(lead => lead.firstName?.toLowerCase().includes(term) || lead.lastName?.toLowerCase().includes(term) || lead.email?.toLowerCase().includes(term) || lead.company?.toLowerCase().includes(term) || lead.title?.toLowerCase().includes(term));
-      console.log('After search filter:', filtered.length);
-    }
-
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.status === statusFilter);
-      console.log('After status filter:', filtered.length);
-    }
-
-    // Filter by category
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.categoryId === categoryFilter);
-      console.log('After category filter:', filtered.length);
-    }
-
-    // Filter by data availability
-    if (dataAvailabilityFilter === 'has-phone') {
-      filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '');
-    } else if (dataAvailabilityFilter === 'has-email') {
-      filtered = filtered.filter(lead => lead.email && lead.email.trim() !== '');
-    } else if (dataAvailabilityFilter === 'has-both') {
-      filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '' && lead.email && lead.email.trim() !== '');
-    }
-    console.log('Final filtered count:', filtered.length);
-    return filtered;
-  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, importBatches]);
-
-  // Sort leads
-  const sortedLeads = useMemo(() => {
-    return [...filteredLeads].sort((a, b) => {
-      let aValue: any = a[sortField as keyof Lead];
-      let bValue: any = b[sortField as keyof Lead];
-      if (aValue instanceof Date) aValue = aValue.getTime();
-      if (bValue instanceof Date) bValue = bValue.getTime();
-      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
-      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
-      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [filteredLeads, sortField, sortDirection]);
-
   // Pagination
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedLeads = sortedLeads.slice(startIndex, startIndex + itemsPerPage);
 
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, selectedBatchId]);
+  // Mobile-optimized column visibility
+  const mobileVisibleColumns = useMemo(() => {
+    if (!isMobile) return visibleColumns;
+    return visibleColumns.filter(col => ['select', 'name', 'status', 'actions'].includes(col.id));
+  }, [visibleColumns, isMobile]);
+
+  const activeColumns = isMobile ? mobileVisibleColumns : visibleColumns;
+
+  // Event handlers
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -249,30 +158,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       setSortDirection('asc');
     }
   };
-  const handleSelectAll = useCallback(() => {
-    const currentPageLeadIds = paginatedLeads.map(lead => lead.id);
-    const allCurrentSelected = currentPageLeadIds.every(id => selectedLeads.has(id));
-    if (allCurrentSelected) {
-      setSelectedLeads(prev => {
-        const newSet = new Set(prev);
-        currentPageLeadIds.forEach(id => newSet.delete(id));
-        return newSet;
-      });
-    } else {
-      setSelectedLeads(prev => new Set([...prev, ...currentPageLeadIds]));
-    }
-  }, [paginatedLeads, selectedLeads]);
-  const handleSelectLead = (leadId: string, checked: boolean) => {
-    setSelectedLeads(prev => {
-      const newSet = new Set(prev);
-      if (checked) {
-        newSet.add(leadId);
-      } else {
-        newSet.delete(leadId);
-      }
-      return newSet;
-    });
-  };
+
   const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
     if (selectedLeads.size === 0) {
       toast({
@@ -282,6 +168,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       });
       return;
     }
+
     const leadIds = Array.from(selectedLeads);
     try {
       if (action === 'delete') {
@@ -297,7 +184,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           description: `${leadIds.length} leads status updated to ${value}.`
         });
       }
-      setSelectedLeads(new Set());
+      clearSelection();
     } catch (error) {
       toast({
         title: 'Action failed',
@@ -306,27 +193,31 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       });
     }
   };
+
   const handleExport = () => {
-    const leadsToExport = selectedLeads.size > 0 ? sortedLeads.filter(lead => selectedLeads.has(lead.id)) : sortedLeads;
+    const leadsToExport = selectedLeads.size > 0 
+      ? sortedLeads.filter(lead => selectedLeads.has(lead.id)) 
+      : sortedLeads;
     exportLeadsToCSV(leadsToExport, categories);
     toast({
       title: 'Export successful',
       description: `${leadsToExport.length} leads exported to CSV.`
     });
   };
+
   const openLeadSidebar = (lead: Lead) => {
     setSelectedLead(lead);
     setShowSidebar(true);
   };
+
   const closeSidebar = () => {
     setShowSidebar(false);
     setSelectedLead(null);
   };
+
   const handleStatusChange = async (leadId: string, status: LeadStatus) => {
     try {
-      await onUpdateLead(leadId, {
-        status
-      });
+      await onUpdateLead(leadId, { status });
       toast({
         title: 'Status updated',
         description: `Lead status updated to ${status}`
@@ -339,11 +230,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       });
     }
   };
+
   const handleRemarksUpdate = async (leadId: string, remarks: string) => {
     try {
-      await onUpdateLead(leadId, {
-        remarks
-      });
+      await onUpdateLead(leadId, { remarks });
       toast({
         title: 'Remarks updated',
         description: 'Lead remarks have been updated.'
@@ -356,55 +246,38 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       });
     }
   };
+
   const handleDragEnd = (event: any) => {
-    const {
-      active,
-      over
-    } = event;
+    const { active, over } = event;
     if (active.id !== over?.id) {
       reorderColumns(active.id, over.id);
     }
   };
+
   const handleLoadMore = () => {
     setCurrentPage(prev => prev + 1);
   };
+
   const clearAllFilters = () => {
     setStatusFilter('all');
     setCategoryFilter('all');
     setDataAvailabilityFilter('all');
     setSearchTerm('');
   };
-  const getBatchName = (batchId: string | undefined) => {
-    if (!batchId) return 'Direct Entry';
-    const batch = importBatches.find(b => b.id === batchId);
-    return batch ? batch.name : 'Unknown Batch';
-  };
+
   const getCategoryInfo = (categoryId: string | undefined) => {
-    if (!categoryId) return {
-      name: 'Uncategorized',
-      color: '#6B7280'
-    };
+    if (!categoryId) return { name: 'Uncategorized', color: '#6B7280' };
     const category = categories.find(c => c.id === categoryId);
-    return category ? {
-      name: category.name,
-      color: category.color
-    } : {
-      name: 'Unknown',
-      color: '#6B7280'
-    };
+    return category ? { name: category.name, color: category.color } : { name: 'Unknown', color: '#6B7280' };
   };
+
   const getSizeColor = (size: string) => {
     switch (size) {
-      case 'Small (1-50)':
-        return 'bg-blue-100 text-blue-800';
-      case 'Medium (51-200)':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'Large (201-1000)':
-        return 'bg-orange-100 text-orange-800';
-      case 'Enterprise (1000+)':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'Small (1-50)': return 'bg-blue-100 text-blue-800';
+      case 'Medium (51-200)': return 'bg-yellow-100 text-yellow-800';
+      case 'Large (201-1000)': return 'bg-orange-100 text-orange-800';
+      case 'Enterprise (1000+)': return 'bg-purple-100 text-purple-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -414,31 +287,46 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   const isAllCurrentPageSelected = currentPageLeadIds.length > 0 && selectedCurrentPageCount === currentPageLeadIds.length;
   const isPartialSelection = selectedCurrentPageCount > 0 && selectedCurrentPageCount < currentPageLeadIds.length;
 
-  // Mobile-optimized column visibility
-  const mobileVisibleColumns = useMemo(() => {
-    if (!isMobile) return visibleColumns;
-
-    // On mobile, show only essential columns
-    return visibleColumns.filter(col => ['select', 'name', 'status', 'actions'].includes(col.id));
-  }, [visibleColumns, isMobile]);
-  const activeColumns = isMobile ? mobileVisibleColumns : visibleColumns;
-
   // Render column content based on column id
   const renderColumnContent = (columnId: string, lead: Lead) => {
     switch (columnId) {
       case 'select':
-        return <Checkbox checked={selectedLeads.has(lead.id)} onCheckedChange={checked => handleSelectLead(lead.id, checked as boolean)} className="h-2.5 w-2.5 font-normal" />;
+        return (
+          <Checkbox
+            checked={selectedLeads.has(lead.id)}
+            onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
+            className="h-2.5 w-2.5 font-normal"
+          />
+        );
       case 'status':
-        return <QuickStatusEditor status={lead.status} onChange={status => handleStatusChange(lead.id, status)} />;
+        return (
+          <QuickStatusEditor
+            status={lead.status}
+            onChange={(status) => handleStatusChange(lead.id, status)}
+          />
+        );
       case 'remarks':
-        return <QuickRemarksCell remarks={lead.remarks || ''} onUpdate={remarks => handleRemarksUpdate(lead.id, remarks)} />;
+        return (
+          <QuickRemarksCell
+            remarks={lead.remarks || ''}
+            onUpdate={(remarks) => handleRemarksUpdate(lead.id, remarks)}
+          />
+        );
       case 'actions':
-        return <QuickActionsCell lead={lead} onEmailClick={() => {
-          setSelectedLeadForEmail(lead);
-          setShowEmailDialog(true);
-        }} onViewDetails={() => openLeadSidebar(lead)} onDeleteLead={() => onDeleteLead(lead.id)} />;
+        return (
+          <QuickActionsCell
+            lead={lead}
+            onEmailClick={() => {
+              setSelectedLeadForEmail(lead);
+              setShowEmailDialog(true);
+            }}
+            onViewDetails={() => openLeadSidebar(lead)}
+            onDeleteLead={() => onDeleteLead(lead.id)}
+          />
+        );
       case 'name':
-        return <div className="flex items-center gap-3">
+        return (
+          <div className="flex items-center gap-3">
             <Avatar className="h-8 w-8">
               <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
               <AvatarFallback>
@@ -453,211 +341,230 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 {lead.title}
               </div>
             </div>
-          </div>;
+          </div>
+        );
       case 'company':
-        return <div>
+        return (
+          <div>
             <div className="font-medium">{lead.company}</div>
             <div className="flex gap-1 mt-1">
               <Badge variant="outline" className={getSizeColor(lead.companySize)}>
                 {lead.companySize.replace(/\s*\([^)]*\)/, '')}
               </Badge>
             </div>
-          </div>;
+          </div>
+        );
       case 'contact':
-        return <div className="space-y-1">
+        return (
+          <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm">
               <Mail className="h-3 w-3" />
               <span className="truncate max-w-[200px]">{lead.email}</span>
             </div>
-            {lead.phone && <div className="flex items-center gap-2 text-sm">
+            {lead.phone && (
+              <div className="flex items-center gap-2 text-sm">
                 <Phone className="h-3 w-3" />
                 <span>{lead.phone}</span>
-              </div>}
-          </div>;
+              </div>
+            )}
+          </div>
+        );
       case 'category':
         const category = getCategoryInfo(lead.categoryId);
-        return <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full" style={{
-            backgroundColor: category.color
-          }} />
+        return (
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: category.color }}
+            />
             <span className="text-sm">{category.name}</span>
-          </div>;
+          </div>
+        );
       case 'created':
-        return <div className="text-sm text-muted-foreground">
+        return (
+          <div className="text-sm text-muted-foreground">
             {format(lead.createdAt, 'MMM dd')}
-          </div>;
+          </div>
+        );
       default:
         return null;
     }
   };
-  return <div className="space-y-3 lg:space-y-6">
+
+  return (
+    <div className="space-y-3 lg:space-y-6">
       {/* Mobile Search Toolbar */}
-      <MobileSearchToolbar searchTerm={searchTerm} onSearchChange={setSearchTerm} statusFilter={statusFilter} onStatusChange={setStatusFilter} categoryFilter={categoryFilter} onCategoryChange={setCategoryFilter} dataAvailabilityFilter={dataAvailabilityFilter} onDataAvailabilityChange={setDataAvailabilityFilter} categories={categories} onExport={handleExport} onClearFilters={clearAllFilters} activeFiltersCount={activeFiltersCount} />
+      <MobileSearchToolbar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusChange={setStatusFilter}
+        categoryFilter={categoryFilter}
+        onCategoryChange={setCategoryFilter}
+        dataAvailabilityFilter={dataAvailabilityFilter}
+        onDataAvailabilityChange={setDataAvailabilityFilter}
+        categories={categories}
+        onExport={handleExport}
+        onClearFilters={clearAllFilters}
+        activeFiltersCount={activeFiltersCount}
+      />
 
       {/* Desktop Search and Filters - Hidden on Mobile */}
-      {!isMobile && <Card className="apple-card">
-          <CardContent className="pt-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input placeholder="Search leads..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-36 h-9">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {allStatuses.map(status => <SelectItem key={status} value={status}>{status}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-
-                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                  <SelectTrigger className="w-36 h-9">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map(category => <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-
-                <Select value={dataAvailabilityFilter} onValueChange={setDataAvailabilityFilter}>
-                  <SelectTrigger className="w-36 h-9">
-                    <SelectValue placeholder="Data" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Data</SelectItem>
-                    <SelectItem value="has-email">Has Email</SelectItem>
-                    <SelectItem value="has-phone">Has Phone</SelectItem>
-                    <SelectItem value="has-both">Has Both</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <ColumnSettings columns={columns} onToggleVisibility={toggleColumnVisibility} onReset={resetToDefault} />
-
-                <Button variant="outline" onClick={handleExport} className="h-9">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-
-                {activeFiltersCount > 0 && <Button variant="ghost" onClick={clearAllFilters} className="h-9">
-                    <X className="h-4 w-4 mr-2" />
-                    Clear ({activeFiltersCount})
-                  </Button>}
-              </div>
-            </div>
-          </CardContent>
-        </Card>}
+      {!isMobile && (
+        <DesktopFilters
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          statusFilter={statusFilter}
+          onStatusChange={setStatusFilter}
+          categoryFilter={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+          dataAvailabilityFilter={dataAvailabilityFilter}
+          onDataAvailabilityChange={setDataAvailabilityFilter}
+          categories={categories}
+          onExport={handleExport}
+          onClearFilters={clearAllFilters}
+          activeFiltersCount={activeFiltersCount}
+          columns={columns}
+          onToggleColumnVisibility={toggleColumnVisibility}
+          onResetColumns={resetToDefault}
+        />
+      )}
 
       {/* Bulk Actions - Mobile Optimized */}
-      {selectedLeads.size > 0 && <div className="sticky top-20 z-20 bg-primary/5 backdrop-blur-sm border border-primary/20 rounded-lg p-3 mx-1">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-primary">
-              {selectedLeads.size} selected
-            </span>
-            <Button variant="ghost" size="sm" onClick={() => setSelectedLeads(new Set())} className="h-6 w-6 p-0 text-primary hover:bg-primary/10">
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-          
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex-1 h-8 text-xs">
-                  Update Status
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                {allStatuses.map(status => <DropdownMenuItem key={status} onClick={() => handleBulkAction('status', status)}>
-                    Mark as {status}
-                  </DropdownMenuItem>)}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            <Button variant="outline" size="sm" onClick={() => handleBulkAction('delete')} className="text-red-600 hover:text-red-700 h-8 text-xs px-3">
-              <Trash2 className="h-3 w-3 mr-1" />
-              Delete
-            </Button>
-          </div>
-        </div>}
+      <BulkActionsBar
+        selectedCount={selectedLeads.size}
+        onClearSelection={clearSelection}
+        onBulkAction={handleBulkAction}
+      />
 
       {/* Results Overview - Compact */}
       <Card className="apple-card">
-        <CardHeader className="pb-2 lg:pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base lg:text-xl">
-                <Users className="h-4 w-4 lg:h-5 lg:w-5" />
-                {filteredLeads.length} Lead{filteredLeads.length !== 1 ? 's' : ''}
-                {selectedLeads.size > 0 && <Badge variant="secondary" className="ml-2 text-xs">
-                    {selectedLeads.size} selected
-                  </Badge>}
-              </CardTitle>
-              {selectedBatchId && <CardDescription className="mt-1 flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    Batch: {getBatchName(selectedBatchId)}
-                  </Badge>
-                </CardDescription>}
-            </div>
-          </div>
-        </CardHeader>
+        <ResultsOverview
+          filteredLeadsCount={filteredLeads.length}
+          selectedCount={selectedLeads.size}
+          selectedBatchId={selectedBatchId}
+          importBatches={importBatches}
+        />
         <CardContent className="pt-0">
-          {paginatedLeads.length === 0 ? <div className="text-center py-8 text-muted-foreground">
+          {paginatedLeads.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
               <Users className="h-8 w-8 mx-auto mb-3 opacity-50" />
               <h3 className="text-sm font-medium mb-1">No leads found</h3>
               <p className="text-xs">Try adjusting your search or filters.</p>
-            </div> : isMobile ?
-        // Mobile Date-Grouped Layout
-        <DateGroupedLeads leads={paginatedLeads} categories={categories} selectedLeads={selectedLeads} onSelectLead={handleSelectLead} onStatusChange={handleStatusChange} onRemarksUpdate={handleRemarksUpdate} onEmailClick={lead => {
-          setSelectedLeadForEmail(lead);
-          setShowEmailDialog(true);
-        }} onViewDetails={openLeadSidebar} onDeleteLead={onDeleteLead} /> :
-        // Desktop Table Layout
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            </div>
+          ) : isMobile ? (
+            // Mobile Date-Grouped Layout
+            <DateGroupedLeads
+              leads={paginatedLeads}
+              categories={categories}
+              selectedLeads={selectedLeads}
+              onSelectLead={handleSelectLead}
+              onStatusChange={handleStatusChange}
+              onRemarksUpdate={handleRemarksUpdate}
+              onEmailClick={(lead) => {
+                setSelectedLeadForEmail(lead);
+                setShowEmailDialog(true);
+              }}
+              onViewDetails={openLeadSidebar}
+              onDeleteLead={onDeleteLead}
+            />
+          ) : (
+            // Desktop Table Layout
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
               <AppleTable>
                 <AppleTableHeader>
                   <AppleTableRow>
-                    <SortableContext items={activeColumns.map(col => col.id)} strategy={horizontalListSortingStrategy}>
+                    <SortableContext
+                      items={activeColumns.map(col => col.id)}
+                      strategy={horizontalListSortingStrategy}
+                    >
                       {activeColumns.map(column => {
-                    if (column.id === 'select') {
-                      return <AppleTableHead key="select" className="w-10">
-                              <Checkbox checked={isAllCurrentPageSelected} ref={el => {
-                          if (el) {
-                            (el as any).indeterminate = isPartialSelection;
-                          }
-                        }} onCheckedChange={handleSelectAll} className="h-3.5 w-3.5" />
-                            </AppleTableHead>;
-                    }
-                    return <DraggableTableHeader key={column.id} column={column} sortField={sortField} sortDirection={sortDirection} onSort={handleSort}>
+                        if (column.id === 'select') {
+                          return (
+                            <AppleTableHead key="select" className="w-10">
+                              <Checkbox
+                                checked={isAllCurrentPageSelected}
+                                ref={(el) => {
+                                  if (el) {
+                                    (el as any).indeterminate = isPartialSelection;
+                                  }
+                                }}
+                                onCheckedChange={() => handleSelectAll(paginatedLeads)}
+                                className="h-3.5 w-3.5"
+                              />
+                            </AppleTableHead>
+                          );
+                        }
+                        return (
+                          <DraggableTableHeader
+                            key={column.id}
+                            column={column}
+                            sortField={sortField}
+                            sortDirection={sortDirection}
+                            onSort={handleSort}
+                          >
                             {column.label}
-                          </DraggableTableHeader>;
-                  })}
+                          </DraggableTableHeader>
+                        );
+                      })}
                     </SortableContext>
                   </AppleTableRow>
                 </AppleTableHeader>
                 <AppleTableBody>
-                  {paginatedLeads.map(lead => <AppleTableRow key={lead.id} className="group hover:bg-muted/50 cursor-pointer" onClick={() => openLeadSidebar(lead)}>
-                      {activeColumns.map(column => <AppleTableCell key={`${lead.id}-${column.id}`} className={column.width} onClick={column.id === 'select' || column.id === 'status' || column.id === 'remarks' || column.id === 'actions' ? e => e.stopPropagation() : undefined}>
+                  {paginatedLeads.map(lead => (
+                    <AppleTableRow
+                      key={lead.id}
+                      className="group hover:bg-muted/50 cursor-pointer"
+                      onClick={() => openLeadSidebar(lead)}
+                    >
+                      {activeColumns.map(column => (
+                        <AppleTableCell
+                          key={`${lead.id}-${column.id}`}
+                          className={column.width}
+                          onClick={
+                            column.id === 'select' || 
+                            column.id === 'status' || 
+                            column.id === 'remarks' || 
+                            column.id === 'actions'
+                              ? (e) => e.stopPropagation()
+                              : undefined
+                          }
+                        >
                           {renderColumnContent(column.id, lead)}
-                        </AppleTableCell>)}
-                    </AppleTableRow>)}
+                        </AppleTableCell>
+                      ))}
+                    </AppleTableRow>
+                  ))}
                 </AppleTableBody>
               </AppleTable>
-            </DndContext>}
+            </DndContext>
+          )}
 
           {/* Mobile-optimized Pagination */}
-          {paginatedLeads.length > 0 && <>
-              {isMobile ? <MobilePagination currentPage={currentPage} totalPages={totalPages} itemsPerPage={itemsPerPage} totalItems={filteredLeads.length} onLoadMore={handleLoadMore} hasMore={currentPage < totalPages} /> :
-          // Desktop Pagination
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4">
+          {paginatedLeads.length > 0 && (
+            <>
+              {isMobile ? (
+                <MobilePagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  itemsPerPage={itemsPerPage}
+                  totalItems={filteredLeads.length}
+                  onLoadMore={handleLoadMore}
+                  hasMore={currentPage < totalPages}
+                />
+              ) : (
+                // Desktop Pagination
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4">
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Show</span>
-                    <Select value={itemsPerPage.toString()} onValueChange={value => setItemsPerPage(parseInt(value))}>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => setItemsPerPage(parseInt(value))}
+                    >
                       <SelectTrigger className="w-16 h-8">
                         <SelectValue />
                       </SelectTrigger>
@@ -673,11 +580,19 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
                     <span className="text-sm text-muted-foreground">
-                      Showing {Math.min(startIndex + 1, filteredLeads.length)} to {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of {filteredLeads.length} leads
+                      Showing {Math.min(startIndex + 1, filteredLeads.length)} to{' '}
+                      {Math.min(startIndex + itemsPerPage, filteredLeads.length)} of{' '}
+                      {filteredLeads.length} leads
                     </span>
                     
                     <div className="flex gap-1">
-                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="h-8">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8"
+                      >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       
@@ -685,32 +600,60 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                         {currentPage} of {Math.max(1, Math.ceil(filteredLeads.length / itemsPerPage))}
                       </span>
                       
-                      <Button variant="outline" size="sm" onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))} disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)} className="h-8">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(Math.ceil(filteredLeads.length / itemsPerPage), prev + 1))}
+                        disabled={currentPage >= Math.ceil(filteredLeads.length / itemsPerPage)}
+                        className="h-8"
+                      >
                         <ChevronRightIcon className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </div>}
-            </>}
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
 
       {/* Floating Action Button for Mobile */}
-      <FloatingActionButton onClick={() => {
-      toast({
-        title: 'Add Lead',
-        description: 'Lead creation feature coming soon!'
-      });
-    }} icon={<Plus className="h-5 w-5" />} label="Add Lead" className="bottom-20 right-4 h-12 w-12 shadow-xl" />
+      <FloatingActionButton
+        onClick={() => {
+          toast({
+            title: 'Add Lead',
+            description: 'Lead creation feature coming soon!'
+          });
+        }}
+        icon={<Plus className="h-5 w-5" />}
+        label="Add Lead"
+        className="bottom-20 right-4 h-12 w-12 shadow-xl"
+      />
 
       {/* Sidebar for Lead Details */}
-      <LeadSidebar lead={selectedLead} isOpen={showSidebar} onClose={closeSidebar} categories={categories} onUpdateLead={onUpdateLead} onCreateCategory={onCreateCategory} />
+      <LeadSidebar
+        lead={selectedLead}
+        isOpen={showSidebar}
+        onClose={closeSidebar}
+        categories={categories}
+        onUpdateLead={onUpdateLead}
+        onCreateCategory={onCreateCategory}
+      />
 
       {/* Email Dialog */}
-      {selectedLeadForEmail && <EmailDialog lead={selectedLeadForEmail} templates={templates} branding={branding} onEmailSent={leadId => {
-      onSendEmail(leadId);
-      setShowEmailDialog(false);
-      setSelectedLeadForEmail(null);
-    }} />}
-    </div>;
+      {selectedLeadForEmail && (
+        <EmailDialog
+          lead={selectedLeadForEmail}
+          templates={templates}
+          branding={branding}
+          onEmailSent={(leadId) => {
+            onSendEmail(leadId);
+            setShowEmailDialog(false);
+            setSelectedLeadForEmail(null);
+          }}
+        />
+      )}
+    </div>
+  );
 };
