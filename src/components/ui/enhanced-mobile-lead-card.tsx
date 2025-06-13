@@ -33,7 +33,8 @@ import {
   Globe,
   MessageSquare,
   Clock,
-  Activity
+  Activity,
+  User
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { useToast } from '@/hooks/use-toast';
@@ -390,16 +391,17 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
               </div>
             )}
 
-            {/* Activity Log */}
-            {lead.activityLog && lead.activityLog.length > 0 && (
-              <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                <h4 className="text-sm font-medium mb-2 text-left flex items-center gap-2">
-                  <Activity className="h-4 w-4" />
-                  Recent Activity
-                </h4>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
-                  {lead.activityLog.slice().reverse().slice(0, 3).map((activity) => (
-                    <div key={activity.id} className="text-xs">
+            {/* Activity Summary - Mobile Version */}
+            <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+              <h4 className="text-sm font-medium mb-2 text-left flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Activity Summary
+              </h4>
+              
+              {lead.activityLog && lead.activityLog.length > 0 ? (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {lead.activityLog.slice().reverse().slice(0, 5).map((activity) => (
+                    <div key={activity.id} className="text-xs border-l-2 border-blue-200 pl-3 py-1">
                       <div className="flex items-start gap-2">
                         <Badge variant="outline" className="text-xs shrink-0">
                           {activity.type === 'status_change' ? 'Status' : 
@@ -415,14 +417,34 @@ export const EnhancedMobileLeadCard: React.FC<EnhancedMobileLeadCardProps> = ({
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Lead Created Entry */}
+                  <div className="text-xs border-l-2 border-gray-200 pl-3 py-1">
+                    <div className="flex items-start gap-2">
+                      <Badge variant="outline" className="text-xs shrink-0">Created</Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-left">Lead was added to the system</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <Clock className="h-2 w-2" />
+                          <span>{format(lead.createdAt, 'MMM dd, HH:mm')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                {lead.activityLog.length > 3 && (
-                  <p className="text-xs text-muted-foreground text-center">
-                    +{lead.activityLog.length - 3} more activities
-                  </p>
-                )}
-              </div>
-            )}
+              ) : (
+                <div className="text-center py-4">
+                  <Activity className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Activity tracking coming soon</p>
+                </div>
+              )}
+              
+              {lead.activityLog && lead.activityLog.length > 5 && (
+                <p className="text-xs text-muted-foreground text-center pt-2 border-t">
+                  +{lead.activityLog.length - 5} more activities
+                </p>
+              )}
+            </div>
           </CollapsibleContent>
         </Collapsible>
 

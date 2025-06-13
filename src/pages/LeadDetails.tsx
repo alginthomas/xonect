@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -91,11 +92,11 @@ export default function LeadDetails() {
           remarks: data.remarks || '',
           tags: data.tags || [],
           importBatchId: data.import_batch_id || undefined,
-          remarksHistory: data.remarks_history ? data.remarks_history.map((entry: any) => ({
+          remarksHistory: Array.isArray(data.remarks_history) ? data.remarks_history.map((entry: any) => ({
             ...entry,
             timestamp: new Date(entry.timestamp)
           })) : [],
-          activityLog: data.activity_log ? data.activity_log.map((entry: any) => ({
+          activityLog: Array.isArray(data.activity_log) ? data.activity_log.map((entry: any) => ({
             ...entry,
             timestamp: new Date(entry.timestamp)
           })) : [],
@@ -166,11 +167,22 @@ export default function LeadDetails() {
 
       const updatedActivityLog = [...(lead.activityLog || []), activityEntry];
 
+      // Convert to JSON format for database
+      const activityLogJson = updatedActivityLog.map(entry => ({
+        id: entry.id,
+        type: entry.type,
+        description: entry.description,
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        timestamp: entry.timestamp.toISOString(),
+        userId: entry.userId
+      }));
+
       const { error } = await supabase
         .from('leads')
         .update({ 
           status: newStatus,
-          activity_log: updatedActivityLog,
+          activity_log: activityLogJson,
           updated_at: new Date().toISOString()
         })
         .eq('id', lead.id);
@@ -215,12 +227,29 @@ export default function LeadDetails() {
 
       const updatedActivityLog = [...(lead.activityLog || []), activityEntry];
 
+      // Convert to JSON format for database
+      const remarksHistoryJson = updatedRemarksHistory.map(entry => ({
+        id: entry.id,
+        text: entry.text,
+        timestamp: entry.timestamp.toISOString()
+      }));
+
+      const activityLogJson = updatedActivityLog.map(entry => ({
+        id: entry.id,
+        type: entry.type,
+        description: entry.description,
+        oldValue: entry.oldValue,
+        newValue: entry.newValue,
+        timestamp: entry.timestamp.toISOString(),
+        userId: entry.userId
+      }));
+
       const { error } = await supabase
         .from('leads')
         .update({ 
           remarks,
-          remarks_history: updatedRemarksHistory,
-          activity_log: updatedActivityLog,
+          remarks_history: remarksHistoryJson,
+          activity_log: activityLogJson,
           updated_at: new Date().toISOString()
         })
         .eq('id', lead.id);
@@ -422,6 +451,100 @@ export default function LeadDetails() {
             </CardContent>
           </Card>
 
+          {/* Activity & Timeline - Desktop Version */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Activity & Timeline
+              </CardTitle>
+              <CardDescription>
+                Track all activities and interactions with this lead
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {lead?.activityLog && lead.activityLog.length > 0 ? (
+                <div className="space-y-4">
+                  {lead.activityLog.slice().reverse().map((activity) => (
+                    <div key={activity.id} className="flex items-start gap-3 p-4 border rounded-lg">
+                      <div className="flex-shrink-0 mt-1">
+                        {activity.type === 'status_change' && (
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Activity className="h-4 w-4 text-blue-600" />
+                          </div>
+                        )}
+                        {activity.type === 'remark_added' && (
+                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <Edit3 className="h-4 w-4 text-green-600" />
+                          </div>
+                        )}
+                        {activity.type === 'email_sent' && (
+                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                            <Mail className="h-4 w-4 text-purple-600" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium text-sm">
+                            {activity.type === 'status_change' && 'Status Changed'}
+                            {activity.type === 'remark_added' && 'Remark Added'}
+                            {activity.type === 'email_sent' && 'Email Sent'}
+                          </h4>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>{format(activity.timestamp, 'MMM dd, yyyy HH:mm')}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                        {activity.oldValue && activity.newValue && (
+                          <div className="flex items-center gap-2 mt-2 text-xs">
+                            <Badge variant="outline" className="bg-red-50 text-red-700">
+                              {activity.oldValue}
+                            </Badge>
+                            <span>→</span>
+                            <Badge variant="outline" className="bg-green-50 text-green-700">
+                              {activity.newValue}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Lead Created Entry */}
+                  <div className="flex items-start gap-3 p-4 border rounded-lg bg-muted/30">
+                    <div className="flex-shrink-0 mt-1">
+                      <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                        <User className="h-4 w-4 text-gray-600" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium text-sm">Lead Created</h4>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          <span>{format(lead.createdAt, 'MMM dd, yyyy HH:mm')}</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Lead was added to the system
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+                  <p className="text-muted-foreground">No activities yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Activities will appear here as you interact with this lead
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Remarks with Timestamp */}
           <Card>
             <CardHeader>
@@ -506,38 +629,6 @@ export default function LeadDetails() {
               )}
             </CardContent>
           </Card>
-
-          {/* Activity Log */}
-          {lead?.activityLog && lead.activityLog.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Activity History
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {lead.activityLog.slice().reverse().map((activity) => (
-                    <div key={activity.id} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
-                      <div className="flex-shrink-0 mt-1">
-                        {activity.type === 'status_change' && <Badge variant="outline" className="text-xs">Status</Badge>}
-                        {activity.type === 'remark_added' && <Badge variant="outline" className="text-xs">Remark</Badge>}
-                        {activity.type === 'email_sent' && <Badge variant="outline" className="text-xs">Email</Badge>}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm">{activity.description}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3" />
-                          <span>{format(activity.timestamp, 'MMM dd, yyyy HH:mm')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Sidebar */}
