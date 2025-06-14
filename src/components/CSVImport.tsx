@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
@@ -9,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag } from 'lucide-react';
+import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag, Trash2 } from 'lucide-react';
 import { generateFileHash, checkFileAlreadyImported } from '@/utils/duplicateDetection';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -23,6 +22,7 @@ interface CSVImportProps {
   onCreateCategory: (categoryData: Partial<Category>) => Promise<void>;
   existingLeads: Lead[];
   importBatches: ImportBatch[];
+  onDeleteBatch?: (batchId: string, batchName?: string) => void; // ADDED
 }
 
 export const CSVImport: React.FC<CSVImportProps> = ({
@@ -30,7 +30,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   onImportComplete,
   onCreateCategory,
   existingLeads,
-  importBatches
+  importBatches,
+  onDeleteBatch // ADDED
 }) => {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
@@ -39,6 +40,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [importName, setImportName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
+  const [deletingBatchName, setDeletingBatchName] = useState<string | null>(null);
   const { toast } = useToast();
 
   const clearFile = useCallback(() => {
@@ -459,7 +463,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                             </div>
                           </div>
                         </div>
-                        <div className="text-right space-y-1">
+                        <div className="text-right space-y-1 flex flex-col items-end">
                           <div className="text-sm font-medium">
                             {batch.successfulImports} / {batch.totalLeads} imported
                           </div>
@@ -468,6 +472,19 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                               {batch.failedImports} failed
                             </div>
                           )}
+                          {/* Delete button - visible if onDeleteBatch is provided */}
+                          {onDeleteBatch && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-destructive mt-1 hover:bg-destructive/5 focus-visible:ring-destructive"
+                              onClick={() => handleDeleteBatch(batch.id, batch.name)}
+                              title="Delete Import Batch"
+                              aria-label="Delete Import Batch"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -475,6 +492,27 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                 ))
               )}
             </div>
+            {/* AlertDialog for delete confirmation */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Import Batch</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {`Are you sure you want to delete the import batch "${deletingBatchName || ""}"? `}
+                    This will delete all leads associated with this batch and cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleConfirmDelete}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Delete Batch
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </TabsContent>
         </div>
       </Tabs>
