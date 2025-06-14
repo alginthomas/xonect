@@ -2,7 +2,9 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { generateFileHash, preventDuplicateImport } from '@/utils/duplicateDetection';
+import { mapCSVToLead } from '@/utils/csvMapping';
+import { filterDuplicatesFromCSV } from '@/utils/csvDuplicateDetection';
+import { createImportBatch, updateImportBatch, findOrCreateCategory } from '@/utils/importBatchManager';
 import type { Category } from '@/types/category';
 
 interface UseCSVImportProps {
@@ -13,96 +15,6 @@ interface UseCSVImportProps {
 export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps) => {
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
-
-  const calculateCompletenessScore = (lead: any): number => {
-    const fields = ['firstName', 'lastName', 'email', 'phone', 'company', 'title', 'linkedin'];
-    const filledFields = fields.filter(field => lead[field] && lead[field].trim() !== '');
-    return Math.round((filledFields.length / fields.length) * 100);
-  };
-
-  const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
-    // Enhanced CSV field mapping with more flexible column name matching
-    const getFieldValue = (possibleNames: string[]): string => {
-      for (const name of possibleNames) {
-        if (csvRow[name] !== undefined && csvRow[name] !== null && csvRow[name] !== '') {
-          return String(csvRow[name]).trim();
-        }
-      }
-      return '';
-    };
-
-    // --- Enhanced phone number detection logic ---
-    const getPhoneValue = (row: any): string => {
-      // Try various likely candidates
-      const possiblePhoneKeys = [
-        'Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber',
-        'mobile', 'cell', 'Cell Phone', 'Mobile Phone', 'tel', 'telephone',
-        'Primary Phone', 'Primary Contact', 'Contact Number', 'Contact', 
-        'phone number', 'Mobile', 'Contact No.'
-      ];
-      for (const key of possiblePhoneKeys) {
-        if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-          return String(row[key]).trim();
-        }
-      }
-      // fallback: look for any key containing 'phone' or 'mobile' (case-insensitive)
-      for (const col in row) {
-        if (/phone|mobile|tel/i.test(col) && row[col] && String(row[col]).trim() !== '') {
-          return String(row[col]).trim();
-        }
-      }
-      return '';
-    };
-
-    const mappedLead = {
-      first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
-      last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
-      email: getFieldValue(['Email', 'email', 'Email Address', 'email_address', 'EmailAddress', 'e_mail']),
-      phone: getPhoneValue(csvRow),
-      company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
-      title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
-      linkedin: getFieldValue(['LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 'linkedin_profile']),
-      industry: getFieldValue(['Industry', 'industry', 'sector']),
-      location: getFieldValue(['Location', 'location', 'city', 'address', 'country']),
-      seniority: 'Mid-level' as const,
-      company_size: 'Small (1-50)' as const,
-      status: 'New' as const,
-      emails_sent: 0,
-      completeness_score: 0, // Will be calculated
-      category_id: categoryId || null,
-      import_batch_id: importBatchId || null,
-      user_id: userId || '',
-      tags: [],
-      remarks_history: [],
-      activity_log: [],
-      department: getFieldValue(['Department', 'department', 'dept']),
-      personal_email: getFieldValue(['Personal Email', 'personal_email', 'personalEmail', 'private_email']),
-      photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
-      twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
-      facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
-      organization_website: getFieldValue(['Website', 'website', 'company_website', 'url', 'web']),
-      organization_founded: (() => {
-        const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
-        return founded ? parseInt(founded) : null;
-      })(),
-      remarks: ''
-    };
-
-    // Calculate completeness score based on the mapped data
-    mappedLead.completeness_score = calculateCompletenessScore({
-      firstName: mappedLead.first_name,
-      lastName: mappedLead.last_name,
-      email: mappedLead.email,
-      phone: mappedLead.phone,
-      company: mappedLead.company,
-      title: mappedLead.title,
-      linkedin: mappedLead.linkedin,
-    });
-
-    console.log('🔄 Mapped CSV row to lead:', { originalRow: csvRow, mappedLead });
-
-    return mappedLead;
-  };
 
   const importCSVData = async (
     csvData: any[],
@@ -140,115 +52,62 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
 
       console.log('📊 Fetched existing leads for duplicate check:', existingLeads?.length || 0);
 
-      let categoryId: string | undefined;
-
       // Create or find category if provided
-      if (selectedCategory && selectedCategory.trim()) {
-        const existingCategory = categories.find(cat => 
-          cat.name.toLowerCase() === selectedCategory.toLowerCase()
-        );
-        
-        if (existingCategory) {
-          categoryId = existingCategory.id;
-          console.log('📂 Using existing category:', existingCategory);
-        } else {
-          // Create new category
-          const { data: newCategory, error: categoryError } = await supabase
-            .from('categories')
-            .insert({
-              name: selectedCategory,
-              description: `Auto-created from import: ${importName}`,
-              color: '#3B82F6',
-              user_id: user.id
-            })
-            .select()
-            .single();
-
-          if (categoryError) throw categoryError;
-          categoryId = newCategory.id;
-          console.log('📂 Created new category:', newCategory);
-        }
-      }
+      const categoryId = await findOrCreateCategory(selectedCategory, categories, importName, user.id);
 
       // Map CSV data to leads format
       const potentialLeads = csvData.map(row => mapCSVToLead(row, categoryId, null, user.id));
 
-      // Filter out duplicates using enhanced duplicate detection
-      const { allowedLeads, blockedLeads, warnings } = preventDuplicateImport(
+      // Filter out duplicates
+      const { uniqueLeads, duplicates, withinBatchDuplicates } = filterDuplicatesFromCSV(
         potentialLeads,
-        existingLeads || [],
-        true // Use strict mode for better duplicate prevention
+        existingLeads || []
       );
 
       console.log('🔍 Duplicate detection results:', {
         totalProcessed: potentialLeads.length,
-        allowedLeads: allowedLeads.length,
-        blockedLeads: blockedLeads.length,
-        warnings
+        uniqueLeads: uniqueLeads.length,
+        duplicates: duplicates.length,
+        withinBatchDuplicates: withinBatchDuplicates.length
       });
 
       // Show warnings to user if there are duplicates
-      if (blockedLeads.length > 0) {
-        const duplicateCount = blockedLeads.length;
+      const totalDuplicates = duplicates.length + withinBatchDuplicates.length;
+      if (totalDuplicates > 0) {
         toast({
           title: "Duplicates Detected",
-          description: `${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} found and skipped. ${allowedLeads.length} unique leads will be imported.`,
+          description: `${totalDuplicates} duplicate${totalDuplicates > 1 ? 's' : ''} found and skipped. ${uniqueLeads.length} unique leads will be imported.`,
           variant: "default"
         });
       }
 
       // Create import batch record
-      const fileHash = generateFileHash(JSON.stringify(csvData));
-      const { data: importBatch, error: batchError } = await supabase
-        .from('import_batches')
-        .insert({
-          name: importName,
-          source_file: fileName,
-          total_leads: csvData.length,
-          successful_imports: 0,
-          failed_imports: blockedLeads.length,
-          category_id: categoryId,
-          user_id: user.id,
-          metadata: {
-            fileHash,
-            importDate: new Date().toISOString(),
-            fileName,
-            originalRowCount: csvData.length,
-            uniqueLeadsCount: allowedLeads.length,
-            duplicatesSkipped: blockedLeads.length,
-            columnNames: Object.keys(csvData[0] || {}),
-            duplicateReasons: blockedLeads.map(b => b.reason)
-          }
-        })
-        .select()
-        .single();
-
-      if (batchError) throw batchError;
-      console.log('📦 Created import batch:', importBatch);
+      const importBatch = await createImportBatch(
+        importName,
+        fileName,
+        csvData,
+        categoryId,
+        user.id,
+        csvData.length,
+        0,
+        totalDuplicates
+      );
 
       // Only process unique leads
-      if (allowedLeads.length === 0) {
+      if (uniqueLeads.length === 0) {
         toast({
           title: "No New Leads",
           description: "All leads in the CSV already exist in your database. No new leads were imported.",
           variant: "default"
         });
         
-        // Update import batch with final counts
-        await supabase
-          .from('import_batches')
-          .update({
-            successful_imports: 0,
-            failed_imports: blockedLeads.length
-          })
-          .eq('id', importBatch.id);
-
+        await updateImportBatch(importBatch.id, 0, totalDuplicates);
         onImportComplete();
         return true;
       }
 
       // Add import batch ID to allowed leads
-      const leadsToInsert = allowedLeads.map(lead => ({
+      const leadsToInsert = uniqueLeads.map(lead => ({
         ...lead,
         import_batch_id: importBatch.id
       }));
@@ -256,7 +115,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       // Insert leads in batches to avoid overwhelming the database
       const batchSize = 100;
       let successfulImports = 0;
-      let failedImports = blockedLeads.length; // Start with duplicates count
+      let failedImports = totalDuplicates;
 
       for (let i = 0; i < leadsToInsert.length; i += batchSize) {
         const batch = leadsToInsert.slice(i, i + batchSize);
@@ -282,24 +141,18 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       }
 
       // Update import batch with final counts
-      await supabase
-        .from('import_batches')
-        .update({
-          successful_imports: successfulImports,
-          failed_imports: failedImports
-        })
-        .eq('id', importBatch.id);
+      await updateImportBatch(importBatch.id, successfulImports, failedImports);
 
       console.log('🎉 Import completed:', {
         successfulImports,
         failedImports,
         totalProcessed: successfulImports + failedImports,
-        duplicatesSkipped: blockedLeads.length
+        duplicatesSkipped: totalDuplicates
       });
 
       const message = successfulImports > 0 
-        ? `"${importName}" has been imported successfully. ${successfulImports} unique leads imported${blockedLeads.length > 0 ? `, ${blockedLeads.length} duplicates skipped` : ''}.`
-        : `Import completed. ${blockedLeads.length} duplicates were detected and skipped. No new leads were added.`;
+        ? `"${importName}" has been imported successfully. ${successfulImports} unique leads imported${totalDuplicates > 0 ? `, ${totalDuplicates} duplicates skipped` : ''}.`
+        : `Import completed. ${totalDuplicates} duplicates were detected and skipped. No new leads were added.`;
 
       toast({
         title: "Import Completed",
