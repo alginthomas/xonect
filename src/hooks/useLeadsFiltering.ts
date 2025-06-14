@@ -1,4 +1,5 @@
 
+
 import { useMemo, useEffect } from 'react';
 import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
@@ -185,3 +186,4 @@ export const useLeadsFiltering = ({
     totalLeads
   };
 };
+

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
@@ -98,31 +97,37 @@ const MobilePaginationComponent: React.FC<MobilePaginationComponentProps> = ({
 interface MobileLeadsListProps {
   leads: Lead[];
   categories: Category[];
-  onLeadUpdate: (leadId: string, updates: Partial<Lead>) => Promise<void>;
-  onLeadDelete: (leadId: string) => Promise<void>;
-  onBulkStatusUpdate: (leadIds: string[], status: LeadStatus) => Promise<void>;
-  onBulkCategoryUpdate: (leadIds: string[], categoryId: string) => Promise<void>;
+  // Primary props - these are the main interface
+  onUpdateLead: (leadId: string, updates: Partial<Lead>) => Promise<void>;
+  onDeleteLead: (leadId: string) => Promise<void>;
+  onBulkUpdateStatus: (leadIds: string[], status: LeadStatus) => Promise<void>;
   onBulkDelete: (leadIds: string[]) => Promise<void>;
-  // Optional props for backwards compatibility
-  onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
+  
+  // Optional props for additional functionality
+  onBulkCategoryUpdate?: (leadIds: string[], categoryId: string) => Promise<void>;
   onEmailClick?: (leadId: string) => Promise<void>;
   onViewDetails?: (lead: Lead) => void;
-  onDeleteLead?: (leadId: string) => Promise<void>;
+  
+  // Backwards compatibility aliases - these are optional
+  onLeadUpdate?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
+  onLeadDelete?: (leadId: string) => Promise<void>;
+  onBulkStatusUpdate?: (leadIds: string[], status: LeadStatus) => Promise<void>;
   onBulkUpdateStatus?: (leadIds: string[], status: LeadStatus) => Promise<void>;
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   leads,
   categories,
-  onLeadUpdate,
-  onLeadDelete,
-  onBulkStatusUpdate,
+  onUpdateLead,
+  onDeleteLead,
+  onBulkUpdateStatus,
   onBulkCategoryUpdate,
   onBulkDelete,
-  onUpdateLead,
+  onLeadUpdate,
   onEmailClick,
   onViewDetails,
-  onDeleteLead,
+  onLeadDelete,
+  onBulkStatusUpdate,
   onBulkUpdateStatus
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -200,12 +205,12 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handleStatusChange = async (leadId: string, status: LeadStatus) => {
-    const updateFn = onUpdateLead || onLeadUpdate;
+    const updateFn = onLeadUpdate || onUpdateLead;
     await updateFn(leadId, { status });
   };
 
   const handleRemarksUpdate = async (leadId: string, remarks: string) => {
-    const updateFn = onUpdateLead || onLeadUpdate;
+    const updateFn = onLeadUpdate || onUpdateLead;
     await updateFn(leadId, { remarks });
   };
 
@@ -226,7 +231,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    const deleteFn = onDeleteLead || onLeadDelete;
+    const deleteFn = onLeadDelete || onDeleteLead;
     await deleteFn(leadId);
   };
 
@@ -235,7 +240,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     if (action === 'delete') {
       await onBulkDelete(selectedIds);
     } else if (action === 'status' && value) {
-      const bulkStatusFn = onBulkUpdateStatus || onBulkStatusUpdate;
+      // Use any available bulk status update function
+      const bulkStatusFn = onBulkUpdateStatus || onBulkStatusUpdate || onBulkUpdateStatus;
       await bulkStatusFn(selectedIds, value as LeadStatus);
     }
     clearSelection();
