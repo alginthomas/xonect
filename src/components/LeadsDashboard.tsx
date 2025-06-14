@@ -74,6 +74,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setCountryFilter,
     duplicatePhoneFilter,
     setDuplicatePhoneFilter,
+    sortField,
+    setSortField,
+    sortDirection,
+    setSortDirection,
     currentPage,
     setCurrentPage,
     itemsPerPage,
@@ -152,6 +156,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     const url = new URL(window.location.href);
     url.searchParams.delete('status');
     window.history.replaceState({}, '', url.toString());
+  };
+
+  // Create a wrapper for handleSelectAll that matches the expected signature
+  const handleSelectAllWrapper = (selected: boolean) => {
+    handleSelectAll(paginatedLeads);
   };
 
   return (
@@ -239,7 +248,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             sortDirection={sortDirection}
             onSort={handleSort}
             onSelectLead={handleSelectLead}
-            onSelectAll={handleSelectAll}
+            onSelectAll={handleSelectAllWrapper}
             onStatusChange={handleStatusChange}
             onRemarksUpdate={handleRemarksUpdate}
             onEmailClick={(lead) => {
