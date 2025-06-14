@@ -3,8 +3,14 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { MessageSquare, Save, X, Edit3, Clock, ChevronDown, ChevronUp, History, Eye } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { MessageSquare, Save, X, Edit3, Clock, History, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import type { RemarkEntry } from '@/types/lead';
 
@@ -19,7 +25,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   remarks,
   remarksHistory = [],
   onUpdate,
-  className = ""
+  className = "",
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
@@ -44,6 +50,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     setShowModal(true);
     setEditValue(remarks);
     setIsEditing(false);
+    setShowHistory(false);
   };
 
   const handleEditClick = (e: React.MouseEvent) => {
@@ -51,6 +58,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     setEditValue(remarks);
     setIsEditing(true);
     setShowModal(true);
+    setShowHistory(false);
   };
 
   const handleSave = () => {
@@ -72,65 +80,64 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     setEditValue('');
     setIsEditing(false);
     setShowModal(false);
+    setShowHistory(false);
   };
 
-  const handleToggleHistory = () => setShowHistory(v => !v);
+  const handleToggleHistory = () => setShowHistory((v) => !v);
 
   // Table (cell) view: always one line, ellipsis, view button
   return (
     <div className={`flex items-center gap-1 ${className}`}>
-      {remarks
-        ? (
-          <>
-            <div 
-              className="flex-1 min-w-0 cursor-pointer group"
-              onClick={isLong ? handleViewFull : undefined}
-              style={{ maxWidth: 260 }}
-              title={remarks}
-            >
-              {/* One line, ellipsis */}
-              <span className="block text-sm line-clamp-1 break-all truncate pr-7 transition-colors">
-                {remarks}
-              </span>
-            </div>
-            {showViewIcon && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 p-0 ml-[-1.5rem] opacity-70 hover:opacity-100 transition-opacity"
-                onClick={handleViewFull}
-                aria-label="View full remark"
-                tabIndex={0}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
-            {/* Always allow edit */}
+      {remarks ? (
+        <>
+          <div
+            className="flex-1 min-w-0 cursor-pointer group"
+            onClick={isLong ? handleViewFull : undefined}
+            style={{ maxWidth: 260 }}
+            title={remarks}
+          >
+            {/* One line, ellipsis */}
+            <span className="block text-sm line-clamp-1 break-all truncate pr-7 transition-colors">
+              {remarks}
+            </span>
+          </div>
+          {showViewIcon && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 p-0 opacity-70 hover:opacity-100 transition-opacity"
-              onClick={handleEditClick}
-              aria-label="Edit remarks"
+              className="h-6 w-6 p-0 ml-[-1.5rem] opacity-70 hover:opacity-100 transition-opacity"
+              onClick={handleViewFull}
+              aria-label="View full remark"
               tabIndex={0}
             >
-              <Edit3 className="h-3 w-3" />
+              <Eye className="h-4 w-4" />
             </Button>
-          </>
-        )
-        : (
+          )}
+          {/* Always allow edit */}
           <Button
             variant="ghost"
-            size="sm"
-            className="w-full text-left opacity-70 hover:opacity-100"
+            size="icon"
+            className="h-6 w-6 p-0 opacity-70 hover:opacity-100 transition-opacity"
             onClick={handleEditClick}
+            aria-label="Edit remarks"
+            tabIndex={0}
           >
-            <span className="text-muted-foreground text-sm flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" /> Add remarks...
-            </span>
+            <Edit3 className="h-3 w-3" />
           </Button>
-        )
-      }
+        </>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full text-left opacity-70 hover:opacity-100"
+          onClick={handleEditClick}
+        >
+          <span className="text-muted-foreground text-sm flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" /> Add remarks...
+          </span>
+        </Button>
+      )}
+
       {/* MODAL for full remark/editor/history */}
       <Dialog open={showModal} onOpenChange={v => { if (!v) handleCancel(); }}>
         <DialogContent className="max-w-lg w-full p-6 rounded-2xl space-y-2">
@@ -146,7 +153,8 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
                   ? format(
                       new Date(
                         [...remarksHistory].sort(
-                          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                          (a, b) =>
+                            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
                         )[0].timestamp
                       ),
                       'MMM dd, yyyy • HH:mm'
@@ -156,7 +164,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
             )}
           </DialogHeader>
           {/* Content */}
-          <div className="">
+          <div>
             {isEditing ? (
               <Textarea
                 ref={textareaRef}
@@ -166,7 +174,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
                 placeholder="Edit your remark..."
               />
             ) : (
-              <div className="text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[48px]">
+              <div className="text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[48px] max-h-40 overflow-y-auto">
                 {remarks}
               </div>
             )}
@@ -174,24 +182,57 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
           {/* View/Edit controls */}
           <DialogFooter className="flex flex-col gap-2">
             {!isEditing ? (
-              <div className="flex w-full justify-between">
-                <Button size="sm" onClick={() => setIsEditing(true)}>
-                  <Edit3 className="h-3 w-3 mr-1" />
-                  Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleToggleHistory}
-                >
-                  <History className="h-3 w-3 mr-1" />
-                  {showHistory ? 'Hide History' : 'Remarks History'}
+              <div className="flex w-full flex-col gap-2">
+                <div className="flex w-full justify-between">
+                  <Button size="sm" onClick={() => setIsEditing(true)}>
+                    <Edit3 className="h-3 w-3 mr-1" />
+                    Edit
+                  </Button>
                   {remarksHistory.length > 1 && (
-                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
-                      {remarksHistory.length}
-                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleToggleHistory}
+                    >
+                      <History className="h-3 w-3 mr-1" />
+                      {showHistory ? 'Hide History' : 'Remarks History'}
+                      <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                        {remarksHistory.length}
+                      </Badge>
+                    </Button>
                   )}
-                </Button>
+                </div>
+                {/* REMARK HISTORY */}
+                {showHistory && remarksHistory.length > 0 && (
+                  <div className="w-full space-y-2 rounded-lg bg-muted/10 px-2 py-2 border border-muted max-h-40 overflow-y-auto">
+                    {remarksHistory
+                      .sort(
+                        (a, b) =>
+                          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                      )
+                      .map((entry, idx) => (
+                        <div
+                          key={entry.id}
+                          className="p-2 rounded-md bg-white/80 dark:bg-white/10 border border-border/10"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="block text-xs text-foreground break-words font-medium">
+                              {entry.text}
+                            </span>
+                            {idx === 0 && (
+                              <Badge variant="outline" className="h-5 px-2 text-xs ml-2 flex-shrink-0">
+                                Current
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex gap-2">
@@ -201,32 +242,6 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
                 <Button size="sm" variant="outline" onClick={handleCancel}>
                   <X className="h-3 w-3 mr-1" /> Cancel
                 </Button>
-              </div>
-            )}
-            {/* REMARK HISTORY */}
-            {showHistory && remarksHistory.length > 0 && (
-              <div className="w-full space-y-2 rounded-lg bg-muted/10 px-2 py-2 border border-muted">
-                {remarksHistory
-                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                  .map((entry, idx) => (
-                    <div
-                      key={entry.id}
-                      className="p-2 rounded-md bg-white/80 dark:bg-white/10 border border-border/10"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="block text-xs text-foreground break-words font-medium">{entry.text}</span>
-                        {idx === 0 && (
-                          <Badge variant="outline" className="h-5 px-2 text-xs ml-2 flex-shrink-0">
-                            Current
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-[11px] text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-2.5 w-2.5" />
-                        {format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}
-                      </div>
-                    </div>
-                  ))}
               </div>
             )}
           </DialogFooter>
