@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -63,12 +62,6 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
     return null; // Mobile uses DateGroupedLeads component instead
   }
 
-  // Create a stable handler for remarks updates to prevent unnecessary re-renders
-  const handleRemarksUpdate = React.useCallback((leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
-    console.log('LeadsTable: handleRemarksUpdate called for lead:', leadId);
-    onRemarksUpdate(leadId, remarks, remarksHistory);
-  }, [onRemarksUpdate]);
-
   return (
     <DndContext
       sensors={sensors}
@@ -106,7 +99,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     selectedLeads={selectedLeads}
                     onSelectLead={(leadId, selected) => onSelectLead(leadId)}
                     onStatusChange={onStatusChange}
-                    onRemarksUpdate={handleRemarksUpdate}
+                    onRemarksUpdate={onRemarksUpdate}
                     onEmailClick={() => onEmailClick(lead)}
                     onViewDetails={() => onViewDetails(lead)}
                     onDeleteLead={() => onDeleteLead(lead.id)}

@@ -1,9 +1,15 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Eye, Plus } from 'lucide-react';
+import { MessageSquare, Eye } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import type { RemarkEntry } from '@/types/lead';
-import { QuickRemarksModal } from './remarks/QuickRemarksModal';
+import { SimpleRemarksList } from './remarks/SimpleRemarksList';
 
 interface QuickRemarksCellProps {
   remarks: string;
@@ -18,8 +24,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   onUpdate,
   className = "",
 }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [modalInitialEditMode, setModalInitialEditMode] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
 
   // Truncate with ellipsis and a tooltip for overflow
   const TRUNCATE_LENGTH = 50;
@@ -27,18 +32,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   const truncated = remarks.length > TRUNCATE_LENGTH
     ? `${remarks.slice(0, TRUNCATE_LENGTH)}...`
     : remarks;
-  const showViewIcon = isLong || !!remarks;
 
-  const handleViewFull = (e: React.MouseEvent) => {
+  const handleViewClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setModalInitialEditMode(false);
-    setShowModal(true);
-  };
-
-  const handleAddRemarkClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setModalInitialEditMode(true);
-    setShowModal(true);
+    setShowDialog(true);
   };
 
   return (
@@ -47,38 +44,24 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       {remarks ? (
         <>
           <div
-            className="flex-1 min-w-0 cursor-pointer group"
-            onClick={isLong ? handleViewFull : handleAddRemarkClick}
+            className="flex-1 min-w-0 cursor-pointer"
+            onClick={handleViewClick}
             style={{ maxWidth: 240 }}
             title={remarks}
           >
-            <span className="block text-sm line-clamp-1 break-all truncate pr-6 transition-colors">
+            <span className="block text-sm line-clamp-1 break-all truncate pr-2 transition-colors">
               {isLong ? truncated : remarks}
             </span>
           </div>
-          {/* Eye icon for full view if truncated/long */}
-          {showViewIcon && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 p-0 ml-[-1.5rem] opacity-80 hover:opacity-100 transition-opacity"
-              onClick={handleViewFull}
-              aria-label="View full remark"
-              tabIndex={0}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
-          {/* Always show add new remark icon at end */}
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 p-0 opacity-80 hover:opacity-100 transition-opacity"
-            onClick={handleAddRemarkClick}
-            aria-label="Add new remark"
+            onClick={handleViewClick}
+            aria-label="View remarks"
             tabIndex={0}
           >
-            <Plus className="h-4 w-4" />
+            <Eye className="h-4 w-4" />
           </Button>
         </>
       ) : (
@@ -86,7 +69,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
           variant="ghost"
           size="sm"
           className="w-full text-left opacity-90 hover:opacity-100"
-          onClick={handleAddRemarkClick}
+          onClick={handleViewClick}
         >
           <span className="text-muted-foreground text-sm flex items-center gap-2">
             <MessageSquare className="h-4 w-4" /> Add remark...
@@ -94,17 +77,20 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
         </Button>
       )}
 
-      {/* Modal for full editing/view */}
-      {showModal && (
-        <QuickRemarksModal
-          open={showModal}
-          onOpenChange={setShowModal}
-          initialRemarks={remarks}
-          initialRemarksHistory={remarksHistory}
-          onUpdate={onUpdate}
-          initialIsEditing={modalInitialEditMode}
-        />
-      )}
+      {/* Simple Dialog with Remarks List */}
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-w-2xl w-full">
+          <DialogHeader>
+            <DialogTitle>Remarks</DialogTitle>
+          </DialogHeader>
+          <SimpleRemarksList
+            remarks={remarks}
+            remarksHistory={remarksHistory}
+            onUpdate={onUpdate}
+            className="mt-4"
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
