@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { format, isToday, isYesterday, isThisWeek, parseISO } from 'date-fns';
 import { CompactLeadCard } from '@/components/ui/compact-lead-card';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category } from '@/types/category';
-
 interface DateGroupedLeadsProps {
   leads: Lead[];
   categories: Category[];
@@ -16,7 +14,6 @@ interface DateGroupedLeadsProps {
   onViewDetails: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
 }
-
 export const DateGroupedLeads: React.FC<DateGroupedLeadsProps> = ({
   leads,
   categories,
@@ -50,19 +47,15 @@ export const DateGroupedLeads: React.FC<DateGroupedLeadsProps> = ({
     const order = ['Today', 'Yesterday', 'This Week'];
     const indexA = order.indexOf(a);
     const indexB = order.indexOf(b);
-    
     if (indexA !== -1 && indexB !== -1) return indexA - indexB;
     if (indexA !== -1) return -1;
     if (indexB !== -1) return 1;
-    
+
     // For other dates, sort chronologically (newest first)
     return new Date(b).getTime() - new Date(a).getTime();
   });
-
-  return (
-    <div className="space-y-4">
-      {sortedGroups.map(([dateGroup, groupLeads]) => (
-        <div key={dateGroup} className="space-y-2">
+  return <div className="space-y-4">
+      {sortedGroups.map(([dateGroup, groupLeads]) => <div key={dateGroup} className="space-y-2">
           {/* Date Group Header */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2">
             <div className="flex items-center gap-2">
@@ -75,24 +68,9 @@ export const DateGroupedLeads: React.FC<DateGroupedLeadsProps> = ({
           </div>
 
           {/* Leads in this date group */}
-          <div className="space-y-1">
-            {groupLeads.map(lead => (
-              <CompactLeadCard
-                key={lead.id}
-                lead={lead}
-                categories={categories}
-                isSelected={selectedLeads.has(lead.id)}
-                onSelect={(checked) => onSelectLead(lead.id, checked)}
-                onStatusChange={(status) => onStatusChange(lead.id, status)}
-                onRemarksUpdate={(remarks) => onRemarksUpdate(lead.id, remarks)}
-                onEmailClick={() => onEmailClick(lead)}
-                onViewDetails={() => onViewDetails(lead)}
-                onDeleteLead={() => onDeleteLead(lead.id)}
-              />
-            ))}
+          <div className="space-y-1 px-[12px] my-0">
+            {groupLeads.map(lead => <CompactLeadCard key={lead.id} lead={lead} categories={categories} isSelected={selectedLeads.has(lead.id)} onSelect={checked => onSelectLead(lead.id, checked)} onStatusChange={status => onStatusChange(lead.id, status)} onRemarksUpdate={remarks => onRemarksUpdate(lead.id, remarks)} onEmailClick={() => onEmailClick(lead)} onViewDetails={() => onViewDetails(lead)} onDeleteLead={() => onDeleteLead(lead.id)} />)}
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        </div>)}
+    </div>;
 };
