@@ -51,6 +51,8 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     }
   };
 
+  console.log('QuickRemarksCell props:', { remarks, remarksHistory: remarksHistory.length });
+
   if (isEditing) {
     return (
       <div className={`space-y-3 ${className}`} onClick={(e) => e.stopPropagation()}>
@@ -149,6 +151,28 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
               ))}
             </div>
           )}
+        </div>
+      )}
+      
+      {/* Show All Remarks History if there are any remarks */}
+      {remarksHistory.length === 1 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">
+              Remark History (1 entry)
+            </span>
+          </div>
+          <div className="p-3 bg-muted/20 rounded-lg border border-border/20">
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+              <Clock className="h-3 w-3" />
+              <span>{format(remarksHistory[0].timestamp, 'MMM dd, yyyy HH:mm')}</span>
+              <Badge variant="outline" className="text-xs ml-auto">
+                #1
+              </Badge>
+            </div>
+            <p className="text-sm text-foreground leading-relaxed">{remarksHistory[0].text}</p>
+          </div>
         </div>
       )}
     </div>

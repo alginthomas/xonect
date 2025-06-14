@@ -200,6 +200,12 @@ export const useLeadsDashboardLogic = ({
       const currentLead = leads.find(lead => lead.id === leadId);
       if (!currentLead) return;
 
+      // Only create a new remark entry if the remarks text has actually changed
+      if (currentLead.remarks === remarks) {
+        console.log('Remarks unchanged, skipping update');
+        return;
+      }
+
       // Create new remark entry with timestamp
       const newRemarkEntry: import('@/types/lead').RemarkEntry = {
         id: crypto.randomUUID(),
@@ -209,6 +215,11 @@ export const useLeadsDashboardLogic = ({
 
       // Update remarks history with new entry
       const updatedRemarksHistory = [...(currentLead.remarksHistory || []), newRemarkEntry];
+
+      console.log('Updating remarks for lead:', leadId);
+      console.log('Current remarks history:', currentLead.remarksHistory);
+      console.log('New remark entry:', newRemarkEntry);
+      console.log('Updated remarks history:', updatedRemarksHistory);
 
       // Update lead with both current remarks and history
       await onUpdateLead(leadId, { 
@@ -221,6 +232,7 @@ export const useLeadsDashboardLogic = ({
         description: 'Lead remarks have been updated with timestamp.'
       });
     } catch (error) {
+      console.error('Error updating remarks:', error);
       toast({
         title: 'Update failed',
         description: 'Failed to update remarks. Please try again.',

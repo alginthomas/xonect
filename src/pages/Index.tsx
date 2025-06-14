@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -237,87 +236,124 @@ const Index = () => {
     senderEmail: 'you@yourcompany.com'
   };
 
+  const transformLead = (lead: any): Lead => ({
+    id: lead.id,
+    firstName: lead.first_name,
+    lastName: lead.last_name,
+    email: lead.email,
+    company: lead.company,
+    title: lead.title,
+    phone: lead.phone || '',
+    linkedin: lead.linkedin || '',
+    status: lead.status,
+    createdAt: new Date(lead.created_at),
+    categoryId: lead.category_id,
+    companySize: lead.company_size,
+    seniority: lead.seniority,
+    emailsSent: lead.emails_sent || 0,
+    lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
+    completenessScore: lead.completeness_score || 0,
+    industry: lead.industry || '',
+    location: lead.location || '',
+    department: lead.department || '',
+    personalEmail: lead.personal_email || '',
+    photoUrl: lead.photo_url || '',
+    twitterUrl: lead.twitter_url || '',
+    facebookUrl: lead.facebook_url || '',
+    organizationWebsite: lead.organization_website || '',
+    organizationFounded: lead.organization_founded,
+    remarks: lead.remarks || '',
+    tags: lead.tags || [],
+    importBatchId: lead.import_batch_id || undefined,
+    remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history.map((entry: any) => ({
+      id: entry.id,
+      text: entry.text,
+      timestamp: new Date(entry.timestamp)
+    })) : [],
+    activityLog: Array.isArray(lead.activity_log) ? lead.activity_log.map((entry: any) => ({
+      id: entry.id,
+      type: entry.type,
+      description: entry.description,
+      oldValue: entry.oldValue,
+      newValue: entry.newValue,
+      timestamp: new Date(entry.timestamp),
+      userId: entry.userId
+    })) : []
+  });
+
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
-    if (!user) return;
-
-    // Convert camelCase to snake_case for database
-    const dbUpdates: any = {};
-    Object.entries(updates).forEach(([key, value]) => {
-      switch (key) {
-        case 'firstName':
-          dbUpdates.first_name = value;
-          break;
-        case 'lastName':
-          dbUpdates.last_name = value;
-          break;
-        case 'categoryId':
-          dbUpdates.category_id = value;
-          break;
-        case 'importBatchId':
-          dbUpdates.import_batch_id = value;
-          break;
-        case 'emailsSent':
-          dbUpdates.emails_sent = value;
-          break;
-        case 'lastContactDate':
-          dbUpdates.last_contact_date = value;
-          break;
-        case 'completenessScore':
-          dbUpdates.completeness_score = value;
-          break;
-        case 'organizationWebsite':
-          dbUpdates.organization_website = value;
-          break;
-        case 'personalEmail':
-          dbUpdates.personal_email = value;
-          break;
-        case 'photoUrl':
-          dbUpdates.photo_url = value;
-          break;
-        case 'twitterUrl':
-          dbUpdates.twitter_url = value;
-          break;
-        case 'facebookUrl':
-          dbUpdates.facebook_url = value;
-          break;
-        case 'organizationFounded':
-          dbUpdates.organization_founded = value;
-          break;
-        case 'remarksHistory':
-          dbUpdates.remarks_history = value;
-          break;
-        case 'activityLog':
-          dbUpdates.activity_log = value;
-          break;
-        case 'companySize':
-          dbUpdates.company_size = value;
-          break;
-        default:
-          dbUpdates[key] = value;
+    try {
+      const updateData: any = {};
+      
+      // Map lead fields to database column names
+      if (updates.firstName !== undefined) updateData.first_name = updates.firstName;
+      if (updates.lastName !== undefined) updateData.last_name = updates.lastName;
+      if (updates.email !== undefined) updateData.email = updates.email;
+      if (updates.company !== undefined) updateData.company = updates.company;
+      if (updates.title !== undefined) updateData.title = updates.title;
+      if (updates.phone !== undefined) updateData.phone = updates.phone;
+      if (updates.linkedin !== undefined) updateData.linkedin = updates.linkedin;
+      if (updates.status !== undefined) updateData.status = updates.status;
+      if (updates.categoryId !== undefined) updateData.category_id = updates.categoryId;
+      if (updates.companySize !== undefined) updateData.company_size = updates.companySize;
+      if (updates.seniority !== undefined) updateData.seniority = updates.seniority;
+      if (updates.emailsSent !== undefined) updateData.emails_sent = updates.emailsSent;
+      if (updates.lastContactDate !== undefined) updateData.last_contact_date = updates.lastContactDate?.toISOString();
+      if (updates.completenessScore !== undefined) updateData.completeness_score = updates.completenessScore;
+      if (updates.industry !== undefined) updateData.industry = updates.industry;
+      if (updates.location !== undefined) updateData.location = updates.location;
+      if (updates.department !== undefined) updateData.department = updates.department;
+      if (updates.personalEmail !== undefined) updateData.personal_email = updates.personalEmail;
+      if (updates.photoUrl !== undefined) updateData.photo_url = updates.photoUrl;
+      if (updates.twitterUrl !== undefined) updateData.twitter_url = updates.twitterUrl;
+      if (updates.facebookUrl !== undefined) updateData.facebook_url = updates.facebookUrl;
+      if (updates.organizationWebsite !== undefined) updateData.organization_website = updates.organizationWebsite;
+      if (updates.organizationFounded !== undefined) updateData.organization_founded = updates.organizationFounded;
+      if (updates.remarks !== undefined) updateData.remarks = updates.remarks;
+      if (updates.tags !== undefined) updateData.tags = updates.tags;
+      if (updates.remarksHistory !== undefined) {
+        updateData.remarks_history = updates.remarksHistory.map(entry => ({
+          id: entry.id,
+          text: entry.text,
+          timestamp: entry.timestamp.toISOString()
+        }));
       }
-    });
+      if (updates.activityLog !== undefined) {
+        updateData.activity_log = updates.activityLog.map(entry => ({
+          id: entry.id,
+          type: entry.type,
+          description: entry.description,
+          oldValue: entry.oldValue,
+          newValue: entry.newValue,
+          timestamp: entry.timestamp.toISOString(),
+          userId: entry.userId
+        }));
+      }
 
-    const { error } = await supabase
-      .from('leads')
-      .update(dbUpdates)
-      .eq('id', leadId)
-      .eq('user_id', user.id);
+      updateData.updated_at = new Date().toISOString();
 
-    if (error) {
+      const { error } = await supabase
+        .from('leads')
+        .update(updateData)
+        .eq('id', leadId)
+        .eq('user_id', user?.id);
+
+      if (error) throw error;
+
+      // Update the local state
+      setLeads(prevLeads => 
+        prevLeads.map(lead => 
+          lead.id === leadId 
+            ? { ...lead, ...updates }
+            : lead
+        )
+      );
+
+      console.log('Lead updated successfully:', leadId, updates);
+    } catch (error: any) {
       console.error('Error updating lead:', error);
-      toast({
-        title: 'Error updating lead',
-        description: error.message,
-        variant: 'destructive'
-      });
-      return;
+      throw error;
     }
-
-    refetchLeads();
-    toast({
-      title: 'Lead updated',
-      description: 'Lead has been updated successfully'
-    });
   };
 
   const handleDeleteLead = async (leadId: string) => {
