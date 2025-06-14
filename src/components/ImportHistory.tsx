@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,11 +9,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Search, Trash2, Download, Eye, Calendar, Users, TrendingUp, FileText, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
 import { useBatchSelection } from '@/hooks/useBatchSelection';
 import { BulkBatchActions } from '@/components/BulkBatchActions';
+import { navigateToBatchLeads } from '@/utils/batchNavigation';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -36,7 +35,6 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'leads'>('date');
   const { toast } = useToast();
-  const navigate = useNavigate();
   
   const {
     selectedBatchIds,
@@ -138,8 +136,21 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
     });
   };
 
-  const handleViewBatchLeads = (batchId: string) => {
-    navigate(`/?tab=dashboard&batch=${batchId}`);
+  const handleViewBatchLeads = (batchId: string, batchName?: string) => {
+    console.log('🔗 Viewing batch leads:', { batchId, batchName });
+    
+    // Use the navigation utility to properly navigate to batch leads
+    navigateToBatchLeads(batchId, batchName);
+    
+    // Also call the optional callback if provided
+    if (onViewBatchLeads) {
+      onViewBatchLeads(batchId);
+    }
+    
+    toast({
+      title: "Viewing batch leads",
+      description: `Showing leads from batch "${batchName || 'Unknown'}"`
+    });
   };
 
   const getCategoryName = (categoryId?: string) => {
@@ -324,7 +335,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              onClick={() => handleViewBatchLeads(batch.id)}
+                              onClick={() => handleViewBatchLeads(batch.id, batch.name)}
                               className="flex items-center gap-2"
                             >
                               <Eye className="h-4 w-4" />
