@@ -3,7 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Save, X, Edit3, Clock, ChevronDown, ChevronUp, History } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { MessageSquare, Save, X, Edit3, Clock, ChevronDown, ChevronUp, History, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import type { RemarkEntry } from '@/types/lead';
 
@@ -23,6 +24,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -30,27 +32,17 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       textareaRef.current.focus();
       textareaRef.current.select();
     }
-  }, [isEditing]);
+  }, [isEditing, showModal]);
 
-  const handleSave = () => {
-    if (!editValue.trim()) return;
+  // Only show ellipsis; show icon if trimmed or if hovered
+  const isLong = remarks.length > 50 || remarks.includes('\n');
+  const showViewIcon = isLong || remarks.length > 0;
 
-    // Create new entry with current timestamp
-    const newEntry: RemarkEntry = {
-      id: crypto.randomUUID(),
-      text: editValue.trim(),
-      timestamp: new Date()
-    };
-
-    // Append the new entry to the existing history
-    const updatedHistory = [...remarksHistory, newEntry];
-    onUpdate(editValue.trim(), updatedHistory);
-    setEditValue('');
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setEditValue('');
+  // Handler: Viewing in modal
+  const handleViewFull = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowModal(true);
+    setEditValue(remarks);
     setIsEditing(false);
   };
 
@@ -58,151 +50,188 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     e.stopPropagation();
     setEditValue(remarks);
     setIsEditing(true);
+    setShowModal(true);
   };
 
-  const handleAddClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleSave = () => {
+    const trimmed = editValue.trim();
+    if (!trimmed) return;
+    // Prepare new remark entry
+    const newEntry: RemarkEntry = {
+      id: crypto.randomUUID(),
+      text: trimmed,
+      timestamp: new Date()
+    };
+    const updatedHistory = [...remarksHistory, newEntry];
+    onUpdate(trimmed, updatedHistory);
+    setIsEditing(false);
+    setShowModal(false);
+  };
+
+  const handleCancel = () => {
     setEditValue('');
-    setIsEditing(true);
+    setIsEditing(false);
+    setShowModal(false);
   };
 
-  // Get the most recent timestamp from history
-  const getMostRecentTimestamp = () => {
-    if (remarksHistory.length === 0) return null;
-    const sortedHistory = [...remarksHistory].sort((a, b) => 
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-    return sortedHistory[0].timestamp;
-  };
+  const handleToggleHistory = () => setShowHistory(v => !v);
 
-  const handleToggleHistory = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShowHistory(!showHistory);
-  };
-
-  if (isEditing) {
-    return (
-      <div className={`space-y-3 ${className}`} onClick={(e) => e.stopPropagation()}>
-        <Textarea
-          ref={textareaRef}
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          className="min-h-[80px] max-h-[120px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words overflow-wrap-anywhere"
-          placeholder="Add your remarks..."
-          style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}
-        />
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSave} className="h-8 px-3 text-xs">
-            <Save className="h-3 w-3 mr-1" />
-            Save
-          </Button>
-          <Button size="sm" variant="outline" onClick={handleCancel} className="h-8 px-3 text-xs">
-            <X className="h-3 w-3 mr-1" />
-            Cancel
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Table (cell) view: always one line, ellipsis, view button
   return (
-    <div className={`space-y-3 ${className}`}>
-      {/* Current Remark Display with Edit Button */}
-      <div className="relative group">
-        {remarks ? (
-          <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors">
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere flex-1" 
-                 style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
+    <div className={`flex items-center gap-1 ${className}`}>
+      {remarks
+        ? (
+          <>
+            <div 
+              className="flex-1 min-w-0 cursor-pointer group"
+              onClick={isLong ? handleViewFull : undefined}
+              style={{ maxWidth: 260 }}
+              title={remarks}
+            >
+              {/* One line, ellipsis */}
+              <span className="block text-sm line-clamp-1 break-all truncate pr-7 transition-colors">
                 {remarks}
-              </p>
+              </span>
+            </div>
+            {showViewIcon && (
               <Button
                 variant="ghost"
-                size="sm"
-                onClick={handleEditClick}
-                className="h-6 w-6 p-0 flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
-                title="Edit remarks"
+                size="icon"
+                className="h-6 w-6 p-0 ml-[-1.5rem] opacity-70 hover:opacity-100 transition-opacity"
+                onClick={handleViewFull}
+                aria-label="View full remark"
+                tabIndex={0}
               >
-                <Edit3 className="h-3 w-3" />
+                <Eye className="h-4 w-4" />
               </Button>
-            </div>
-            
-            {getMostRecentTimestamp() && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span>Last updated: {format(new Date(getMostRecentTimestamp()!), 'MMM dd, yyyy • HH:mm')}</span>
-              </div>
             )}
-          </div>
-        ) : (
-          <button
-            onClick={handleAddClick}
-            className="w-full bg-muted/5 border border-dashed border-border/30 rounded-lg p-3 text-left hover:bg-muted/10 transition-colors group"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <MessageSquare className="h-4 w-4" />
-                <span className="text-sm">Add remarks...</span>
-              </div>
-              <Edit3 className="h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity" />
-            </div>
-          </button>
-        )}
-      </div>
-
-      {/* History Section */}
-      {remarksHistory.length > 0 && (
-        <div className="space-y-2">
+            {/* Always allow edit */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 p-0 opacity-70 hover:opacity-100 transition-opacity"
+              onClick={handleEditClick}
+              aria-label="Edit remarks"
+              tabIndex={0}
+            >
+              <Edit3 className="h-3 w-3" />
+            </Button>
+          </>
+        )
+        : (
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleToggleHistory}
-            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground w-full justify-between"
+            className="w-full text-left opacity-70 hover:opacity-100"
+            onClick={handleEditClick}
           >
-            <div className="flex items-center gap-1">
-              <History className="h-3 w-3" />
-              <span>Remarks History</span>
-              {remarksHistory.length > 1 && (
-                <Badge variant="secondary" className="ml-1 text-xs h-4 px-1.5">
-                  {remarksHistory.length}
-                </Badge>
-              )}
-            </div>
-            {showHistory ? (
-              <ChevronUp className="h-3 w-3" />
-            ) : (
-              <ChevronDown className="h-3 w-3" />
-            )}
+            <span className="text-muted-foreground text-sm flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" /> Add remarks...
+            </span>
           </Button>
-
-          {/* History Items */}
-          {showHistory && remarksHistory.length > 0 && (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {remarksHistory
-                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-                .map((entry, index) => (
-                  <div key={entry.id} className="bg-muted/5 rounded-md p-3 border border-border/10">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <p className="text-xs leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere flex-1" 
-                         style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
-                        {entry.text}
-                      </p>
-                      {index === 0 && (
-                        <Badge variant="outline" className="text-xs h-5 px-1.5 flex-shrink-0">
-                          Current
-                        </Badge>
-                      )}
+        )
+      }
+      {/* MODAL for full remark/editor/history */}
+      <Dialog open={showModal} onOpenChange={v => { if (!v) handleCancel(); }}>
+        <DialogContent className="max-w-lg w-full p-6 rounded-2xl space-y-2">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? 'Edit Remark' : 'Quick Remark'}
+            </DialogTitle>
+            {!isEditing && remarks && (
+              <div className="text-xs flex items-center gap-1 text-muted-foreground pt-2">
+                <Clock className="h-3 w-3" />
+                Last updated:&nbsp;
+                {remarksHistory.length > 0
+                  ? format(
+                      new Date(
+                        [...remarksHistory].sort(
+                          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                        )[0].timestamp
+                      ),
+                      'MMM dd, yyyy • HH:mm'
+                    )
+                  : ''}
+              </div>
+            )}
+          </DialogHeader>
+          {/* Content */}
+          <div className="">
+            {isEditing ? (
+              <Textarea
+                ref={textareaRef}
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                className="min-h-[80px] max-h-[120px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words"
+                placeholder="Edit your remark..."
+              />
+            ) : (
+              <div className="text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[48px]">
+                {remarks}
+              </div>
+            )}
+          </div>
+          {/* View/Edit controls */}
+          <DialogFooter className="flex flex-col gap-2">
+            {!isEditing ? (
+              <div className="flex w-full justify-between">
+                <Button size="sm" onClick={() => setIsEditing(true)}>
+                  <Edit3 className="h-3 w-3 mr-1" />
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleToggleHistory}
+                >
+                  <History className="h-3 w-3 mr-1" />
+                  {showHistory ? 'Hide History' : 'Remarks History'}
+                  {remarksHistory.length > 1 && (
+                    <Badge variant="secondary" className="ml-2 h-5 px-1.5 text-xs">
+                      {remarksHistory.length}
+                    </Badge>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSave}>
+                  <Save className="h-3 w-3 mr-1" /> Save
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleCancel}>
+                  <X className="h-3 w-3 mr-1" /> Cancel
+                </Button>
+              </div>
+            )}
+            {/* REMARK HISTORY */}
+            {showHistory && remarksHistory.length > 0 && (
+              <div className="w-full space-y-2 rounded-lg bg-muted/10 px-2 py-2 border border-muted">
+                {remarksHistory
+                  .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                  .map((entry, idx) => (
+                    <div
+                      key={entry.id}
+                      className="p-2 rounded-md bg-white/80 dark:bg-white/10 border border-border/10"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="block text-xs text-foreground break-words font-medium">{entry.text}</span>
+                        {idx === 0 && (
+                          <Badge variant="outline" className="h-5 px-2 text-xs ml-2 flex-shrink-0">
+                            Current
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        {format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-2.5 w-2.5" />
-                      <span>{format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}</span>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
+                  ))}
+              </div>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
