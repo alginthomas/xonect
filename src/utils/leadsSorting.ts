@@ -28,9 +28,25 @@ export const sortLeads = (leads: Lead[], sortField: string, sortDirection: 'asc'
     if (aValue instanceof Date) aValue = aValue.getTime();
     if (bValue instanceof Date) bValue = bValue.getTime();
     
-    // Handle string fields (case-insensitive)
-    if (typeof aValue === 'string') aValue = aValue.toLowerCase();
-    if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+    // Handle string date fields
+    if (typeof aValue === 'string' && (sortField.includes('date') || sortField.includes('Date') || sortField === 'createdAt' || sortField === 'lastContact')) {
+      const aDate = new Date(aValue);
+      const bDate = new Date(bValue);
+      if (!isNaN(aDate.getTime()) && !isNaN(bDate.getTime())) {
+        aValue = aDate.getTime();
+        bValue = bDate.getTime();
+      }
+    }
+    
+    // Handle string fields (case-insensitive with natural sorting)
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      // Use natural sorting for better number handling in strings
+      const comparison = aValue.localeCompare(bValue, undefined, {
+        numeric: true,
+        sensitivity: 'base'
+      });
+      return sortDirection === 'asc' ? comparison : -comparison;
+    }
 
     // Handle numeric fields
     if (sortField === 'emailsSent' || sortField === 'companySize') {
@@ -38,6 +54,21 @@ export const sortLeads = (leads: Lead[], sortField: string, sortDirection: 'asc'
       bValue = Number(bValue) || 0;
     }
 
+    // Handle custom sort orders for specific fields
+    const customSortOrders = {
+      status: ['New', 'Contacted', 'Qualified', 'Interested', 'Not Interested', 'Converted'],
+      seniority: ['Junior', 'Mid-Level', 'Senior', 'Manager', 'Director', 'VP', 'C-Level'],
+    };
+
+    if (customSortOrders[sortField as keyof typeof customSortOrders]) {
+      const order = customSortOrders[sortField as keyof typeof customSortOrders];
+      const aIndex = order.indexOf(aValue);
+      const bIndex = order.indexOf(bValue);
+      aValue = aIndex === -1 ? 999 : aIndex;
+      bValue = bIndex === -1 ? 999 : bIndex;
+    }
+
+    // Standard comparison
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;

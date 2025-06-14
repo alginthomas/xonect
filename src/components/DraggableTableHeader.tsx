@@ -4,24 +4,26 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { AppleTableHead } from '@/components/ui/apple-table';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ChevronUp, ChevronDown, ChevronsUpDown, GripVertical } from 'lucide-react';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
 
 interface DraggableTableHeaderProps {
   column: ColumnConfig;
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
-  onSort?: (field: string) => void;
+  sortPriority?: number;
+  onSort: (field: string, multiSelect?: boolean) => void;
   isAllSelected?: boolean;
   isPartiallySelected?: boolean;
-  onSelectAll?: (checked: boolean) => void;
+  onSelectAll?: (selected: boolean) => void;
 }
 
 export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
   column,
   sortField,
   sortDirection,
+  sortPriority,
   onSort,
   isAllSelected,
   isPartiallySelected,
@@ -34,71 +36,90 @@ export const DraggableTableHeader: React.FC<DraggableTableHeaderProps> = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({
+  } = useSortable({ 
     id: column.id,
-    disabled: column.fixed,
+    disabled: column.fixed
   });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    opacity: isDragging ? 0.5 : 1,
   };
 
-  const handleSort = () => {
-    if (column.sortable && onSort) {
-      onSort(column.id);
+  const isSorted = sortField === column.id;
+  const showSortPriority = sortPriority && sortPriority > 1;
+
+  const handleSort = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (column.sortable) {
+      const multiSelect = e.ctrlKey || e.metaKey; // Ctrl/Cmd + click for multi-sort
+      onSort(column.id, multiSelect);
     }
   };
 
-  const renderColumnContent = () => {
-    if (column.id === 'select' && onSelectAll) {
-      return (
+  const getSortIcon = () => {
+    if (!column.sortable) return null;
+    
+    if (!isSorted) {
+      return <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />;
+    }
+    
+    const IconComponent = sortDirection === 'asc' ? ChevronUp : ChevronDown;
+    return (
+      <div className="flex items-center gap-1">
+        <IconComponent className="h-4 w-4" />
+        {showSortPriority && (
+          <span className="text-xs bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center">
+            {sortPriority}
+          </span>
+        )}
+      </div>
+    );
+  };
+
+  if (column.id === 'select') {
+    return (
+      <AppleTableHead ref={setNodeRef} style={style} className={column.width}>
         <Checkbox
           checked={isAllSelected}
-          ref={(el: any) => {
-            if (el) {
-              const buttonElement = el.querySelector('button');
-              if (buttonElement) {
-                (buttonElement as any).indeterminate = isPartiallySelected || false;
-              }
-            }
-          }}
-          onCheckedChange={(checked) => onSelectAll(checked as boolean)}
-          className="h-4 w-4"
+          ref={isPartiallySelected ? (el) => {
+            if (el) el.indeterminate = true;
+          } : undefined}
+          onCheckedChange={onSelectAll}
         />
-      );
-    }
-    return column.label;
-  };
+      </AppleTableHead>
+    );
+  }
 
   return (
-    <AppleTableHead
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        column.width,
-        column.sortable && 'cursor-pointer hover:bg-muted/50',
-        isDragging && 'opacity-50 z-50',
-        'relative group'
-      )}
-      onClick={column.sortable ? handleSort : undefined}
+    <AppleTableHead 
+      ref={setNodeRef} 
+      style={style} 
+      className={`${column.width} ${column.sortable ? 'cursor-pointer' : ''} ${isSorted ? 'bg-muted/50' : ''}`}
     >
       <div className="flex items-center gap-2">
         {!column.fixed && (
-          <div
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-4 w-4 p-0 cursor-grab active:cursor-grabbing"
             {...attributes}
             {...listeners}
-            className="opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing p-1 -ml-1"
           >
-            <GripVertical className="h-3 w-3 text-muted-foreground" />
-          </div>
+            <GripVertical className="h-3 w-3" />
+          </Button>
         )}
         
-        <div className="flex items-center gap-2 flex-1">
-          {renderColumnContent()}
-          {column.sortable && sortField === column.id && (
-            sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
-          )}
+        <div 
+          className="flex items-center gap-2 flex-1"
+          onClick={handleSort}
+          title={column.sortable ? (
+            `Click to sort by ${column.label}${column.sortable ? '. Ctrl+click for multi-sort.' : ''}`
+          ) : undefined}
+        >
+          <span className="font-semibold">{column.label}</span>
+          {getSortIcon()}
         </div>
       </div>
     </AppleTableHead>
