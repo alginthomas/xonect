@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -63,10 +62,6 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
     return null; // Mobile uses DateGroupedLeads component instead
   }
 
-  const handleRowClick = (lead: Lead) => {
-    onViewDetails(lead);
-  };
-
   return (
     <DndContext
       sensors={sensors}
@@ -94,11 +89,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
         </AppleTableHeader>
         <AppleTableBody>
           {leads.map((lead) => (
-            <AppleTableRow 
-              key={lead.id}
-              className="cursor-pointer hover:bg-muted/50"
-              onClick={() => handleRowClick(lead)}
-            >
+            <AppleTableRow key={lead.id}>
               {visibleColumns.map((column) => (
                 <AppleTableCell key={`${lead.id}-${column.id}`} className={column.width || ''}>
                   <LeadTableCell
