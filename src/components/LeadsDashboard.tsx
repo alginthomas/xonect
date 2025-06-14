@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -16,7 +15,7 @@ import { IntegrationsTab } from '@/components/IntegrationsTab';
 import { useLeadsDashboardLogic } from '@/hooks/useLeadsDashboardLogic';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, Mail, Linkedin } from 'lucide-react';
+import { Plus, Users, Mail } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
@@ -173,7 +172,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   return (
     <div className="space-y-3 lg:space-y-6">
       <Tabs defaultValue="leads" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="leads" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Leads
