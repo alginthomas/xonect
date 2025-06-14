@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
@@ -8,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag, Trash2, Eye } from 'lucide-react';
 import { checkFileAlreadyImported } from '@/utils/duplicateDetection';
 import { format } from 'date-fns';
@@ -274,6 +276,58 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   )}
                 </div>
 
+                {/* Data Preview */}
+                {csvData.length > 0 && !fileError && !isDuplicateFile && (
+                  <Card className="border-blue-200 bg-blue-50/50">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-lg text-blue-800">
+                        <Eye className="h-5 w-5" />
+                        Data Preview
+                      </CardTitle>
+                      <CardDescription className="text-blue-700">
+                        First 5 rows of your CSV data
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              {Object.keys(csvData[0] || {}).slice(0, 6).map((header, index) => (
+                                <TableHead key={index} className="text-xs font-medium">
+                                  {header}
+                                </TableHead>
+                              ))}
+                              {Object.keys(csvData[0] || {}).length > 6 && (
+                                <TableHead className="text-xs font-medium">...</TableHead>
+                              )}
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {csvData.slice(0, 5).map((row, rowIndex) => (
+                              <TableRow key={rowIndex}>
+                                {Object.values(row).slice(0, 6).map((value: any, cellIndex) => (
+                                  <TableCell key={cellIndex} className="text-xs max-w-[120px] truncate">
+                                    {String(value || '')}
+                                  </TableCell>
+                                ))}
+                                {Object.values(row).length > 6 && (
+                                  <TableCell className="text-xs">...</TableCell>
+                                )}
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      {csvData.length > 5 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Showing 5 of {csvData.length} rows
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Import Configuration */}
                 {fileName && csvData.length > 0 && !fileError && !isDuplicateFile && (
                   <Card className="border-green-200 bg-green-50/50">
@@ -417,7 +471,6 @@ export const CSVImport: React.FC<CSVImportProps> = ({
               </p>
             </div>
 
-            {/* Import History */}
             <div className="space-y-4 max-w-4xl mx-auto">
               {importBatches.length === 0 ? (
                 <Card>

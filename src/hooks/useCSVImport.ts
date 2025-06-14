@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { generateFileHash } from '@/utils/duplicateDetection';
 import type { Category } from '@/types/category';
-import type { Lead } from '@/types/lead';
 
 interface UseCSVImportProps {
   onImportComplete: () => void;
@@ -21,10 +20,10 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
     return Math.round((filledFields.length / fields.length) * 100);
   };
 
-  const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string): Partial<Lead> => {
-    return {
-      firstName: csvRow['First Name'] || csvRow['firstName'] || '',
-      lastName: csvRow['Last Name'] || csvRow['lastName'] || '',
+  const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
+    const mappedLead = {
+      first_name: csvRow['First Name'] || csvRow['firstName'] || '',
+      last_name: csvRow['Last Name'] || csvRow['lastName'] || '',
       email: csvRow['Email'] || csvRow['email'] || '',
       phone: csvRow['Phone'] || csvRow['phone'] || '',
       company: csvRow['Company'] || csvRow['company'] || '',
@@ -32,16 +31,39 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       linkedin: csvRow['LinkedIn'] || csvRow['linkedin'] || csvRow['LinkedIn URL'] || '',
       industry: csvRow['Industry'] || csvRow['industry'] || '',
       location: csvRow['Location'] || csvRow['location'] || '',
-      seniority: 'Mid-level',
-      companySize: 'Small (1-50)',
-      status: 'New',
-      emailsSent: 0,
-      completenessScore: 0, // Will be calculated
-      categoryId: categoryId || null,
-      importBatchId: importBatchId || null,
+      seniority: 'Mid-level' as const,
+      company_size: 'Small (1-50)' as const,
+      status: 'New' as const,
+      emails_sent: 0,
+      completeness_score: 0, // Will be calculated
+      category_id: categoryId || null,
+      import_batch_id: importBatchId || null,
+      user_id: userId || '',
       tags: [],
-      remarksHistory: []
+      remarks_history: [],
+      activity_log: [],
+      department: csvRow['Department'] || csvRow['department'] || '',
+      personal_email: csvRow['Personal Email'] || csvRow['personalEmail'] || '',
+      photo_url: csvRow['Photo URL'] || csvRow['photoUrl'] || '',
+      twitter_url: csvRow['Twitter'] || csvRow['twitter'] || '',
+      facebook_url: csvRow['Facebook'] || csvRow['facebook'] || '',
+      organization_website: csvRow['Website'] || csvRow['website'] || '',
+      organization_founded: csvRow['Founded'] ? parseInt(csvRow['Founded']) : null,
+      remarks: ''
     };
+
+    // Calculate completeness score based on the mapped data
+    mappedLead.completeness_score = calculateCompletenessScore({
+      firstName: mappedLead.first_name,
+      lastName: mappedLead.last_name,
+      email: mappedLead.email,
+      phone: mappedLead.phone,
+      company: mappedLead.company,
+      title: mappedLead.title,
+      linkedin: mappedLead.linkedin
+    });
+
+    return mappedLead;
   };
 
   const importCSVData = async (
@@ -112,12 +134,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       if (batchError) throw batchError;
 
       // Process and insert leads
-      const leads: Partial<Lead>[] = csvData.map(row => {
-        const lead = mapCSVToLead(row, categoryId, importBatch.id);
-        lead.completenessScore = calculateCompletenessScore(lead);
-        lead.user_id = user.id;
-        return lead;
-      });
+      const leads = csvData.map(row => mapCSVToLead(row, categoryId, importBatch.id, user.id));
 
       // Insert leads in batches to avoid overwhelming the database
       const batchSize = 100;

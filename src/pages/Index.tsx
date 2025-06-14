@@ -17,10 +17,10 @@ import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/le
 import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('leads'); // Changed from 'dashboard' to 'leads'
+  const [activeTab, setActiveTab] = useState('leads');
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { handleDeleteBatch } = useImportBatchOperations(); // Fixed: use handleDeleteBatch instead of deleteBatch
+  const { handleDeleteBatch } = useImportBatchOperations();
   const { user } = useAuth();
 
   // Set active tab from URL on mount
@@ -491,7 +491,7 @@ const Index = () => {
     leadsError,
     selectedBatchId,
     user: user?.id,
-    activeTab // Add activeTab to debug output
+    activeTab
   });
 
   if (!user) {
@@ -551,7 +551,6 @@ const Index = () => {
           onCreateCategory={handleCreateCategory}
           existingLeads={leads}
           importBatches={importBatches}
-          onDeleteBatch={handleDeleteBatchWrapper} // Added: pass the delete handler
         />
       )}
 
@@ -597,7 +596,7 @@ const Index = () => {
           leads={leads}
           importBatches={importBatches}
           categories={categories}
-          onDeleteBatch={handleDeleteBatchWrapper} // Fixed: use handleDeleteBatchWrapper
+          onDeleteBatch={handleDeleteBatchWrapper}
           onViewBatchLeads={setSelectedBatchId}
         />
       )}
