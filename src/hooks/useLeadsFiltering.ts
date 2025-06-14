@@ -1,10 +1,13 @@
 
 import { useMemo, useEffect } from 'react';
 import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
+import type { ImportBatch } from '@/types/category';
 import { filterDuplicatePhoneNumbers, getLeadsWithDuplicatePhones } from '@/utils/phoneDeduplication';
 
 interface UseLeadsFilteringProps {
   leads: Lead[];
+  importBatches: ImportBatch[];
+  selectedBatchId?: string | null;
   searchQuery: string;
   selectedStatus: LeadStatus | 'all';
   selectedCategory: string;
@@ -23,6 +26,8 @@ interface UseLeadsFilteringProps {
 
 export const useLeadsFiltering = ({
   leads,
+  importBatches,
+  selectedBatchId,
   searchQuery,
   selectedStatus,
   selectedCategory,
@@ -51,6 +56,12 @@ export const useLeadsFiltering = ({
     });
     
     let filtered = leads;
+
+    // Filter by import batch if selected
+    if (selectedBatchId) {
+      filtered = filtered.filter(lead => lead.importBatchId === selectedBatchId);
+      console.log('After batch filter:', filtered.length);
+    }
 
     // Filter by search term - add null check
     if (searchQuery && searchQuery.trim()) {
@@ -126,7 +137,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
+  }, [leads, importBatches, selectedBatchId, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {
@@ -153,6 +164,7 @@ export const useLeadsFiltering = ({
 
   return {
     filteredLeads: paginatedLeads,
+    sortedLeads,
     totalPages,
     totalLeads
   };

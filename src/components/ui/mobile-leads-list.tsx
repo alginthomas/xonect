@@ -141,6 +141,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     totalLeads
   } = useLeadsFiltering({
     leads,
+    importBatches: [],
+    selectedBatchId: null,
     searchQuery: searchQuery || '',
     selectedStatus,
     selectedCategory,
