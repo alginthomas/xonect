@@ -24,6 +24,8 @@ interface MobileSearchToolbarProps {
   onCountryChange?: (value: string) => void;
   duplicatePhoneFilter?: string;
   onDuplicatePhoneChange?: (value: string) => void;
+  remarksFilter?: string;
+  onRemarksChange?: (value: string) => void;
   categories: Category[];
   leads: Lead[];
   onExport: () => void;
@@ -51,6 +53,8 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
   onCountryChange,
   duplicatePhoneFilter = 'all',
   onDuplicatePhoneChange,
+  remarksFilter = 'all',
+  onRemarksChange,
   categories,
   leads,
   onExport,
@@ -69,7 +73,8 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
 
   const totalActiveFilters = activeFiltersCount + 
     (countryFilter !== 'all' ? 1 : 0) + 
-    (duplicatePhoneFilter !== 'all' ? 1 : 0);
+    (duplicatePhoneFilter !== 'all' ? 1 : 0) +
+    (remarksFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="space-y-4 p-4">
@@ -209,6 +214,22 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
                             </Select>
                           </div>
                         )}
+
+                        {onRemarksChange && (
+                          <div className="space-y-2">
+                            <label className="text-xs text-muted-foreground">Remarks</label>
+                            <Select value={remarksFilter} onValueChange={onRemarksChange}>
+                              <SelectTrigger className="h-11 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Remarks</SelectItem>
+                                <SelectItem value="has-remarks">Has Remarks</SelectItem>
+                                <SelectItem value="no-remarks">No Remarks</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -290,6 +311,11 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
             {duplicatePhoneFilter !== 'all' && (
               <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Phone: {duplicatePhoneFilter === 'unique-only' ? 'Unique Only' : 'Duplicates Only'}
+              </Badge>
+            )}
+            {remarksFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Remarks: {remarksFilter === 'has-remarks' ? 'Has Remarks' : 'No Remarks'}
               </Badge>
             )}
           </div>
