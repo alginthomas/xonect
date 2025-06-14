@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 export interface ColumnConfig {
@@ -17,7 +16,7 @@ const defaultColumns: ColumnConfig[] = [
   { id: 'actions', label: 'Actions', width: 'w-32', sortable: false, visible: true, fixed: true },
   { id: 'name', label: 'Name', sortable: true, visible: true },
   { id: 'company', label: 'Company', sortable: true, visible: true },
-  { id: 'contact', label: 'Contact', sortable: false, visible: true },
+  { id: 'phone', label: 'Phone', sortable: false, visible: true },
   { id: 'category', label: 'Category', sortable: false, visible: true },
   { id: 'created', label: 'Created', sortable: true, visible: true },
 ];
