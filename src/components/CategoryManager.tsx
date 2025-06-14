@@ -10,20 +10,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Edit, Trash2, Tag } from 'lucide-react';
 import { CategorySelector } from './CategorySelector';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { Category } from '@/types/category';
 
 interface CategoryManagerProps {
   categories: Category[];
-  onCreateCategory: (category: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => void;
-  onUpdateCategory: (id: string, updates: Partial<Category>) => void;
-  onDeleteCategory: (id: string) => void;
+  onRefresh: () => void;
 }
 
 export const CategoryManager: React.FC<CategoryManagerProps> = ({
   categories,
-  onCreateCategory,
-  onUpdateCategory,
-  onDeleteCategory
+  onRefresh
 }) => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -39,7 +36,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
   });
   const { toast } = useToast();
 
-  const handleCreateCategory = () => {
+  const handleCreateCategory = async () => {
     if (!newCategory.name.trim()) {
       toast({
         title: "Validation Error",
@@ -49,15 +46,36 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
       return;
     }
 
-    onCreateCategory({
-      ...newCategory,
-      criteria: {}
-    });
+    const { error } = await supabase
+      .from('categories')
+      .insert([{
+        name: newCategory.name,
+        description: newCategory.description,
+        color: newCategory.color,
+        criteria: {},
+        user_id: (await supabase.auth.getUser()).data.user?.id!
+      }]);
+
+    if (error) {
+      console.error('Error creating category:', error);
+      toast({
+        title: 'Error creating category',
+        description: error.message,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    onRefresh();
     setNewCategory({ name: '', description: '', color: '#3B82F6' });
     setIsCreateOpen(false);
+    toast({
+      title: 'Category created',
+      description: 'Category has been created successfully'
+    });
   };
 
-  const handleEditCategory = () => {
+  const handleEditCategory = async () => {
     if (!editCategory.name.trim()) {
       toast({
         title: "Validation Error",
@@ -68,14 +86,56 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
     }
 
     if (editingCategory) {
-      onUpdateCategory(editingCategory.id, {
-        name: editCategory.name,
-        description: editCategory.description,
-        color: editCategory.color
-      });
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: editCategory.name,
+          description: editCategory.description,
+          color: editCategory.color
+        })
+        .eq('id', editingCategory.id);
+
+      if (error) {
+        console.error('Error updating category:', error);
+        toast({
+          title: 'Error updating category',
+          description: error.message,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      onRefresh();
       setEditingCategory(null);
       setEditCategory({ name: '', description: '', color: '#3B82F6' });
+      toast({
+        title: 'Category updated',
+        description: 'Category has been updated successfully'
+      });
     }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
+
+    if (error) {
+      console.error('Error deleting category:', error);
+      toast({
+        title: 'Error deleting category',
+        description: error.message,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    onRefresh();
+    toast({
+      title: 'Category deleted',
+      description: 'Category has been deleted successfully'
+    });
   };
 
   const openEditDialog = (category: Category) => {
@@ -248,7 +308,7 @@ export const CategoryManager: React.FC<CategoryManagerProps> = ({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => onDeleteCategory(category.id)}
+                    onClick={() => handleDeleteCategory(category.id)}
                     disabled={category.name === 'General'}
                   >
                     <Trash2 className="h-4 w-4" />
