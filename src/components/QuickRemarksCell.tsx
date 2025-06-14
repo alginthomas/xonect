@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -63,14 +62,29 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
   const handleSave = () => {
     const trimmed = editValue.trim();
-    if (!trimmed) return;
-    // Prepare new remark entry
+    // Do not save if remark is empty after trimming, but allow clearing an existing remark
+    if (!trimmed && !remarks) return; // Don't save if new and empty
+    if (trimmed === remarks) { // If content is unchanged
+      setIsEditing(false);
+      setShowModal(false);
+      return;
+    }
+
     const newEntry: RemarkEntry = {
       id: crypto.randomUUID(),
       text: trimmed,
       timestamp: new Date()
     };
-    const updatedHistory = [...remarksHistory, newEntry];
+    // If current remarks are not empty, add current state to history before this new one
+    // Only add if the current remarks are not already the latest in history
+    let baseHistory = [...remarksHistory];
+    if (remarks && (remarksHistory.length === 0 || remarksHistory[remarksHistory.length -1]?.text !== remarks)) {
+        // This logic might need refinement based on how history is structured.
+        // Assuming remarks prop is always the latest text before this edit.
+    }
+
+    const updatedHistory = [...baseHistory, newEntry].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    
     onUpdate(trimmed, updatedHistory);
     setIsEditing(false);
     setShowModal(false);
@@ -84,6 +98,8 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   };
 
   const handleToggleHistory = () => setShowHistory((v) => !v);
+
+  const latestHistoryEntry = remarksHistory.length > 0 ? [...remarksHistory].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0] : null;
 
   // Table (cell) view: always one line, ellipsis, view button
   return (
@@ -145,36 +161,26 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
             <DialogTitle>
               {isEditing ? 'Edit Remark' : 'Quick Remark'}
             </DialogTitle>
-            {!isEditing && remarks && (
+            {!isEditing && remarks && latestHistoryEntry && (
               <div className="text-xs flex items-center gap-1 text-muted-foreground pt-2">
                 <Clock className="h-3 w-3" />
                 Last updated:&nbsp;
-                {remarksHistory.length > 0
-                  ? format(
-                      new Date(
-                        [...remarksHistory].sort(
-                          (a, b) =>
-                            new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-                        )[0].timestamp
-                      ),
-                      'MMM dd, yyyy • HH:mm'
-                    )
-                  : ''}
+                {format(new Date(latestHistoryEntry.timestamp), 'MMM dd, yyyy • HH:mm')}
               </div>
             )}
           </DialogHeader>
           {/* Content */}
-          <div>
+          <div className="w-full">
             {isEditing ? (
               <Textarea
                 ref={textareaRef}
                 value={editValue}
                 onChange={e => setEditValue(e.target.value)}
-                className="min-h-[80px] max-h-[120px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words"
+                className="w-full min-h-[80px] max-h-[120px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words"
                 placeholder="Edit your remark..."
               />
             ) : (
-              <div className="text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[48px] max-h-40 overflow-y-auto">
+              <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[48px] max-h-40 overflow-y-auto">
                 {remarks}
               </div>
             )}
@@ -188,7 +194,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
                     <Edit3 className="h-3 w-3 mr-1" />
                     Edit
                   </Button>
-                  {remarksHistory.length > 1 && (
+                  {remarksHistory.length > 0 && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -216,10 +222,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
                           className="p-2 rounded-md bg-white/80 dark:bg-white/10 border border-border/10"
                         >
                           <div className="flex items-center justify-between mb-1">
-                            <span className="block text-xs text-foreground break-words font-medium">
+                            <span className="block text-xs text-foreground break-words font-medium w-full">
                               {entry.text}
                             </span>
-                            {idx === 0 && (
+                            {idx === 0 && remarks === entry.text && (
                               <Badge variant="outline" className="h-5 px-2 text-xs ml-2 flex-shrink-0">
                                 Current
                               </Badge>
