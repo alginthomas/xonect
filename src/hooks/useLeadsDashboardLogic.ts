@@ -1,12 +1,12 @@
 
-import { useState, useMemo, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useEffect, useMemo } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
 import { useLeadsSelection } from '@/hooks/useLeadsSelection';
 import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
-import { useToast } from '@/hooks/use-toast';
-import { exportLeadsToCSV } from '@/utils/csvExport';
+import { useLeadsDashboardState } from '@/hooks/useLeadsDashboardState';
+import { useLeadsDashboardActions } from '@/hooks/useLeadsDashboardActions';
+import { useLeadsDashboardFilters } from '@/hooks/useLeadsDashboardFilters';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -56,13 +56,18 @@ export const useLeadsDashboardLogic = ({
     setNavigationFilter
   } = useLeadsCache();
 
-  const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<'all' | 'unique-only' | 'duplicates-only'>('all');
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [selectedLeadForEmail, setSelectedLeadForEmail] = useState<Lead | null>(null);
-  const [showEmailDialog, setShowEmailDialog] = useState(false);
-
-  const { toast } = useToast();
+  const {
+    duplicatePhoneFilter,
+    setDuplicatePhoneFilter,
+    selectedLead,
+    setSelectedLead,
+    showSidebar,
+    setShowSidebar,
+    selectedLeadForEmail,
+    setSelectedLeadForEmail,
+    showEmailDialog,
+    setShowEmailDialog
+  } = useLeadsDashboardState();
 
   // Check URL parameters for navigation filter on component mount
   useEffect(() => {
@@ -107,16 +112,31 @@ export const useLeadsDashboardLogic = ({
     resetToDefault
   } = useColumnConfiguration();
 
-  // Calculate active filters count
-  const activeFiltersCount = useMemo(() => {
-    let count = 0;
-    if (statusFilter !== 'all') count++;
-    if (categoryFilter !== 'all') count++;
-    if (dataAvailabilityFilter !== 'all') count++;
-    if (countryFilter !== 'all') count++;
-    if (duplicatePhoneFilter !== 'all') count++;
-    return count;
-  }, [statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter]);
+  const { activeFiltersCount, clearAllFilters } = useLeadsDashboardFilters({
+    statusFilter,
+    categoryFilter,
+    dataAvailabilityFilter,
+    countryFilter,
+    duplicatePhoneFilter,
+    setStatusFilter,
+    setCategoryFilter,
+    setDataAvailabilityFilter,
+    setCountryFilter,
+    setDuplicatePhoneFilter,
+    setSearchTerm,
+    setNavigationFilter
+  });
+
+  const { handleBulkAction, handleExport, handleStatusChange, handleRemarksUpdate } = useLeadsDashboardActions({
+    leads,
+    categories,
+    sortedLeads,
+    selectedLeads,
+    onUpdateLead,
+    onBulkUpdateStatus,
+    onBulkDelete,
+    clearSelection
+  });
 
   // Pagination calculations
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
@@ -131,128 +151,6 @@ export const useLeadsDashboardLogic = ({
       setSortField(field);
       setSortDirection('asc');
     }
-  };
-
-  const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
-    if (selectedLeads.size === 0) {
-      toast({
-        title: 'No leads selected',
-        description: 'Please select leads to perform bulk actions.',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    const leadIds = Array.from(selectedLeads);
-    try {
-      if (action === 'delete') {
-        await onBulkDelete(leadIds);
-        toast({
-          title: 'Leads deleted',
-          description: `${leadIds.length} leads have been deleted.`
-        });
-      } else if (action === 'status' && value) {
-        await onBulkUpdateStatus(leadIds, value as LeadStatus);
-        toast({
-          title: 'Status updated',
-          description: `${leadIds.length} leads status updated to ${value}.`
-        });
-      }
-      clearSelection();
-    } catch (error) {
-      toast({
-        title: 'Action failed',
-        description: 'Failed to perform bulk action. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleExport = () => {
-    const leadsToExport = selectedLeads.size > 0 
-      ? sortedLeads.filter(lead => selectedLeads.has(lead.id)) 
-      : sortedLeads;
-    exportLeadsToCSV(leadsToExport, categories);
-    toast({
-      title: 'Export successful',
-      description: `${leadsToExport.length} leads exported to CSV.`
-    });
-  };
-
-  const handleStatusChange = async (leadId: string, status: LeadStatus) => {
-    try {
-      await onUpdateLead(leadId, { status });
-      toast({
-        title: 'Status updated',
-        description: `Lead status updated to ${status}`
-      });
-    } catch (error) {
-      toast({
-        title: 'Update failed',
-        description: 'Failed to update status. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleRemarksUpdate = async (leadId: string, remarks: string) => {
-    try {
-      // Find the current lead to get existing remarks history
-      const currentLead = leads.find(lead => lead.id === leadId);
-      if (!currentLead) return;
-
-      // Only create a new remark entry if the remarks text has actually changed
-      if (currentLead.remarks === remarks) {
-        console.log('Remarks unchanged, skipping update');
-        return;
-      }
-
-      // Create new remark entry with precise timestamp
-      const newRemarkEntry: import('@/types/lead').RemarkEntry = {
-        id: crypto.randomUUID(),
-        text: remarks,
-        timestamp: new Date() // This will capture the exact moment of creation
-      };
-
-      // Update remarks history with new entry
-      const updatedRemarksHistory = [...(currentLead.remarksHistory || []), newRemarkEntry];
-
-      console.log('Updating remarks for lead:', leadId);
-      console.log('New remark entry:', newRemarkEntry);
-      console.log('Updated remarks history:', updatedRemarksHistory);
-
-      // Update lead with both current remarks and history
-      await onUpdateLead(leadId, { 
-        remarks,
-        remarksHistory: updatedRemarksHistory
-      });
-      
-      toast({
-        title: 'Remarks updated',
-        description: `Remark added at ${format(newRemarkEntry.timestamp, 'MMM dd, yyyy • HH:mm')}`
-      });
-    } catch (error) {
-      console.error('Error updating remarks:', error);
-      toast({
-        title: 'Update failed',
-        description: 'Failed to update remarks. Please try again.',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const clearAllFilters = () => {
-    setStatusFilter('all');
-    setCategoryFilter('all');
-    setDataAvailabilityFilter('all');
-    setCountryFilter('all');
-    setDuplicatePhoneFilter('all');
-    setSearchTerm('');
-    setNavigationFilter(undefined);
-    
-    const url = new URL(window.location.href);
-    url.searchParams.delete('status');
-    window.history.replaceState({}, '', url.toString());
   };
 
   return {
