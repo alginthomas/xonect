@@ -111,11 +111,14 @@ export const useLeadsDashboardActions = ({
         timestamp: entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp)
       }));
 
-      // Update lead with both current remarks and processed history
-      await onUpdateLead(leadId, { 
+      // Create the update object - only include what's actually changing
+      const updateData: Partial<Lead> = { 
         remarks,
         remarksHistory: processedHistory
-      });
+      };
+
+      // Update lead with minimal data to avoid triggering unnecessary re-renders
+      await onUpdateLead(leadId, updateData);
       
       // Get the latest entry for the toast
       const latestEntry = processedHistory[processedHistory.length - 1];

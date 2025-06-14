@@ -22,7 +22,7 @@ interface LeadsTableProps {
   onSelectLead: (leadId: string) => void;
   onSelectAll: (selected: boolean) => void;
   onStatusChange: (leadId: string, status: LeadStatus) => void;
-  onRemarksUpdate: (leadId: string, remarks: string) => void;
+  onRemarksUpdate: (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => void;
   onEmailClick: (lead: Lead) => void;
   onViewDetails: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
@@ -63,6 +63,12 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
     return null; // Mobile uses DateGroupedLeads component instead
   }
 
+  // Create a stable handler for remarks updates to prevent unnecessary re-renders
+  const handleRemarksUpdate = React.useCallback((leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
+    console.log('LeadsTable: handleRemarksUpdate called for lead:', leadId);
+    onRemarksUpdate(leadId, remarks, remarksHistory);
+  }, [onRemarksUpdate]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -100,7 +106,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
                     selectedLeads={selectedLeads}
                     onSelectLead={(leadId, selected) => onSelectLead(leadId)}
                     onStatusChange={onStatusChange}
-                    onRemarksUpdate={onRemarksUpdate}
+                    onRemarksUpdate={handleRemarksUpdate}
                     onEmailClick={() => onEmailClick(lead)}
                     onViewDetails={() => onViewDetails(lead)}
                     onDeleteLead={() => onDeleteLead(lead.id)}
