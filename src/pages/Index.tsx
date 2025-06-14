@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -86,9 +87,6 @@ const Index = () => {
         createdAt: new Date(lead.created_at),
         updatedAt: new Date(lead.updated_at),
         userId: lead.user_id,
-        organizationId: lead.organization_id,
-        assignedTo: lead.assigned_to,
-        teamId: lead.team_id,
         organizationWebsite: lead.organization_website || '',
         department: lead.department || '',
         personalEmail: lead.personal_email || '',
@@ -96,8 +94,12 @@ const Index = () => {
         twitterUrl: lead.twitter_url || '',
         facebookUrl: lead.facebook_url || '',
         organizationFounded: lead.organization_founded,
-        remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history as RemarkEntry[] : [],
-        activityLog: Array.isArray(lead.activity_log) ? lead.activity_log as ActivityEntry[] : []
+        remarksHistory: Array.isArray(lead.remarks_history) 
+          ? (lead.remarks_history as unknown as RemarkEntry[]) 
+          : [],
+        activityLog: Array.isArray(lead.activity_log) 
+          ? (lead.activity_log as unknown as ActivityEntry[]) 
+          : []
       }));
       
       console.log('🔄 Mapped leads:', mappedLeads);
@@ -360,6 +362,13 @@ const Index = () => {
     }
   };
 
+  const handleBulkAction = async (action: 'delete' | 'merge', leadIds: string[]) => {
+    if (action === 'delete') {
+      await handleBulkDelete(leadIds);
+    }
+    // Merge functionality would be implemented here
+  };
+
   // Debug output
   console.log('📊 Current data state:', {
     leads: leads.length,
@@ -425,15 +434,7 @@ const Index = () => {
         {activeTab === 'categories' && (
           <CategoryManager 
             categories={categories}
-            onCategoryCreated={() => {
-              refetchCategories();
-              refetchLeads();
-            }}
-            onCategoryUpdated={() => {
-              refetchCategories();
-              refetchLeads();
-            }}
-            onCategoryDeleted={() => {
+            onRefresh={() => {
               refetchCategories();
               refetchLeads();
             }}
@@ -443,8 +444,7 @@ const Index = () => {
         {activeTab === 'duplicates' && (
           <DuplicateManager 
             leads={leads}
-            onLeadDeleted={refetchLeads}
-            onLeadUpdated={refetchLeads}
+            onBulkAction={handleBulkAction}
           />
         )}
 
