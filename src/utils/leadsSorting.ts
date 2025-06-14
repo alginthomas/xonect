@@ -24,6 +24,12 @@ export const sortLeads = (leads: Lead[], sortField: string, sortDirection: 'asc'
       bValue = b.categoryId || '';
     }
 
+    // Handle name sorting by combining first and last names
+    if (sortField === 'name') {
+      aValue = `${a.firstName || ''} ${a.lastName || ''}`.trim().toLowerCase();
+      bValue = `${b.firstName || ''} ${b.lastName || ''}`.trim().toLowerCase();
+    }
+
     // Handle date fields
     if (aValue instanceof Date) aValue = aValue.getTime();
     if (bValue instanceof Date) bValue = bValue.getTime();
