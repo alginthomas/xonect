@@ -76,6 +76,7 @@ export const useLeadsDashboardActions = ({
 
   const handleStatusChange = async (leadId: string, status: LeadStatus) => {
     try {
+      // Update only the status, preserving all other data
       await onUpdateLead(leadId, { status });
       toast({
         title: 'Status updated',
@@ -93,7 +94,10 @@ export const useLeadsDashboardActions = ({
   const handleRemarksUpdate = async (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
     try {
       const currentLead = leads.find(lead => lead.id === leadId);
-      if (!currentLead) return;
+      if (!currentLead) {
+        console.error('Lead not found:', leadId);
+        return;
+      }
 
       // Check if remarks have actually changed
       if (currentLead.remarks === remarks) {
@@ -102,8 +106,6 @@ export const useLeadsDashboardActions = ({
       }
 
       console.log('Updating remarks for lead:', leadId);
-      console.log('New remarks:', remarks);
-      console.log('Updated remarks history length:', remarksHistory.length);
 
       // Ensure all timestamp entries are proper Date objects
       const processedHistory = remarksHistory.map(entry => ({
@@ -111,27 +113,29 @@ export const useLeadsDashboardActions = ({
         timestamp: entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp)
       }));
 
-      // Create the update object - only include what's actually changing
+      // Create minimal update object - ONLY what changed
       const updateData: Partial<Lead> = { 
         remarks,
         remarksHistory: processedHistory
       };
 
-      // Update lead with minimal data to avoid triggering unnecessary re-renders
+      // Perform the update
       await onUpdateLead(leadId, updateData);
       
       // Get the latest entry for the toast
       const latestEntry = processedHistory[processedHistory.length - 1];
       
       toast({
-        title: 'Remarks updated',
-        description: `Remark added at ${format(latestEntry.timestamp, 'MMM dd, yyyy • HH:mm')}`
+        title: 'Remark saved',
+        description: `Added at ${format(latestEntry.timestamp, 'MMM dd, HH:mm')}`
       });
+
+      console.log('Remarks update completed successfully');
     } catch (error) {
       console.error('Error updating remarks:', error);
       toast({
         title: 'Update failed',
-        description: 'Failed to update remarks. Please try again.',
+        description: 'Failed to save remark. Please try again.',
         variant: 'destructive'
       });
     }
