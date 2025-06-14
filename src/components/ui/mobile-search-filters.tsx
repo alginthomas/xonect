@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users, Phone, Mail, Globe } from 'lucide-react';
+import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users, Phone, Mail, Globe, MessageSquare } from 'lucide-react';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { LeadStatus, Seniority, CompanySize, Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
@@ -42,6 +42,9 @@ interface MobileSearchFiltersProps {
   // Duplicate phone filter
   duplicatePhoneFilter?: string;
   onDuplicatePhoneChange?: (filter: string) => void;
+  // Remarks filter
+  remarksFilter?: string;
+  onRemarksFilterChange?: (filter: string) => void;
 }
 
 // All available lead statuses
@@ -77,7 +80,9 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   countryFilter = 'all',
   onCountryChange,
   duplicatePhoneFilter = 'all',
-  onDuplicatePhoneChange
+  onDuplicatePhoneChange,
+  remarksFilter = 'all',
+  onRemarksFilterChange
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
@@ -93,6 +98,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     if (onDataFilterChange) onDataFilterChange('all');
     if (onCountryChange) onCountryChange('all');
     if (onDuplicatePhoneChange) onDuplicatePhoneChange('all');
+    if (onRemarksFilterChange) onRemarksFilterChange('all');
     setIsFilterSheetOpen(false);
   };
 
@@ -115,7 +121,8 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     (selectedIndustry ? 1 : 0) + 
     (selectedDataFilter !== 'all' ? 1 : 0) +
     (countryFilter !== 'all' ? 1 : 0) +
-    (duplicatePhoneFilter !== 'all' ? 1 : 0);
+    (duplicatePhoneFilter !== 'all' ? 1 : 0) +
+    (remarksFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="sticky top-0 z-40 bg-background border-b border-border/30 px-4 py-3 space-y-4">
@@ -224,6 +231,21 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
               </Select>
             )}
 
+            {/* Remarks Filter */}
+            {onRemarksFilterChange && (
+              <Select value={remarksFilter} onValueChange={onRemarksFilterChange}>
+                <SelectTrigger className="w-36 h-10 text-sm flex-shrink-0">
+                  <MessageSquare className="h-3 w-3 mr-2" />
+                  <SelectValue placeholder="Remarks" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Remarks</SelectItem>
+                  <SelectItem value="has-remarks">Has Remarks</SelectItem>
+                  <SelectItem value="no-remarks">No Remarks</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
             {/* Advanced Filters Sheet */}
             <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
               <SheetTrigger asChild>
@@ -242,7 +264,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                   <SheetHeader className="text-left">
                     <SheetTitle>Advanced Filters</SheetTitle>
                     <SheetDescription>
-                      Refine your search with additional filters including phone duplicates
+                      Refine your search with additional filters including phone duplicates and remarks
                     </SheetDescription>
                   </SheetHeader>
                 </div>
@@ -342,11 +364,11 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                           </div>
                         </div>
 
-                        {/* Data Availability & Phone Filters */}
+                        {/* Data Availability & Communication Filters */}
                         <div className="space-y-4">
                           <h4 className="font-medium text-sm flex items-center gap-2">
                             <Phone className="h-4 w-4" />
-                            Contact Information
+                            Contact Information & Communication
                           </h4>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {onDataFilterChange && (
@@ -377,6 +399,23 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                                     <SelectItem value="all">All Phone Numbers</SelectItem>
                                     <SelectItem value="unique-only">Unique Phone Only</SelectItem>
                                     <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {onRemarksFilterChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Remarks</label>
+                                <Select value={remarksFilter} onValueChange={onRemarksFilterChange}>
+                                  <SelectTrigger className="h-11 w-full">
+                                    <MessageSquare className="h-3 w-3 mr-2" />
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All Remarks</SelectItem>
+                                    <SelectItem value="has-remarks">Has Remarks</SelectItem>
+                                    <SelectItem value="no-remarks">No Remarks</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -543,6 +582,11 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
             {duplicatePhoneFilter !== 'all' && (
               <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Phone: {duplicatePhoneFilter === 'unique-only' ? 'Unique Only' : 'Duplicates Only'}
+              </Badge>
+            )}
+            {remarksFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Remarks: {remarksFilter === 'has-remarks' ? 'Has Remarks' : 'No Remarks'}
               </Badge>
             )}
           </div>
