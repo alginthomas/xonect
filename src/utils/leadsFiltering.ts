@@ -1,3 +1,4 @@
+
 import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 import type { DuplicatePhoneFilter } from '@/types/filtering';
@@ -111,26 +112,42 @@ export const filterLeads = ({
     filtered = filtered.filter(lead => lead.industry === selectedIndustry);
   }
 
-  // Filter by country (with fallback: try to parse from phone if not set)
+  // Enhanced country filter with better matching logic
   if (countryFilter !== 'all') {
+    console.log(`Filtering by country: "${countryFilter}"`);
     filtered = filtered.filter(lead => {
-      let countryName = lead.country;
-      if ((!countryName || countryName === '') && lead.phone) {
+      // First check if lead has country field directly
+      if (lead.country && lead.country === countryFilter) {
+        return true;
+      }
+      
+      // Fallback: try to parse from phone if country field is empty/missing
+      if ((!lead.country || lead.country === '') && lead.phone) {
         try {
-          const parsed = getCountryFromPhoneNumber(lead.phone);
-          countryName = parsed?.name ?? '';
+          const parsedCountry = getCountryFromPhoneNumber(lead.phone);
+          if (parsedCountry && parsedCountry.name === countryFilter) {
+            return true;
+          }
         } catch (e) {
-          // fallback continues to no match
+          console.warn('Error parsing country from phone:', lead.phone, e);
         }
       }
-      return countryName === countryFilter;
+      
+      return false;
     });
+    
+    console.log(`After country filter (${countryFilter}):`, filtered.length);
     if (filtered.length === 0 && leads.length > 0) {
-      // log one lead to help debugging what exists
-      console.log('[LeadsFiltering] Example lead:', leads[0]);
-      console.log(`[LeadsFiltering] Searched for country: "${countryFilter}"`);
+      // Debug logging to help identify the issue
+      const sampleLead = leads[0];
+      console.log('[DEBUG] Sample lead for country debugging:', {
+        id: sampleLead.id,
+        country: sampleLead.country,
+        phone: sampleLead.phone,
+        parsedCountry: sampleLead.phone ? getCountryFromPhoneNumber(sampleLead.phone) : null
+      });
+      console.log(`[DEBUG] Looking for country: "${countryFilter}"`);
     }
-    console.log('After country filter:', filtered.length);
   }
 
   // Filter by data availability
