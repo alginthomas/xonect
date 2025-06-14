@@ -12,7 +12,7 @@ import { QuickRemarksModalHeader } from './QuickRemarksModalHeader';
 import { RemarkHistoryView } from './RemarkHistoryView';
 import { QuickRemarksModalControls } from './QuickRemarksModalControls';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Apple-style responsive modal with improved mobile UX
@@ -108,25 +108,32 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
       <DialogContent 
         className={`
           ${isMobile 
-            ? 'fixed inset-x-2 bottom-0 top-auto h-[85vh] max-h-[85vh] w-auto max-w-none rounded-t-3xl rounded-b-none data-[state=open]:slide-in-from-bottom-[100%] data-[state=closed]:slide-out-to-bottom-[100%]' 
-            : 'max-w-md'
+            ? 'fixed inset-x-0 bottom-0 top-auto h-[90vh] max-h-[90vh] w-full max-w-none rounded-t-[28px] rounded-b-none border-0 p-0 shadow-2xl bg-white dark:bg-gray-900' 
+            : 'max-w-md rounded-2xl border-0 shadow-xl bg-white dark:bg-gray-900'
           } 
-          p-0 gap-0 flex flex-col overflow-hidden border-0 shadow-2xl
+          flex flex-col overflow-hidden
         `}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
+        {/* Mobile drag indicator */}
+        {isMobile && (
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+          </div>
+        )}
+
         {/* Mobile header with close button - Apple style */}
         {isMobile && (
-          <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleModalClose}
-              className="text-blue-600 font-medium"
+              className="text-blue-600 hover:text-blue-700 font-medium text-base px-0"
             >
               Cancel
             </Button>
-            <h3 className="font-semibold text-lg">
+            <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
               {isEditing ? 'Add Remark' : 'Remarks'}
             </h3>
             {isEditing && (
@@ -134,7 +141,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleSave}
-                className="text-blue-600 font-medium"
+                className="text-blue-600 hover:text-blue-700 font-semibold text-base px-0"
                 disabled={!editValue.trim()}
               >
                 Save
@@ -145,9 +152,9 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleModalClose}
-                className="p-1"
+                className="p-1 text-gray-500 hover:text-gray-700"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </Button>
             )}
           </div>
@@ -155,7 +162,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
         {/* Desktop header */}
         {!isMobile && (
-          <DialogHeader className="p-6 pb-3">
+          <DialogHeader className="p-6 pb-4">
             <QuickRemarksModalHeader
               isEditing={isEditing}
               remarksPresent={!!initialRemarks}
@@ -165,40 +172,48 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
         )}
 
         {/* Content area */}
-        <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0">
+        <div className={`flex-1 overflow-y-auto min-h-0 ${isMobile ? 'px-6' : 'px-6'}`}>
           {!isMobile && latestHistoryEntry && !isEditing && (
-            <div className="text-xs flex items-center gap-1 text-muted-foreground mb-3">
+            <div className="text-xs flex items-center gap-1 text-gray-500 mb-4">
               Last updated: {latestHistoryEntry.timestamp.toLocaleDateString()}
             </div>
           )}
 
           {isEditing ? (
-            <Textarea
-              ref={textareaRef}
-              value={editValue}
-              onChange={e => setEditValue(e.target.value)}
-              className={`
-                w-full resize-none border-0 shadow-none focus-visible:ring-0 p-0
-                ${isMobile ? 'min-h-[120px] text-base' : 'min-h-[100px] text-sm'}
-                bg-transparent placeholder:text-muted-foreground/60
-              `}
-              placeholder="Type your remark here..."
-              tabIndex={0}
-              aria-label="Add New Remark"
-            />
+            <div className={`${isMobile ? 'mt-2' : 'mt-0'}`}>
+              <Textarea
+                ref={textareaRef}
+                value={editValue}
+                onChange={e => setEditValue(e.target.value)}
+                className={`
+                  w-full resize-none border-0 shadow-none focus-visible:ring-0 p-0 bg-transparent
+                  ${isMobile ? 'min-h-[200px] text-base leading-relaxed' : 'min-h-[120px] text-sm'}
+                  placeholder:text-gray-400 dark:placeholder:text-gray-500
+                `}
+                placeholder="What would you like to note about this lead?"
+                tabIndex={0}
+                aria-label="Add New Remark"
+              />
+            </div>
           ) : (
-            <div className={`w-full ${isMobile ? 'text-base' : 'text-sm'} whitespace-pre-wrap break-words py-2`}>
+            <div className={`w-full whitespace-pre-wrap break-words ${isMobile ? 'text-base leading-relaxed py-4' : 'text-sm py-2'}`}>
               {initialRemarks || (
-                <span className="text-muted-foreground italic">
-                  No remarks yet. Tap "Add Remark" to get started.
-                </span>
+                <div className="text-center py-12">
+                  <div className="text-gray-400 dark:text-gray-500 text-lg mb-2">💭</div>
+                  <div className="text-gray-500 dark:text-gray-400">
+                    No remarks yet
+                  </div>
+                  <div className="text-gray-400 dark:text-gray-500 text-sm mt-1">
+                    Tap "Add Remark" to get started
+                  </div>
+                </div>
               )}
             </div>
           )}
 
           {/* History section */}
           {!isEditing && showHistory && (
-            <div className="mt-4 pt-4 border-t">
+            <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
               <RemarkHistoryView
                 remarksHistory={initialRemarksHistory}
                 currentRemarkText={initialRemarks}
@@ -209,7 +224,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
         {/* Controls footer - Desktop only */}
         {!isMobile && (
-          <DialogFooter className="p-6 pt-3 gap-2">
+          <DialogFooter className="p-6 pt-4 gap-3">
             <QuickRemarksModalControls
               isEditing={isEditing}
               remarksHistoryCount={initialRemarksHistory.length}
@@ -224,10 +239,10 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
         {/* Mobile controls */}
         {isMobile && !isEditing && (
-          <div className="p-4 border-t bg-background/95 backdrop-blur space-y-3">
+          <div className="px-6 py-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 space-y-3">
             <Button 
               onClick={() => setIsEditing(true)}
-              className="w-full h-12 text-base font-medium rounded-xl bg-blue-600 hover:bg-blue-700"
+              className="w-full h-14 text-base font-semibold rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
             >
               Add Remark
             </Button>
@@ -235,9 +250,12 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
               <Button
                 variant="outline"
                 onClick={handleToggleHistory}
-                className="w-full h-11 text-base rounded-xl"
+                className="w-full h-12 text-base rounded-2xl border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                {showHistory ? 'Hide' : 'Show'} History ({initialRemarksHistory.length})
+                <span className="flex items-center justify-center gap-2">
+                  {showHistory ? 'Hide' : 'Show'} History ({initialRemarksHistory.length})
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+                </span>
               </Button>
             )}
           </div>
