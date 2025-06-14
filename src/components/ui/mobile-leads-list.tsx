@@ -1,33 +1,10 @@
-import React, { useState, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+
+import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users, Phone, Mail, Globe } from 'lucide-react';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { LeadStatus, Seniority, CompanySize, Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
 import { MobileSearchFilters } from './mobile-search-filters';
-import { LeadTable } from './lead-table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { MoreHorizontal } from 'lucide-react';
-import { useToast } from '../hooks/use-toast';
-import { api } from '@/convex/_generated/api';
-import { useMutation } from 'convex/react';
-import { ConfirmDialog } from './confirm-dialog';
-import { useConfirm } from './use-confirm';
-import { BulkEditCategories } from './bulk-edit-categories';
-import { BulkEditStatuses } from './bulk-edit-statuses';
-import { Pagination } from './pagination';
 
 interface MobileLeadsListProps {
   leads: Lead[];
@@ -84,13 +61,6 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const availableLocations = [...new Set(leads.map(lead => lead.location).filter(Boolean) as string[])];
   const availableIndustries = [...new Set(leads.map(lead => lead.industry).filter(Boolean) as string[])];
 
-  const { toast } = useToast();
-  const { confirm } = useConfirm();
-
-  const updateLeadStatus = useMutation(api.leads.updateLeadStatus);
-  const updateLeadCategory = useMutation(api.leads.updateLeadCategory);
-  const deleteLead = useMutation(api.leads.deleteLead);
-
   const handleClearFilters = () => {
     setSelectedStatus('all');
     setSelectedCategory('all');
@@ -107,61 +77,14 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     let count = 0;
     if (selectedStatus !== 'all') count++;
     if (selectedCategory !== 'all') count++;
+    if (selectedSeniority !== 'all') count++;
+    if (selectedCompanySize !== 'all') count++;
+    if (selectedLocation) count++;
+    if (selectedIndustry) count++;
+    if (selectedDataFilter !== 'all') count++;
+    if (countryFilter !== 'all') count++;
+    if (duplicatePhoneFilter !== 'all') count++;
     return count;
-  };
-
-  const handleStatusUpdate = async (leadId: string, status: LeadStatus) => {
-    try {
-      await updateLeadStatus({ leadId, status });
-      toast({
-        title: "Status updated.",
-        description: "Lead status has been updated successfully.",
-      })
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error.message,
-      })
-    }
-  };
-
-  const handleCategoryUpdate = async (leadId: string, categoryId: string) => {
-    try {
-      await updateLeadCategory({ leadId, categoryId });
-      toast({
-        title: "Category updated.",
-        description: "Lead category has been updated successfully.",
-      })
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: error.message,
-      })
-    }
-  };
-
-  const handleDelete = async (leadId: string) => {
-    confirm({
-      title: 'Are you sure?',
-      description: 'This action cannot be undone. Are you sure you want to delete this lead?',
-      onConfirm: async () => {
-        try {
-          await deleteLead({ leadId });
-          toast({
-            title: "Lead deleted.",
-            description: "Lead has been deleted successfully.",
-          })
-        } catch (error: any) {
-          toast({
-            variant: "destructive",
-            title: "Uh oh! Something went wrong.",
-            description: error.message,
-          })
-        }
-      },
-    });
   };
 
   return (
@@ -195,29 +118,22 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         onDuplicatePhoneChange={setDuplicatePhoneFilter}
       />
 
-      <LeadTable
-        leads={leads}
-        categories={categories}
-        onLeadUpdate={onLeadUpdate}
-        onLeadDelete={onLeadDelete}
-        onBulkStatusUpdate={onBulkStatusUpdate}
-        onBulkCategoryUpdate={onBulkCategoryUpdate}
-        onBulkDelete={onBulkDelete}
-        onClearSelection={onClearSelection}
-        selectedLeads={selectedLeads}
-        onLeadSelect={onLeadSelect}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onPageChange={onPageChange}
-        totalLeads={totalLeads}
-        itemsPerPage={itemsPerPage}
-        sortField={sortField}
-        sortDirection={sortDirection}
-        onSort={onSort}
-        handleStatusUpdate={handleStatusUpdate}
-        handleCategoryUpdate={handleCategoryUpdate}
-        handleDelete={handleDelete}
-      />
+      {/* Lead List Content */}
+      <div className="flex-1 overflow-auto p-4">
+        <div className="space-y-4">
+          {leads.map((lead) => (
+            <div key={lead.id} className="bg-white border rounded-lg p-4 shadow-sm">
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-lg">{lead.first_name} {lead.last_name}</h3>
+                <Badge variant="outline">{lead.status}</Badge>
+              </div>
+              <p className="text-gray-600 text-sm mb-1">{lead.title} at {lead.company}</p>
+              <p className="text-gray-500 text-sm">{lead.email}</p>
+              {lead.phone && <p className="text-gray-500 text-sm">{lead.phone}</p>}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

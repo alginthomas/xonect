@@ -1,14 +1,13 @@
+
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle, XCircle } from 'lucide-react';
-import { generateFileHash, checkFileAlreadyImported } from '@/utils/duplicateDetection';
-import { useToast } from "@/components/ui/use-toast"
-import { Badge } from '@/components/ui/badge';
+import { XCircle } from 'lucide-react';
+import { generateFileHash, checkFileAlreadyImported, preventDuplicateImport } from '@/utils/duplicateDetection';
+import { useToast } from "@/hooks/use-toast";
+import type { Lead } from '@/types/lead';
 
 interface CSVImportProps {
   onImport: (data: any[], metadata: Record<string, any>) => void;
@@ -20,7 +19,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImport, importBatches })
   const [fileName, setFileName] = useState<string>('');
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDuplicateFile, setIsDuplicateFile] = useState<boolean>(false);
-  const { toast } = useToast()
+  const [fileContent, setFileContent] = useState<string>('');
+  const { toast } = useToast();
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
@@ -31,17 +31,18 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImport, importBatches })
     const reader = new FileReader();
 
     reader.onload = async (e: any) => {
-      const fileContent = e.target.result;
+      const content = e.target.result;
+      setFileContent(content);
 
       // Check if file has already been imported
-      const alreadyImported = checkFileAlreadyImported(fileContent, file.name, importBatches);
+      const alreadyImported = checkFileAlreadyImported(content, file.name, importBatches);
       if (alreadyImported) {
         setIsDuplicateFile(true);
         setFileError('This file has already been imported.');
         return;
       }
 
-      Papa.parse(fileContent, {
+      Papa.parse(content, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
@@ -66,9 +67,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImport, importBatches })
     reader.readAsText(file);
   }, [importBatches]);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: {
-    'text/csv': ['.csv']
-  } })
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop, 
+    accept: {
+      'text/csv': ['.csv']
+    } 
+  });
 
   const handleImport = async () => {
     if (csvData.length === 0) {
@@ -77,33 +81,23 @@ export const CSVImport: React.FC<CSVImportProps> = ({ onImport, importBatches })
     }
 
     // Generate file hash for duplicate detection
-    const fileContent = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e: any) => resolve(e.target.result);
-      reader.onerror = () => reject(new Error('Failed to read file.'));
-      
-      const file = new File([], fileName); // Dummy file to trigger FileReader
-      
-      fetch(file).then(response => response.blob()).then(blob => {
-        reader.readAsText(blob);
-      }).catch(error => reject(error));
-    });
-
     const fileHash = generateFileHash(fileContent);
 
     // Metadata for import batch
     const metadata = {
       fileHash: fileHash,
-      importDate: new Date().toISOString()
+      importDate: new Date().toISOString(),
+      sourceFile: fileName
     };
 
     onImport(csvData, metadata);
     setCsvData([]);
     setFileName('');
+    setFileContent('');
     toast({
       title: "Import Successful",
       description: "Your CSV data has been imported.",
-    })
+    });
   };
 
   return (
