@@ -1,3 +1,4 @@
+
 import React, { useMemo, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -11,12 +12,15 @@ import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
 
 interface LeadsTableProps {
   leads: Lead[];
+  allSortedLeads: Lead[]; // New prop to check if updated lead is on current page
   categories: Category[];
   selectedLeads: Set<string>;
   columns: ColumnConfig[];
   visibleColumns: ColumnConfig[];
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
+  currentPage: number;
+  itemsPerPage: number;
   onSort: (field: string) => void;
   onSelectLead: (leadId: string) => void;
   onSelectAll: (selected: boolean) => void;
@@ -27,16 +31,20 @@ interface LeadsTableProps {
   onDeleteLead: (leadId: string) => void;
   onDragEnd: (event: any) => void;
   lastUpdatedLeadId?: string | null;
+  onPageChange: (page: number) => void; // New prop to handle page changes
 }
 
 export const LeadsTable: React.FC<LeadsTableProps> = ({
   leads,
+  allSortedLeads,
   categories,
   selectedLeads,
   columns,
   visibleColumns,
   sortField,
   sortDirection,
+  currentPage,
+  itemsPerPage,
   onSort,
   onSelectLead,
   onSelectAll,
@@ -46,7 +54,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   onViewDetails,
   onDeleteLead,
   onDragEnd,
-  lastUpdatedLeadId
+  lastUpdatedLeadId,
+  onPageChange
 }) => {
   // KEEP HOOKS CALLED UNCONDITIONALLY TO AVOID HOOK RULE ERRORS
   const isMobile = useIsMobile();
@@ -64,15 +73,41 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   // Refs for each lead row
   const leadRowRefs = useRef<{ [id: string]: HTMLTableRowElement | null }>({});
 
-  // Effect: After table renders, if last updated lead is present, scroll & highlight
+  // Check if the last updated lead is on the current page, if not, navigate to its page
+  useEffect(() => {
+    if (lastUpdatedLeadId && allSortedLeads.length > 0) {
+      const updatedLeadIndex = allSortedLeads.findIndex(lead => lead.id === lastUpdatedLeadId);
+      
+      if (updatedLeadIndex !== -1) {
+        // Calculate which page the updated lead should be on
+        const updatedLeadPage = Math.floor(updatedLeadIndex / itemsPerPage) + 1;
+        
+        // If the updated lead is not on the current page, navigate to its page
+        if (updatedLeadPage !== currentPage) {
+          console.log(`Updated lead ${lastUpdatedLeadId} is on page ${updatedLeadPage}, navigating from page ${currentPage}`);
+          onPageChange(updatedLeadPage);
+          return; // Don't scroll yet, wait for page change
+        }
+      }
+    }
+  }, [lastUpdatedLeadId, allSortedLeads, currentPage, itemsPerPage, onPageChange]);
+
+  // Effect: After table renders and lead is on correct page, scroll & highlight
   useEffect(() => {
     if (lastUpdatedLeadId && leadRowRefs.current[lastUpdatedLeadId]) {
-      leadRowRefs.current[lastUpdatedLeadId]?.scrollIntoView({
-        block: 'center', behavior: 'smooth'
-      });
-      // Focus/visual highlight handled by css class below
+      const leadRow = leadRowRefs.current[lastUpdatedLeadId];
+      if (leadRow) {
+        // Small delay to ensure the page transition is complete
+        setTimeout(() => {
+          leadRow.scrollIntoView({
+            block: 'center', 
+            behavior: 'smooth'
+          });
+          console.log(`Scrolled to updated lead: ${lastUpdatedLeadId}`);
+        }, 100);
+      }
     }
-  }, [lastUpdatedLeadId, leads.map(l => l.id).join(',')]);
+  }, [lastUpdatedLeadId, leads, currentPage]);
 
   // --- Only short-circuit JSX after all hooks above have run ---
   if (isMobile) {
@@ -109,7 +144,10 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
             <AppleTableRow
               key={lead.id}
               ref={el => { leadRowRefs.current[lead.id] = el; }}
-              className={lastUpdatedLeadId === lead.id ? 'animate-pulse bg-yellow-100/60 transition-colors' : ''}
+              className={lastUpdatedLeadId === lead.id 
+                ? 'animate-pulse bg-green-50/80 border-green-200/50 transition-all duration-1000 shadow-sm' 
+                : 'transition-all duration-200'
+              }
             >
               {visibleColumns.map((column) => (
                 <AppleTableCell key={`${lead.id}-${column.id}`} className={column.width || ''}>

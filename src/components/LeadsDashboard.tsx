@@ -388,12 +388,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               {/* Desktop Table */}
               <LeadsTable
                 leads={paginatedLeads}
+                allSortedLeads={sortedLeads}
                 categories={categories}
                 selectedLeads={selectedLeads}
                 columns={columns}
                 visibleColumns={visibleColumns}
                 sortField={sortField}
                 sortDirection={sortDirection}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
                 onSort={handleSort}
                 onSelectLead={handleSelectLeadWrapper}
                 onSelectAll={handleSelectAllWrapper}
@@ -407,6 +410,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 onDeleteLead={onDeleteLead}
                 onDragEnd={handleDragEnd}
                 lastUpdatedLeadId={lastUpdatedLeadId}
+                onPageChange={setCurrentPage}
               />
 
               {/* Pagination */}
