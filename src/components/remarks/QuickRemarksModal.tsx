@@ -15,7 +15,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { X, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-// Apple-style responsive modal with improved mobile UX
 interface QuickRemarksModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -108,51 +107,43 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
       <DialogContent 
         className={`
           ${isMobile 
-            ? 'fixed inset-x-0 bottom-0 top-auto h-[90vh] max-h-[90vh] w-full max-w-none rounded-t-[28px] rounded-b-none border-0 p-0 shadow-2xl bg-white dark:bg-gray-900' 
-            : 'max-w-md rounded-2xl border-0 shadow-xl bg-white dark:bg-gray-900'
+            ? 'fixed inset-x-4 bottom-4 top-auto h-[85vh] max-h-[85vh] w-auto max-w-none rounded-3xl border-0 p-0 shadow-2xl bg-white dark:bg-gray-900' 
+            : 'max-w-lg rounded-3xl border-0 shadow-2xl bg-white dark:bg-gray-900'
           } 
           flex flex-col overflow-hidden
         `}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        {/* Mobile drag indicator */}
+        {/* Mobile header with proper close functionality */}
         {isMobile && (
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
-          </div>
-        )}
-
-        {/* Mobile header with close button - Apple style */}
-        {isMobile && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleModalClose}
-              className="text-blue-600 hover:text-blue-700 font-medium text-base px-0"
+              onClick={isEditing ? handleCancelEditing : handleModalClose}
+              className="text-blue-600 hover:text-blue-700 font-medium text-base px-0 h-auto"
             >
-              Cancel
+              {isEditing ? 'Cancel' : 'Done'}
             </Button>
             <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
               {isEditing ? 'Add Remark' : 'Remarks'}
             </h3>
-            {isEditing && (
+            {isEditing ? (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleSave}
-                className="text-blue-600 hover:text-blue-700 font-semibold text-base px-0"
+                className="text-blue-600 hover:text-blue-700 font-semibold text-base px-0 h-auto"
                 disabled={!editValue.trim()}
               >
                 Save
               </Button>
-            )}
-            {!isEditing && (
+            ) : (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleModalClose}
-                className="p-1 text-gray-500 hover:text-gray-700"
+                className="p-1 text-gray-500 hover:text-gray-700 h-auto"
               >
                 <X className="h-6 w-6" />
               </Button>
@@ -162,19 +153,29 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
         {/* Desktop header */}
         {!isMobile && (
-          <DialogHeader className="p-6 pb-4">
-            <QuickRemarksModalHeader
-              isEditing={isEditing}
-              remarksPresent={!!initialRemarks}
-              latestHistoryEntry={latestHistoryEntry}
-            />
+          <DialogHeader className="p-6 pb-4 bg-gray-50/30 dark:bg-gray-800/30">
+            <div className="flex items-center justify-between">
+              <QuickRemarksModalHeader
+                isEditing={isEditing}
+                remarksPresent={!!initialRemarks}
+                latestHistoryEntry={latestHistoryEntry}
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleModalClose}
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
           </DialogHeader>
         )}
 
         {/* Content area */}
-        <div className={`flex-1 overflow-y-auto min-h-0 ${isMobile ? 'px-6' : 'px-6'}`}>
+        <div className={`flex-1 overflow-y-auto min-h-0 ${isMobile ? 'px-6 py-4' : 'px-6'}`}>
           {!isMobile && latestHistoryEntry && !isEditing && (
-            <div className="text-xs flex items-center gap-1 text-gray-500 mb-4">
+            <div className="text-xs flex items-center gap-1 text-gray-500 mb-4 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg">
               Last updated: {latestHistoryEntry.timestamp.toLocaleDateString()}
             </div>
           )}
@@ -199,12 +200,12 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
             <div className={`w-full whitespace-pre-wrap break-words ${isMobile ? 'text-base leading-relaxed py-4' : 'text-sm py-2'}`}>
               {initialRemarks || (
                 <div className="text-center py-12">
-                  <div className="text-gray-400 dark:text-gray-500 text-lg mb-2">💭</div>
-                  <div className="text-gray-500 dark:text-gray-400">
+                  <div className="text-gray-400 dark:text-gray-500 text-3xl mb-3">💭</div>
+                  <div className="text-gray-500 dark:text-gray-400 text-lg font-medium mb-2">
                     No remarks yet
                   </div>
-                  <div className="text-gray-400 dark:text-gray-500 text-sm mt-1">
-                    Tap "Add Remark" to get started
+                  <div className="text-gray-400 dark:text-gray-500 text-sm">
+                    Add your first remark to get started
                   </div>
                 </div>
               )}
@@ -224,7 +225,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
         {/* Controls footer - Desktop only */}
         {!isMobile && (
-          <DialogFooter className="p-6 pt-4 gap-3">
+          <DialogFooter className="p-6 pt-4 gap-3 bg-gray-50/30 dark:bg-gray-800/30">
             <QuickRemarksModalControls
               isEditing={isEditing}
               remarksHistoryCount={initialRemarksHistory.length}
@@ -239,10 +240,10 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
         {/* Mobile controls */}
         {isMobile && !isEditing && (
-          <div className="px-6 py-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 space-y-3">
+          <div className="px-6 py-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 space-y-3">
             <Button 
               onClick={() => setIsEditing(true)}
-              className="w-full h-14 text-base font-semibold rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+              className="w-full h-14 text-base font-semibold rounded-2xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
             >
               Add Remark
             </Button>
