@@ -182,12 +182,12 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           {lead.organizationWebsite && (
             <Button
               variant="ghost"
-              size="sm"
-              className="h-8 sm:h-9 px-3 sm:px-4 text-primary hover:bg-primary/10 border border-primary/20 rounded-lg flex-shrink-0 w-full sm:w-auto justify-center"
+              size="lg"
+              className="h-12 sm:h-12 px-4 sm:px-6 py-3 text-primary hover:bg-primary/10 border border-primary/20 rounded-xl flex-shrink-0 w-full sm:w-auto justify-center font-medium"
               onClick={handleWebsiteAction}
             >
-              <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-              <span className="text-xs sm:text-sm font-medium">View Website</span>
+              <Globe className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
+              <span className="text-sm sm:text-base">View Website</span>
             </Button>
           )}
         </div>
@@ -253,17 +253,17 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           {/* Call Button */}
           {lead.phone && (
             <Button
               variant="ghost"
               size="lg"
-              className="flex-1 h-11 sm:h-12 lg:h-14 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0"
+              className="flex-1 h-14 sm:h-14 lg:h-16 py-4 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0 font-medium"
               onClick={handleCallAction}
             >
-              <Phone className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-primary flex-shrink-0" />
-              <span className="text-sm sm:text-base font-medium text-primary">Call</span>
+              <Phone className="h-5 w-5 sm:h-5 sm:w-5 mr-3 text-primary flex-shrink-0" />
+              <span className="text-base sm:text-base text-primary">Call</span>
             </Button>
           )}
 
@@ -271,11 +271,11 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           <Button
             variant="ghost"
             size="lg"
-            className="flex-1 h-11 sm:h-12 lg:h-14 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0"
+            className="flex-1 h-14 sm:h-14 lg:h-16 py-4 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0 font-medium"
             onClick={handleEmailAction}
           >
-            <Mail className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-primary flex-shrink-0" />
-            <span className="text-sm sm:text-base font-medium text-primary">Copy Email</span>
+            <Mail className="h-5 w-5 sm:h-5 sm:w-5 mr-3 text-primary flex-shrink-0" />
+            <span className="text-base sm:text-base text-primary">Copy Email</span>
           </Button>
         </div>
       </div>
