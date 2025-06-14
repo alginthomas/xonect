@@ -89,9 +89,9 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
   };
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Mobile-optimized Header with Quality Score */}
-      <div className="p-3 sm:p-6 border-b bg-background">
+    <div className="h-full flex flex-col bg-background">
+      {/* Mobile-optimized Header */}
+      <div className="flex-shrink-0 p-4 border-b bg-background">
         <DuplicateQualityMetrics 
           report={duplicateAnalysis.report}
           totalLeads={leads.length}
@@ -102,18 +102,24 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
       {/* Mobile-optimized Tabs */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Tabs defaultValue="groups" className="flex-1 flex flex-col">
-          <div className="px-3 sm:px-6 py-2 border-b">
-            <TabsList className="grid w-full grid-cols-3 h-9 sm:h-10">
-              <TabsTrigger value="groups" className="text-xs sm:text-sm">Groups</TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs sm:text-sm">Analytics</TabsTrigger>
-              <TabsTrigger value="bulk" className="text-xs sm:text-sm">Bulk Actions</TabsTrigger>
+          <div className="flex-shrink-0 px-4 py-2 border-b bg-background/95 backdrop-blur-sm">
+            <TabsList className="grid w-full grid-cols-3 h-8 text-xs">
+              <TabsTrigger value="groups" className="text-xs px-2">
+                Groups
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="text-xs px-2">
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="bulk" className="text-xs px-2">
+                Actions
+              </TabsTrigger>
             </TabsList>
           </div>
           
           <div className="flex-1 overflow-auto">
-            <TabsContent value="groups" className="p-3 sm:p-6 space-y-3 sm:space-y-4 mt-0">
+            <TabsContent value="groups" className="p-4 space-y-4 mt-0 h-full">
               {duplicateAnalysis.groups.length > 0 ? (
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-4">
                   {duplicateAnalysis.groups.map((group, groupIndex) => (
                     <DuplicateGroupCard
                       key={groupIndex}
@@ -126,16 +132,18 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
                   ))}
                 </div>
               ) : (
-                <Alert>
-                  <CheckCircle2 className="h-4 w-4" />
-                  <AlertDescription className="text-sm">
-                    Great! No duplicate groups found in your leads database.
-                  </AlertDescription>
-                </Alert>
+                <div className="flex items-center justify-center h-full min-h-[200px]">
+                  <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <AlertDescription className="text-sm text-green-800 font-medium">
+                      Great! No duplicate groups found in your leads database.
+                    </AlertDescription>
+                  </Alert>
+                </div>
               )}
             </TabsContent>
 
-            <TabsContent value="analytics" className="p-3 sm:p-6 space-y-4 mt-0">
+            <TabsContent value="analytics" className="p-4 mt-0 h-full">
               <DuplicateAnalyticsView 
                 report={duplicateAnalysis.report}
                 totalLeads={leads.length}
@@ -143,7 +151,7 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
               />
             </TabsContent>
 
-            <TabsContent value="bulk" className="p-3 sm:p-6 space-y-4 mt-0">
+            <TabsContent value="bulk" className="p-4 mt-0 h-full">
               <DuplicateBulkActions
                 selectedDuplicates={selectedDuplicates}
                 duplicateGroups={duplicateAnalysis.groups}
