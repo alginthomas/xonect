@@ -22,12 +22,29 @@ export const useOrganizationLeads = () => {
 
     setLoading(true);
     try {
+      // Prepare data with organization_id and ensure required fields are present
+      const insertData = {
+        first_name: leadData.first_name || '',
+        last_name: leadData.last_name || '',
+        company: leadData.company,
+        email: leadData.email,
+        phone: leadData.phone,
+        status: leadData.status,
+        industry: leadData.industry,
+        linkedin: leadData.linkedin,
+        location: leadData.location,
+        organization_id: currentOrganization.id,
+        // Include other optional fields if they exist
+        ...(leadData.department && { department: leadData.department }),
+        ...(leadData.remarks && { remarks: leadData.remarks }),
+        ...(leadData.category_id && { category_id: leadData.category_id }),
+        ...(leadData.assigned_to && { assigned_to: leadData.assigned_to }),
+        ...(leadData.team_id && { team_id: leadData.team_id }),
+      };
+
       const { data, error } = await supabase
         .from('leads')
-        .insert({
-          ...leadData,
-          organization_id: currentOrganization.id
-        })
+        .insert(insertData)
         .select()
         .single();
 

@@ -29,7 +29,9 @@ export const useOrganization = () => {
 
       if (error) throw error;
 
-      setUserOrganizations(data || []);
+      // Type cast the data to match our interfaces
+      const typedData = (data || []) as UserOrganization[];
+      setUserOrganizations(typedData);
 
       // Get current organization from profile
       const { data: profile } = await supabase
@@ -39,16 +41,16 @@ export const useOrganization = () => {
         .single();
 
       if (profile?.current_organization_id) {
-        const currentOrgData = data?.find(
+        const currentOrgData = typedData?.find(
           org => org.organization_id === profile.current_organization_id
         );
         if (currentOrgData?.organization) {
-          setCurrentOrganization(currentOrgData.organization);
+          setCurrentOrganization(currentOrgData.organization as Organization);
           setUserRole(currentOrgData.role);
         }
-      } else if (data && data.length > 0) {
+      } else if (typedData && typedData.length > 0) {
         // Set first organization as current if none is set
-        const firstOrg = data[0];
+        const firstOrg = typedData[0];
         if (firstOrg.organization) {
           await switchOrganization(firstOrg.organization.id);
         }
@@ -83,7 +85,7 @@ export const useOrganization = () => {
       );
 
       if (orgData?.organization) {
-        setCurrentOrganization(orgData.organization);
+        setCurrentOrganization(orgData.organization as Organization);
         setUserRole(orgData.role);
         
         toast({

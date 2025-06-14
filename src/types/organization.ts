@@ -5,7 +5,7 @@ export interface Organization {
   slug: string;
   domain?: string;
   logo_url?: string;
-  settings: Record<string, any>;
+  settings: any; // Changed from Record<string, any> to any to match Supabase Json type
   subscription_plan: string;
   subscription_status: string;
   created_at: string;
@@ -17,7 +17,7 @@ export interface Team {
   organization_id: string;
   name: string;
   description?: string;
-  territory: Record<string, any>;
+  territory: any; // Changed from Record<string, any> to any to match Supabase Json type
   created_at: string;
   updated_at: string;
 }
