@@ -121,7 +121,7 @@ export const SimpleRemarksList: React.FC<SimpleRemarksListProps> = ({
               ) : (
                 <div>
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm flex-1 whitespace-pre-wrap break-words">
+                    <p className="text-sm flex-1 break-words overflow-hidden hyphens-auto" style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       {entry.text}
                     </p>
                     <div className="flex gap-1 flex-shrink-0">
