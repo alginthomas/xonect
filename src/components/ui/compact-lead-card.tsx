@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,6 +15,8 @@ import {
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { QuickRemarksCell } from '@/components/QuickRemarksCell';
+import { MobileRemarksButtons } from '@/components/remarks/MobileRemarksButtons';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category } from '@/types/category';
@@ -46,8 +47,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   selectionMode = false
 }) => {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
-  const [showRemarks, setShowRemarks] = useState(false);
-  const [showFullRemarks, setShowFullRemarks] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleCallAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -192,63 +192,52 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           )}
         </div>
 
-        {/* Compact Remarks Section - Fixed height and better spacing */}
+        {/* Remarks Section - Mobile vs Desktop */}
         <div className="mb-4 sm:mb-5" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">Remarks</span>
-              {lead.remarksHistory && lead.remarksHistory.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {lead.remarksHistory.length}
-                </Badge>
-              )}
-            </div>
-            <div className="flex items-center gap-1">
-              {!showRemarks && hasLongRemarks && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-xs"
-                  onClick={() => setShowFullRemarks(!showFullRemarks)}
-                >
-                  {showFullRemarks ? 'Less' : 'More'}
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2"
-                onClick={() => setShowRemarks(!showRemarks)}
-              >
-                {showRemarks ? (
-                  <ChevronUp className="h-3 w-3" />
-                ) : (
-                  <ChevronDown className="h-3 w-3" />
+          {isMobile ? (
+            // Mobile: Clean buttons layout
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium text-muted-foreground">Remarks</span>
+                {lead.remarks && (
+                  <Badge variant="secondary" className="text-xs bg-primary/10 text-primary">
+                    Current
+                  </Badge>
                 )}
-              </Button>
-            </div>
-          </div>
-          
-          {/* Remarks Preview - Fixed max height */}
-          {lead.remarks && !showRemarks && (
-            <div className="bg-muted/20 rounded-lg p-2 border border-border/20 max-h-16 overflow-hidden">
-              <p className="text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap line-clamp-3">
-                {showFullRemarks ? lead.remarks : remarksPreview}
-              </p>
-            </div>
-          )}
-          
-          {/* Full Remarks Editor - Controlled height */}
-          {showRemarks && (
-            <div className="bg-muted/30 rounded-lg p-3 max-h-64 overflow-y-auto">
-              <QuickRemarksCell
+              </div>
+              
+              <MobileRemarksButtons
                 remarks={lead.remarks || ''}
                 remarksHistory={lead.remarksHistory || []}
                 onUpdate={handleRemarksUpdateWrapper}
                 className="w-full"
               />
             </div>
+          ) : (
+            // Desktop: Keep existing complex layout
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium text-muted-foreground">Remarks</span>
+                  {lead.remarksHistory && lead.remarksHistory.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {lead.remarksHistory.length}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+              
+              <div className="bg-muted/30 rounded-lg p-3 max-h-64 overflow-y-auto">
+                <QuickRemarksCell
+                  remarks={lead.remarks || ''}
+                  remarksHistory={lead.remarksHistory || []}
+                  onUpdate={handleRemarksUpdateWrapper}
+                  className="w-full"
+                />
+              </div>
+            </>
           )}
         </div>
 
