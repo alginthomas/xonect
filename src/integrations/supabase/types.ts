@@ -23,7 +23,7 @@ export type Database = {
           status: Database["public"]["Enums"]["campaign_status"]
           template_id: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           click_rate?: number
@@ -38,7 +38,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           click_rate?: number
@@ -53,7 +53,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["campaign_status"]
           template_id?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -82,7 +82,7 @@ export type Database = {
           name: string
           organization_id: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           color?: string | null
@@ -93,7 +93,7 @@ export type Database = {
           name: string
           organization_id?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           color?: string | null
@@ -104,7 +104,7 @@ export type Database = {
           name?: string
           organization_id?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -150,7 +150,7 @@ export type Database = {
           organization_id: string | null
           subject: string
           updated_at: string
-          user_id: string | null
+          user_id: string
           variables: string[] | null
         }
         Insert: {
@@ -162,7 +162,7 @@ export type Database = {
           organization_id?: string | null
           subject: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
           variables?: string[] | null
         }
         Update: {
@@ -174,7 +174,7 @@ export type Database = {
           organization_id?: string | null
           subject?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
           variables?: string[] | null
         }
         Relationships: [
@@ -199,7 +199,7 @@ export type Database = {
           source_file: string | null
           successful_imports: number | null
           total_leads: number | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           category_id?: string | null
@@ -212,7 +212,7 @@ export type Database = {
           source_file?: string | null
           successful_imports?: number | null
           total_leads?: number | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           category_id?: string | null
@@ -225,7 +225,7 @@ export type Database = {
           source_file?: string | null
           successful_imports?: number | null
           total_leads?: number | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -253,7 +253,7 @@ export type Database = {
           is_smart: boolean | null
           name: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -263,7 +263,7 @@ export type Database = {
           is_smart?: boolean | null
           name: string
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string
@@ -273,7 +273,7 @@ export type Database = {
           is_smart?: boolean | null
           name?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -313,7 +313,7 @@ export type Database = {
           title: string
           twitter_url: string | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           activity_log?: Json | null
@@ -350,7 +350,7 @@ export type Database = {
           title: string
           twitter_url?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           activity_log?: Json | null
@@ -387,7 +387,7 @@ export type Database = {
           title?: string
           twitter_url?: string | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
