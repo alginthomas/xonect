@@ -3,7 +3,6 @@ import { useMemo } from 'react';
 import type { LeadsFilteringProps, FilteringResult } from '@/types/filtering';
 import { filterLeads } from '@/utils/leadsFiltering';
 import { sortLeads } from '@/utils/leadsSorting';
-import { paginateLeads } from '@/utils/leadsPagination';
 
 export const useLeadsFiltering = ({
   leads,
@@ -27,7 +26,7 @@ export const useLeadsFiltering = ({
   setCurrentPage,
   navigationFilter
 }: LeadsFilteringProps): FilteringResult => {
-  // Filter leads based on various criteria
+  // Memoized filtering to improve performance
   const filteredLeads = useMemo(() => {
     return filterLeads({
       leads,
@@ -46,22 +45,43 @@ export const useLeadsFiltering = ({
       duplicatePhoneFilter,
       navigationFilter
     });
-  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter, navigationFilter]);
+  }, [
+    leads,
+    importBatches,
+    selectedBatchId,
+    searchQuery,
+    searchTerm,
+    selectedStatus,
+    selectedCategory,
+    selectedSeniority,
+    selectedCompanySize,
+    selectedLocation,
+    selectedIndustry,
+    selectedDataFilter,
+    countryFilter,
+    duplicatePhoneFilter,
+    navigationFilter
+  ]);
 
-  // Sort leads
+  // Memoized sorting
   const sortedLeads = useMemo(() => {
     return sortLeads(filteredLeads, sortField, sortDirection);
   }, [filteredLeads, sortField, sortDirection]);
 
-  // Calculate pagination
-  const { paginatedLeads, totalPages, totalLeads } = useMemo(() => {
-    return paginateLeads(sortedLeads, currentPage, itemsPerPage);
-  }, [sortedLeads, currentPage, itemsPerPage]);
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedLeads = sortedLeads.slice(startIndex, startIndex + itemsPerPage);
+
+  // Reset to first page if current page is out of bounds
+  if (currentPage > totalPages && totalPages > 0 && setCurrentPage) {
+    setCurrentPage(1);
+  }
 
   return {
     filteredLeads: paginatedLeads,
     sortedLeads,
     totalPages,
-    totalLeads
+    totalLeads: sortedLeads.length
   };
 };

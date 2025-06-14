@@ -7,7 +7,7 @@ export interface ColumnConfig {
   width?: string;
   sortable: boolean;
   visible: boolean;
-  fixed?: boolean; // For checkbox and actions columns
+  fixed?: boolean;
 }
 
 const defaultColumns: ColumnConfig[] = [
@@ -29,7 +29,8 @@ export const useColumnConfiguration = () => {
     if (saved) {
       try {
         const parsedColumns = JSON.parse(saved);
-        // Check if saved columns have the old 'contact' column and fix it
+        
+        // Fix legacy 'contact' column mapping to 'phone'
         const updatedColumns = parsedColumns.map((col: ColumnConfig) => {
           if (col.id === 'contact') {
             return { ...col, id: 'phone', label: 'Phone' };
@@ -37,19 +38,17 @@ export const useColumnConfiguration = () => {
           return col;
         });
         
-        // Ensure we have the email column if it's missing
-        const hasEmailColumn = updatedColumns.some((col: ColumnConfig) => col.id === 'email');
-        if (!hasEmailColumn) {
-          const phoneIndex = updatedColumns.findIndex((col: ColumnConfig) => col.id === 'phone');
-          if (phoneIndex !== -1) {
-            updatedColumns.splice(phoneIndex + 1, 0, { 
-              id: 'email', 
-              label: 'Email', 
-              sortable: false, 
-              visible: true 
-            });
+        // Ensure all required columns exist
+        const requiredColumns = ['select', 'status', 'remarks', 'actions', 'name', 'company', 'phone', 'email', 'category', 'created'];
+        const missingColumns = requiredColumns.filter(id => !updatedColumns.some((col: ColumnConfig) => col.id === id));
+        
+        // Add missing columns from defaults
+        missingColumns.forEach(id => {
+          const defaultCol = defaultColumns.find(col => col.id === id);
+          if (defaultCol) {
+            updatedColumns.push(defaultCol);
           }
-        }
+        });
         
         return updatedColumns;
       } catch (e) {
@@ -70,14 +69,11 @@ export const useColumnConfiguration = () => {
       const newIndex = prev.findIndex(col => col.id === overId);
       
       if (oldIndex === -1 || newIndex === -1) return prev;
-      
-      // Don't allow moving fixed columns
       if (prev[oldIndex].fixed) return prev;
       
       const newColumns = [...prev];
       const [movedColumn] = newColumns.splice(oldIndex, 1);
       
-      // Insert at the correct position, avoiding fixed columns
       let insertIndex = newIndex;
       if (newColumns[newIndex]?.fixed && newIndex > oldIndex) {
         insertIndex = newIndex + 1;
