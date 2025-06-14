@@ -211,10 +211,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               statusFilter={statusFilter}
-              onStatusChange={(status) => {
-                setStatusFilter(status);
-                setNavigationFilter(undefined);
-              }}
+              onStatusChange={setStatusFilter}
               categoryFilter={categoryFilter}
               onCategoryChange={setCategoryFilter}
               dataAvailabilityFilter={dataAvailabilityFilter}
@@ -334,10 +331,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             statusFilter={statusFilter}
-            onStatusChange={(status) => {
-              setStatusFilter(status);
-              setNavigationFilter(undefined);
-            }}
+            onStatusChange={setStatusFilter}
             categoryFilter={categoryFilter}
             onCategoryChange={setCategoryFilter}
             dataAvailabilityFilter={dataAvailabilityFilter}

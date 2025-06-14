@@ -1,3 +1,4 @@
+
 import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 import type { DuplicatePhoneFilter } from '@/types/filtering';
@@ -49,7 +50,8 @@ export const filterLeads = ({
     selectedCategory,
     countryFilter,
     duplicatePhoneFilter,
-    remarksFilter
+    remarksFilter,
+    navigationFilter: navigationFilter?.status
   });
   
   let filtered = [...leads];
@@ -75,8 +77,9 @@ export const filterLeads = ({
     }
   }
 
-  // Apply navigation filter (from dashboard clicks)
-  if (navigationFilter?.status) {
+  // Apply navigation filter ONLY when it exists and no manual status filter is set
+  if (navigationFilter?.status && selectedStatus === 'all') {
+    console.log('Applying navigation filter:', navigationFilter.status);
     filtered = filtered.filter(lead => lead.status === navigationFilter.status);
     console.log('After navigation filter:', filtered.length);
   }
@@ -96,8 +99,9 @@ export const filterLeads = ({
     console.log('After search filter:', filtered.length);
   }
 
-  // Filter by status (only if no navigation filter is applied and no batch filter)
+  // Filter by status (only if not using navigation filter and not filtering by batch)
   if (!navigationFilter?.status && !selectedBatchId && selectedStatus !== 'all') {
+    console.log('Applying manual status filter:', selectedStatus);
     filtered = filtered.filter(lead => lead.status === selectedStatus);
     console.log('After status filter:', filtered.length);
   }

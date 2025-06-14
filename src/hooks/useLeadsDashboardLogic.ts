@@ -99,12 +99,27 @@ export const useLeadsDashboardLogic = ({
     }
   }, [selectedBatchId, leads]);
 
+  // Clear navigation filter when status filter is manually changed to prevent conflicts
+  const handleStatusFilterChange = (status: string) => {
+    console.log('Manual status filter change:', status);
+    setStatusFilter(status);
+    // Clear navigation filter to prevent conflicts
+    if (navigationFilter?.status) {
+      console.log('Clearing navigation filter due to manual status change');
+      setNavigationFilter(undefined);
+      // Update URL to remove status parameter
+      const url = new URL(window.location.href);
+      url.searchParams.delete('status');
+      window.history.replaceState({}, '', url.toString());
+    }
+  };
+
   const { filteredLeads, sortedLeads } = useLeadsFiltering({
     leads,
     importBatches,
-    selectedBatchId, // This should now properly filter by batch
+    selectedBatchId,
     searchTerm,
-    selectedStatus: navigationFilter?.status ? navigationFilter.status as any : statusFilter as LeadStatus | 'all',
+    selectedStatus: statusFilter as LeadStatus | 'all', // Use statusFilter instead of navigationFilter
     selectedCategory: categoryFilter,
     selectedSeniority: 'all',
     selectedCompanySize: 'all',
@@ -119,7 +134,7 @@ export const useLeadsDashboardLogic = ({
     sortField,
     sortDirection,
     setCurrentPage,
-    navigationFilter
+    navigationFilter: undefined // Don't use navigation filter for normal filtering
   });
 
   // Log filtered results
@@ -129,9 +144,11 @@ export const useLeadsDashboardLogic = ({
       filteredLeads: filteredLeads.length,
       sortedLeads: sortedLeads.length,
       selectedBatchId,
+      statusFilter,
+      navigationFilter: navigationFilter?.status,
       batchFilteredLeads: selectedBatchId ? leads.filter(l => l.importBatchId === selectedBatchId).length : 'N/A'
     });
-  }, [filteredLeads, sortedLeads, selectedBatchId, leads]);
+  }, [filteredLeads, sortedLeads, selectedBatchId, leads, statusFilter, navigationFilter]);
 
   const { selectedLeads, handleSelectAll, handleSelectLead, clearSelection } = useLeadsSelection();
 
@@ -150,7 +167,7 @@ export const useLeadsDashboardLogic = ({
     countryFilter,
     duplicatePhoneFilter,
     remarksFilter,
-    setStatusFilter,
+    setStatusFilter: handleStatusFilterChange, // Use the wrapper function
     setCategoryFilter,
     setDataAvailabilityFilter,
     setCountryFilter,
@@ -196,7 +213,7 @@ export const useLeadsDashboardLogic = ({
     searchTerm,
     setSearchTerm,
     statusFilter,
-    setStatusFilter,
+    setStatusFilter: handleStatusFilterChange, // Use the wrapper function
     categoryFilter,
     setCategoryFilter,
     dataAvailabilityFilter,
