@@ -48,6 +48,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   onDragEnd,
   lastUpdatedLeadId
 }) => {
+  // KEEP HOOKS CALLED UNCONDITIONALLY TO AVOID HOOK RULE ERRORS
   const isMobile = useIsMobile();
   
   const sensors = useSensors(
@@ -59,10 +60,6 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   
   const isAllSelected = leads.length > 0 && leads.every(lead => selectedLeads.has(lead.id));
   const isPartiallySelected = !isAllSelected && leads.some(lead => selectedLeads.has(lead.id));
-
-  if (isMobile) {
-    return null; // Mobile uses DateGroupedLeads component instead
-  }
 
   // Refs for each lead row
   const leadRowRefs = useRef<{ [id: string]: HTMLTableRowElement | null }>({});
@@ -76,6 +73,11 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
       // Focus/visual highlight handled by css class below
     }
   }, [lastUpdatedLeadId, leads.map(l => l.id).join(',')]);
+
+  // --- Only short-circuit JSX after all hooks above have run ---
+  if (isMobile) {
+    return null; // Mobile uses DateGroupedLeads component instead
+  }
 
   return (
     <DndContext
