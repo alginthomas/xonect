@@ -15,6 +15,16 @@ import { format } from 'date-fns';
 import { CategoryCombobox } from '@/components/CategoryCombobox';
 import type { Category, ImportBatch } from '@/types/category';
 import type { Lead } from '@/types/lead';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogAction,
+} from '@/components/ui/alert-dialog';
 
 interface CSVImportProps {
   categories: Category[];
@@ -191,6 +201,27 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                          !isDuplicateFile && 
                          !fileError && 
                          importName.trim() !== '';
+
+  // ADD THIS HANDLER FOR DELETE BUTTON
+  const handleDeleteBatch = (batchId: string, batchName?: string) => {
+    setDeletingBatchId(batchId);
+    setDeletingBatchName(batchName || '');
+    setDeleteDialogOpen(true);
+  };
+
+  // ADD THIS HANDLER FOR CONFIRM DELETE BUTTON
+  const handleConfirmDelete = async () => {
+    if (deletingBatchId && onDeleteBatch) {
+      await onDeleteBatch(deletingBatchId, deletingBatchName || undefined);
+      toast({
+        title: "Batch deleted",
+        description: `Import batch "${deletingBatchName}" and its leads have been deleted.`,
+      });
+    }
+    setDeleteDialogOpen(false);
+    setDeletingBatchId(null);
+    setDeletingBatchName(null);
+  };
 
   return (
     <div className="h-full flex flex-col">
