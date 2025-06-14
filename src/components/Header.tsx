@@ -31,9 +31,6 @@ const Header: React.FC<HeaderProps> = ({
     id: 'duplicates',
     label: 'Duplicates'
   }, {
-    id: 'templates',
-    label: 'Templates'
-  }, {
     id: 'history',
     label: 'History'
   }];
@@ -54,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* Center Section - Desktop Navigation */}
         {!isMobile && (
           <nav className="hidden md:flex items-center space-x-1 overflow-x-auto">
-            {tabs.slice(0, 6).map(tab => (
+            {tabs.map(tab => (
               <Button
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "ghost"}
