@@ -91,7 +91,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
     setEditValue('');
   };
 
-  const handleModalCloseIntent = () => {
+  const handleModalClose = () => {
     setIsEditing(false);
     setShowHistory(false);
     onOpenChange(false);
@@ -104,7 +104,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
     : null;
 
   return (
-    <Dialog open={open} onOpenChange={v => { if (!v) handleModalCloseIntent(); }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
         className={`
           ${isMobile 
@@ -121,7 +121,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleModalCloseIntent}
+              onClick={handleModalClose}
               className="text-blue-600 font-medium"
             >
               Cancel
@@ -144,7 +144,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleModalCloseIntent}
+                onClick={handleModalClose}
                 className="p-1"
               >
                 <X className="h-5 w-5" />
