@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Header from '@/components/Header';
-import { MobileNavigation } from '@/components/MobileNavigation';
+import AppleLayout from '@/layouts/AppleLayout';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { CSVImport } from '@/components/CSVImport';
@@ -12,7 +11,6 @@ import { EmailTemplateBuilder } from '@/components/EmailTemplateBuilder';
 import { BrandingSettings } from '@/components/BrandingSettings';
 import { ImportHistory } from '@/components/ImportHistory';
 import { useToast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/lead';
@@ -22,7 +20,6 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('leads');
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const { deleteBatch } = useImportBatchOperations();
   const { user } = useAuth();
 
@@ -466,110 +463,96 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header 
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-      />
-      
-      <main className="container mx-auto px-4 py-6">
-        {activeTab === 'leads' && (
-          <LeadsDashboard
-            leads={leads}
-            templates={templates}
-            categories={categories}
-            importBatches={importBatches}
-            branding={branding}
-            onUpdateLead={handleUpdateLead}
-            onDeleteLead={handleDeleteLead}
-            onBulkUpdateStatus={handleBulkUpdateStatus}
-            onBulkDelete={handleBulkDelete}
-            onSendEmail={handleSendEmail}
-            selectedBatchId={selectedBatchId}
-            onCreateCategory={handleCreateCategory}
-          />
-        )}
-
-        {activeTab === 'analytics' && (
-          <AnalyticsDashboard 
-            leads={leads} 
-            templates={templates}
-            categories={categories}
-            importBatches={importBatches}
-            onNavigateToLeads={(filter) => {
-              setActiveTab('leads');
-            }}
-          />
-        )}
-
-        {activeTab === 'import' && (
-          <CSVImport 
-            categories={categories}
-            onImportComplete={() => {
-              refetchLeads();
-              refetchImportBatches();
-            }}
-            onCreateCategory={handleCreateCategory}
-            existingLeads={leads}
-            importBatches={importBatches}
-          />
-        )}
-
-        {activeTab === 'categories' && (
-          <CategoryManager 
-            categories={categories}
-            onRefresh={() => {
-              refetchCategories();
-              refetchLeads();
-            }}
-          />
-        )}
-
-        {activeTab === 'duplicates' && (
-          <DuplicateManager 
-            leads={leads}
-            onBulkAction={handleBulkAction}
-          />
-        )}
-
-        {activeTab === 'templates' && (
-          <EmailTemplateBuilder 
-            templates={templates}
-            onSaveTemplate={handleSaveTemplate}
-          />
-        )}
-
-        {activeTab === 'branding' && (
-          <BrandingSettings 
-            branding={branding}
-            onSave={(updatedBranding) => {
-              console.log('Updated branding:', updatedBranding);
-              toast({
-                title: 'Branding updated',
-                description: 'Your branding settings have been saved'
-              });
-            }}
-          />
-        )}
-
-        {activeTab === 'history' && (
-          <ImportHistory 
-            leads={leads}
-            importBatches={importBatches}
-            categories={categories}
-            onDeleteBatch={handleDeleteBatch}
-            onViewBatchLeads={setSelectedBatchId}
-          />
-        )}
-      </main>
-
-      {isMobile && (
-        <MobileNavigation 
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
+    <AppleLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      {activeTab === 'leads' && (
+        <LeadsDashboard
+          leads={leads}
+          templates={templates}
+          categories={categories}
+          importBatches={importBatches}
+          branding={branding}
+          onUpdateLead={handleUpdateLead}
+          onDeleteLead={handleDeleteLead}
+          onBulkUpdateStatus={handleBulkUpdateStatus}
+          onBulkDelete={handleBulkDelete}
+          onSendEmail={handleSendEmail}
+          selectedBatchId={selectedBatchId}
+          onCreateCategory={handleCreateCategory}
         />
       )}
-    </div>
+
+      {activeTab === 'analytics' && (
+        <AnalyticsDashboard 
+          leads={leads} 
+          templates={templates}
+          categories={categories}
+          importBatches={importBatches}
+          onNavigateToLeads={(filter) => {
+            setActiveTab('leads');
+          }}
+        />
+      )}
+
+      {activeTab === 'import' && (
+        <CSVImport 
+          categories={categories}
+          onImportComplete={() => {
+            refetchLeads();
+            refetchImportBatches();
+          }}
+          onCreateCategory={handleCreateCategory}
+          existingLeads={leads}
+          importBatches={importBatches}
+        />
+      )}
+
+      {activeTab === 'categories' && (
+        <CategoryManager 
+          categories={categories}
+          onRefresh={() => {
+            refetchCategories();
+            refetchLeads();
+          }}
+        />
+      )}
+
+      {activeTab === 'duplicates' && (
+        <DuplicateManager 
+          leads={leads}
+          onBulkAction={handleBulkAction}
+        />
+      )}
+
+      {activeTab === 'templates' && (
+        <EmailTemplateBuilder 
+          templates={templates}
+          onSaveTemplate={handleSaveTemplate}
+        />
+      )}
+
+      {activeTab === 'branding' && (
+        <BrandingSettings 
+          branding={branding}
+          onSave={(updatedBranding) => {
+            console.log('Updated branding:', updatedBranding);
+            toast({
+              title: 'Branding updated',
+              description: 'Your branding settings have been saved'
+            });
+          }}
+        />
+      )}
+
+      {activeTab === 'history' && (
+        <ImportHistory 
+          leads={leads}
+          importBatches={importBatches}
+          categories={categories}
+          onDeleteBatch={handleDeleteBatch}
+          onViewBatchLeads={setSelectedBatchId}
+        />
+      )}
+    </AppleLayout>
   );
 };
 

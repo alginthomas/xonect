@@ -164,163 +164,234 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   };
 
   return (
-    <div className="space-y-3 lg:space-y-6">
-      {/* Mobile Search Toolbar */}
-      {isMobile && (
-        <MobileSearchToolbar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusChange={(status) => {
-            setStatusFilter(status);
-            setNavigationFilter(undefined);
-          }}
-          categoryFilter={categoryFilter}
-          onCategoryChange={setCategoryFilter}
-          dataAvailabilityFilter={dataAvailabilityFilter}
-          onDataAvailabilityChange={setDataAvailabilityFilter}
-          categories={categories}
-          onExport={handleExport}
-          onClearFilters={clearAllFilters}
-          activeFiltersCount={activeFiltersCount}
-        />
-      )}
-
-      {/* Desktop Filters */}
-      {!isMobile && (
-        <DesktopFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusChange={(status) => {
-            setStatusFilter(status);
-            setNavigationFilter(undefined);
-          }}
-          categoryFilter={categoryFilter}
-          onCategoryChange={setCategoryFilter}
-          dataAvailabilityFilter={dataAvailabilityFilter}
-          onDataAvailabilityChange={setDataAvailabilityFilter}
-          countryFilter={countryFilter}
-          onCountryChange={setCountryFilter}
-          duplicatePhoneFilter={duplicatePhoneFilter}
-          onDuplicatePhoneChange={handleDuplicatePhoneChange}
-          categories={categories}
-          leads={leads}
-          onExport={handleExport}
-          onClearFilters={clearAllFilters}
-          activeFiltersCount={activeFiltersCount}
-          columns={columns}
-          onToggleColumnVisibility={toggleColumnVisibility}
-          onResetColumns={resetToDefault}
-        />
-      )}
-
-      {/* Navigation Filter Indicator */}
-      <NavigationFilterIndicator
-        navigationFilter={navigationFilter}
-        onClearFilter={clearNavigationFilter}
-      />
-
-      {/* Bulk Actions */}
-      <BulkActionsBar
-        selectedCount={selectedLeads.size}
-        onClearSelection={clearSelection}
-        onBulkAction={handleBulkAction}
-      />
-
-      {/* Main Content */}
-      <Card className="apple-card">
-        <ResultsOverview
-          filteredLeadsCount={filteredLeads.length}
-          selectedCount={selectedLeads.size}
-          selectedBatchId={selectedBatchId}
-          importBatches={importBatches}
-        />
-        <CardContent className="pt-0">
-          {/* Desktop Table */}
-          <LeadsTable
-            leads={paginatedLeads}
-            categories={categories}
-            selectedLeads={selectedLeads}
-            columns={columns}
-            visibleColumns={visibleColumns}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            onSelectLead={handleSelectLead}
-            onSelectAll={handleSelectAllWrapper}
-            onStatusChange={handleStatusChange}
-            onRemarksUpdate={handleRemarksUpdate}
-            onEmailClick={(lead) => {
-              setSelectedLeadForEmail(lead);
-              setShowEmailDialog(true);
-            }}
-            onViewDetails={openLeadSidebar}
-            onDeleteLead={onDeleteLead}
-            onDragEnd={handleDragEnd}
-          />
-
-          {/* Mobile Date Grouped Leads */}
-          {isMobile && (
-            <DateGroupedLeads
-              leads={paginatedLeads}
-              categories={categories}
-              selectedLeads={selectedLeads}
-              onSelectLead={handleSelectLead}
-              onViewDetails={openLeadSidebar}
-              onStatusChange={handleStatusChange}
-              onRemarksUpdate={handleRemarksUpdate}
-              onEmailClick={(lead) => {
-                setSelectedLeadForEmail(lead);
-                setShowEmailDialog(true);
+    <div className="w-full h-full bg-background">
+      {/* Mobile Layout */}
+      {isMobile ? (
+        <div className="flex flex-col h-full">
+          {/* Mobile Search Toolbar - Fixed at top */}
+          <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/40 sticky top-0 z-30">
+            <MobileSearchToolbar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              statusFilter={statusFilter}
+              onStatusChange={(status) => {
+                setStatusFilter(status);
+                setNavigationFilter(undefined);
               }}
-              onDeleteLead={onDeleteLead}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+              dataAvailabilityFilter={dataAvailabilityFilter}
+              onDataAvailabilityChange={setDataAvailabilityFilter}
+              categories={categories}
+              onExport={handleExport}
+              onClearFilters={clearAllFilters}
+              activeFiltersCount={activeFiltersCount}
             />
-          )}
+          </div>
 
-          {/* Pagination */}
-          <LeadsPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            totalItems={sortedLeads.length}
-            startIndex={startIndex}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(newItemsPerPage) => {
-              setItemsPerPage(newItemsPerPage);
-              setCurrentPage(1);
-            }}
-          />
-
-          {/* No Results State */}
-          {sortedLeads.length === 0 && (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No leads found</h3>
-              <p className="text-muted-foreground">
-                {filteredLeads.length === 0 
-                  ? "Try adjusting your search or filters to find leads."
-                  : "All leads are filtered out by your current criteria."
-                }
-              </p>
+          {/* Navigation Filter Indicator */}
+          {navigationFilter && (
+            <div className="flex-shrink-0 px-4 pt-3">
+              <NavigationFilterIndicator
+                navigationFilter={navigationFilter}
+                onClearFilter={clearNavigationFilter}
+              />
             </div>
           )}
-        </CardContent>
-      </Card>
 
-      {/* Floating Action Button for Mobile */}
-      <FloatingActionButton
-        onClick={() => {
-          toast({
-            title: 'Add Lead',
-            description: 'Lead creation feature coming soon!'
-          });
-        }}
-        icon={<Plus className="h-5 w-5" />}
-        label="Add Lead"
-        className="bottom-20 right-4 h-12 w-12 shadow-xl"
-      />
+          {/* Bulk Actions */}
+          {selectedLeads.size > 0 && (
+            <div className="flex-shrink-0 px-4 pt-3">
+              <BulkActionsBar
+                selectedCount={selectedLeads.size}
+                onClearSelection={clearSelection}
+                onBulkAction={handleBulkAction}
+              />
+            </div>
+          )}
 
+          {/* Main Content - Scrollable */}
+          <div className="flex-1 overflow-hidden">
+            <Card className="apple-card h-full rounded-none border-x-0 border-b-0">
+              <div className="px-4 py-3 border-b border-border/40">
+                <ResultsOverview
+                  filteredLeadsCount={filteredLeads.length}
+                  selectedCount={selectedLeads.size}
+                  selectedBatchId={selectedBatchId}
+                  importBatches={importBatches}
+                />
+              </div>
+              <CardContent className="p-0 h-full overflow-auto">
+                {/* Mobile Date Grouped Leads */}
+                <DateGroupedLeads
+                  leads={paginatedLeads}
+                  categories={categories}
+                  selectedLeads={selectedLeads}
+                  onSelectLead={handleSelectLead}
+                  onViewDetails={openLeadSidebar}
+                  onStatusChange={handleStatusChange}
+                  onRemarksUpdate={handleRemarksUpdate}
+                  onEmailClick={(lead) => {
+                    setSelectedLeadForEmail(lead);
+                    setShowEmailDialog(true);
+                  }}
+                  onDeleteLead={onDeleteLead}
+                />
+
+                {/* Mobile Pagination */}
+                <div className="p-4 border-t border-border/40 bg-background">
+                  <LeadsPagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={sortedLeads.length}
+                    startIndex={startIndex}
+                    onPageChange={setCurrentPage}
+                    onItemsPerPageChange={(newItemsPerPage) => {
+                      setItemsPerPage(newItemsPerPage);
+                      setCurrentPage(1);
+                    }}
+                  />
+                </div>
+
+                {/* No Results State */}
+                {sortedLeads.length === 0 && (
+                  <div className="text-center py-12 px-4">
+                    <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-xl font-medium mb-2">No leads found</h3>
+                    <p className="text-muted-foreground">
+                      {filteredLeads.length === 0 
+                        ? "Try adjusting your search or filters to find leads."
+                        : "All leads are filtered out by your current criteria."
+                      }
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Floating Action Button */}
+          <FloatingActionButton
+            onClick={() => {
+              toast({
+                title: 'Add Lead',
+                description: 'Lead creation feature coming soon!'
+              });
+            }}
+            icon={<Plus className="h-5 w-5" />}
+            label="Add Lead"
+            className="bottom-24 right-4 h-14 w-14 shadow-xl"
+          />
+        </div>
+      ) : (
+        /* Desktop Layout */
+        <div className="space-y-6 p-6">
+          {/* Desktop Filters */}
+          <DesktopFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            statusFilter={statusFilter}
+            onStatusChange={(status) => {
+              setStatusFilter(status);
+              setNavigationFilter(undefined);
+            }}
+            categoryFilter={categoryFilter}
+            onCategoryChange={setCategoryFilter}
+            dataAvailabilityFilter={dataAvailabilityFilter}
+            onDataAvailabilityChange={setDataAvailabilityFilter}
+            countryFilter={countryFilter}
+            onCountryChange={setCountryFilter}
+            duplicatePhoneFilter={duplicatePhoneFilter}
+            onDuplicatePhoneChange={handleDuplicatePhoneChange}
+            categories={categories}
+            leads={leads}
+            onExport={handleExport}
+            onClearFilters={clearAllFilters}
+            activeFiltersCount={activeFiltersCount}
+            columns={columns}
+            onToggleColumnVisibility={toggleColumnVisibility}
+            onResetColumns={resetToDefault}
+          />
+
+          {/* Navigation Filter Indicator */}
+          <NavigationFilterIndicator
+            navigationFilter={navigationFilter}
+            onClearFilter={clearNavigationFilter}
+          />
+
+          {/* Bulk Actions */}
+          <BulkActionsBar
+            selectedCount={selectedLeads.size}
+            onClearSelection={clearSelection}
+            onBulkAction={handleBulkAction}
+          />
+
+          {/* Main Content */}
+          <Card className="apple-card">
+            <ResultsOverview
+              filteredLeadsCount={filteredLeads.length}
+              selectedCount={selectedLeads.size}
+              selectedBatchId={selectedBatchId}
+              importBatches={importBatches}
+            />
+            <CardContent className="pt-0">
+              {/* Desktop Table */}
+              <LeadsTable
+                leads={paginatedLeads}
+                categories={categories}
+                selectedLeads={selectedLeads}
+                columns={columns}
+                visibleColumns={visibleColumns}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                onSelectLead={handleSelectLead}
+                onSelectAll={handleSelectAllWrapper}
+                onStatusChange={handleStatusChange}
+                onRemarksUpdate={handleRemarksUpdate}
+                onEmailClick={(lead) => {
+                  setSelectedLeadForEmail(lead);
+                  setShowEmailDialog(true);
+                }}
+                onViewDetails={openLeadSidebar}
+                onDeleteLead={onDeleteLead}
+                onDragEnd={handleDragEnd}
+              />
+
+              {/* Pagination */}
+              <LeadsPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={sortedLeads.length}
+                startIndex={startIndex}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={(newItemsPerPage) => {
+                  setItemsPerPage(newItemsPerPage);
+                  setCurrentPage(1);
+                }}
+              />
+
+              {/* No Results State */}
+              {sortedLeads.length === 0 && (
+                <div className="text-center py-12">
+                  <Users className="h-16 w-16 mx-auto mb-6 text-muted-foreground" />
+                  <h3 className="text-2xl font-medium mb-3">No leads found</h3>
+                  <p className="text-muted-foreground text-lg max-w-md mx-auto">
+                    {filteredLeads.length === 0 
+                      ? "Try adjusting your search or filters to find leads."
+                      : "All leads are filtered out by your current criteria."
+                    }
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Shared Components */}
       {/* Sidebar for Lead Details */}
       <LeadSidebar
         lead={selectedLead}

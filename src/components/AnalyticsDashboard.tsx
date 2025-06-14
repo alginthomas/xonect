@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, ResponsiveContainer, LineChart, Line, Area, AreaChart } from 'recharts';
 import { Users, TrendingUp, Mail, FileText, Database, ArrowUpRight, Calendar, Target, Phone, CheckCircle, XCircle, Clock, Eye } from 'lucide-react';
 import { format, subDays, startOfDay, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { useIsMobile } from '@/hooks/use-mobile';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -26,6 +26,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   importBatches,
   onNavigateToLeads
 }) => {
+  const isMobile = useIsMobile();
+
   // Enhanced metrics calculation
   const metrics = useMemo(() => {
     const totalLeads = leads.length;
@@ -129,315 +131,585 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }, [categories, leads]);
 
   return (
-    <div className="space-y-6 px-4 py-4 lg:px-6 lg:py-6">
-      {/* Header Section */}
-      <div className="text-center lg:text-left">
-        <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
-        <p className="text-muted-foreground">Track your lead generation performance and insights</p>
-      </div>
+    <div className={`w-full h-full bg-background ${isMobile ? '' : 'p-6'}`}>
+      {/* Mobile Layout */}
+      {isMobile ? (
+        <div className="space-y-4 p-4">
+          {/* Header Section */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground mb-1">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Lead generation insights</p>
+          </div>
 
-      {/* Key Performance Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6">
-        <Card className="apple-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-foreground">{metrics.totalLeads}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <Badge variant="secondary" className="text-xs">
-                +{metrics.thisWeekLeads} this week
-              </Badge>
+          {/* Key Performance Metrics - 2x2 Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="apple-card">
+              <CardContent className="p-4 text-center">
+                <Users className="h-5 w-5 mx-auto mb-2 text-primary" />
+                <div className="text-2xl font-bold text-foreground">{metrics.totalLeads}</div>
+                <p className="text-xs text-muted-foreground">Total Leads</p>
+                <Badge variant="secondary" className="text-xs mt-1">
+                  +{metrics.thisWeekLeads} this week
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="apple-card">
+              <CardContent className="p-4 text-center">
+                <Target className="h-5 w-5 mx-auto mb-2 text-green-600" />
+                <div className="text-2xl font-bold text-foreground">{metrics.conversionRate.toFixed(1)}%</div>
+                <p className="text-xs text-muted-foreground">Conversion</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {metrics.qualifiedLeads} qualified
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="apple-card">
+              <CardContent className="p-4 text-center">
+                <TrendingUp className="h-5 w-5 mx-auto mb-2 text-blue-600" />
+                <div className="text-2xl font-bold text-foreground">{metrics.responseRate.toFixed(1)}%</div>
+                <p className="text-xs text-muted-foreground">Response Rate</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From contacted
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="apple-card">
+              <CardContent className="p-4 text-center">
+                <CheckCircle className="h-5 w-5 mx-auto mb-2 text-emerald-600" />
+                <div className="text-2xl font-bold text-foreground">{metrics.dataCompleteness.toFixed(0)}%</div>
+                <p className="text-xs text-muted-foreground">Data Quality</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {metrics.leadsWithPhone} with phone
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Status Overview - Horizontal Scroll */}
+          <div className="overflow-x-auto">
+            <div className="flex gap-3 pb-2" style={{ minWidth: 'max-content' }}>
+              <Card 
+                className="apple-card cursor-pointer hover:shadow-md transition-shadow flex-shrink-0 w-24" 
+                onClick={() => onNavigateToLeads({ status: 'New' })}
+              >
+                <CardContent className="p-3 text-center">
+                  <Clock className="h-4 w-4 mx-auto mb-1 text-gray-500" />
+                  <div className="text-lg font-bold text-foreground">{metrics.newLeads}</div>
+                  <p className="text-xs text-muted-foreground">New</p>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="apple-card cursor-pointer hover:shadow-md transition-shadow flex-shrink-0 w-24" 
+                onClick={() => onNavigateToLeads({ status: 'Contacted' })}
+              >
+                <CardContent className="p-3 text-center">
+                  <Mail className="h-4 w-4 mx-auto mb-1 text-blue-500" />
+                  <div className="text-lg font-bold text-foreground">{metrics.contactedLeads}</div>
+                  <p className="text-xs text-muted-foreground">Contacted</p>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="apple-card cursor-pointer hover:shadow-md transition-shadow flex-shrink-0 w-24" 
+                onClick={() => onNavigateToLeads({ status: 'Qualified' })}
+              >
+                <CardContent className="p-3 text-center">
+                  <CheckCircle className="h-4 w-4 mx-auto mb-1 text-green-500" />
+                  <div className="text-lg font-bold text-foreground">{metrics.qualifiedLeads}</div>
+                  <p className="text-xs text-muted-foreground">Qualified</p>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="apple-card cursor-pointer hover:shadow-md transition-shadow flex-shrink-0 w-24" 
+                onClick={() => onNavigateToLeads({ status: 'Interested' })}
+              >
+                <CardContent className="p-3 text-center">
+                  <Eye className="h-4 w-4 mx-auto mb-1 text-purple-500" />
+                  <div className="text-lg font-bold text-foreground">{metrics.interestedLeads}</div>
+                  <p className="text-xs text-muted-foreground">Interested</p>
+                </CardContent>
+              </Card>
+
+              <Card 
+                className="apple-card cursor-pointer hover:shadow-md transition-shadow flex-shrink-0 w-24" 
+                onClick={() => onNavigateToLeads({ status: 'Not Interested' })}
+              >
+                <CardContent className="p-3 text-center">
+                  <XCircle className="h-4 w-4 mx-auto mb-1 text-red-500" />
+                  <div className="text-lg font-bold text-foreground">{metrics.notInterestedLeads}</div>
+                  <p className="text-xs text-muted-foreground">Not Interested</p>
+                </CardContent>
+              </Card>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        <Card className="apple-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
-            <Target className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-foreground">{metrics.conversionRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {metrics.qualifiedLeads} qualified leads
-            </p>
-          </CardContent>
-        </Card>
+          {/* Charts Section - Stacked */}
+          <div className="space-y-4">
+            {/* Lead Status Distribution */}
+            <Card className="apple-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">Status Distribution</CardTitle>
+                <CardDescription className="text-sm">Current lead breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percentage }) => `${name} (${percentage}%)`}
+                        outerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="apple-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Response Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-foreground">{metrics.responseRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              From contacted leads
-            </p>
-          </CardContent>
-        </Card>
+            {/* Weekly Performance */}
+            <Card className="apple-card">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-semibold">Weekly Trends</CardTitle>
+                <CardDescription className="text-sm">Last 4 weeks performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="newLeads" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} name="New Leads" />
+                      <Area type="monotone" dataKey="contacted" stackId="2" stroke="#10B981" fill="#10B981" fillOpacity={0.6} name="Contacted" />
+                      <Area type="monotone" dataKey="qualified" stackId="3" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Qualified" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card className="apple-card">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Data Quality</CardTitle>
-            <CheckCircle className="h-4 w-4 text-emerald-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl lg:text-3xl font-bold text-foreground">{metrics.dataCompleteness.toFixed(0)}%</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {metrics.leadsWithPhone} have phone numbers
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Status Overview Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
-        <Card 
-          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => onNavigateToLeads({ status: 'New' })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Clock className="h-5 w-5 text-gray-500" />
-            </div>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.newLeads}</div>
-            <p className="text-xs text-muted-foreground">New Leads</p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => onNavigateToLeads({ status: 'Contacted' })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Mail className="h-5 w-5 text-blue-500" />
-            </div>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.contactedLeads}</div>
-            <p className="text-xs text-muted-foreground">Contacted</p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => onNavigateToLeads({ status: 'Qualified' })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-            </div>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.qualifiedLeads}</div>
-            <p className="text-xs text-muted-foreground">Qualified</p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => onNavigateToLeads({ status: 'Interested' })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <Eye className="h-5 w-5 text-purple-500" />
-            </div>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.interestedLeads}</div>
-            <p className="text-xs text-muted-foreground">Interested</p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
-          onClick={() => onNavigateToLeads({ status: 'Not Interested' })}
-        >
-          <CardContent className="p-4 text-center">
-            <div className="flex items-center justify-center mb-2">
-              <XCircle className="h-5 w-5 text-red-500" />
-            </div>
-            <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.notInterestedLeads}</div>
-            <p className="text-xs text-muted-foreground">Not Interested</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Lead Status Distribution */}
-        <Card className="apple-card">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Lead Status Distribution</CardTitle>
-            <CardDescription>Current breakdown of all lead statuses</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percentage }) => `${name} (${percentage}%)`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {statusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Weekly Performance */}
-        <Card className="apple-card">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Weekly Performance</CardTitle>
-            <CardDescription>Lead generation and conversion over the last 4 weeks</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="week" />
-                  <YAxis />
-                  <Tooltip />
-                  <Area type="monotone" dataKey="newLeads" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} name="New Leads" />
-                  <Area type="monotone" dataKey="contacted" stackId="2" stroke="#10B981" fill="#10B981" fillOpacity={0.6} name="Contacted" />
-                  <Area type="monotone" dataKey="qualified" stackId="3" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Qualified" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Category Performance & Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Category Performance */}
-        {categoryPerformance.length > 0 && (
-          <Card className="apple-card lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold">Category Performance</CardTitle>
-              <CardDescription>Qualification rates by lead category</CardDescription>
+          {/* Quick Actions */}
+          <Card className="apple-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={categoryPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip formatter={(value, name) => [value, name === 'total' ? 'Total Leads' : 'Qualified Leads']} />
-                    <Bar dataKey="total" fill="#E5E7EB" name="Total Leads" />
-                    <Bar dataKey="qualified" fill="#10B981" name="Qualified Leads" />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="grid grid-cols-2 gap-3">
+                <Button 
+                  variant="outline" 
+                  className="h-16 flex-col gap-1"
+                  onClick={() => onNavigateToLeads({ status: 'New' })}
+                >
+                  <Users className="h-5 w-5" />
+                  <div className="text-center">
+                    <div className="font-medium text-xs">Review New</div>
+                    <div className="text-xs text-muted-foreground">{metrics.newLeads} waiting</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-16 flex-col gap-1"
+                  onClick={() => onNavigateToLeads({ status: 'Contacted' })}
+                >
+                  <Mail className="h-5 w-5" />
+                  <div className="text-center">
+                    <div className="font-medium text-xs">Follow Up</div>
+                    <div className="text-xs text-muted-foreground">{metrics.contactedLeads} contacted</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-16 flex-col gap-1"
+                  onClick={() => onNavigateToLeads({ status: 'Interested' })}
+                >
+                  <TrendingUp className="h-5 w-5" />
+                  <div className="text-center">
+                    <div className="font-medium text-xs">Hot Prospects</div>
+                    <div className="text-xs text-muted-foreground">{metrics.interestedLeads} interested</div>
+                  </div>
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="h-16 flex-col gap-1"
+                  onClick={() => onNavigateToLeads({})}
+                >
+                  <Database className="h-5 w-5" />
+                  <div className="text-center">
+                    <div className="font-medium text-xs">View All</div>
+                    <div className="text-xs text-muted-foreground">{metrics.totalLeads} total</div>
+                  </div>
+                </Button>
               </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* Quick Actions */}
-        <Card className="apple-card">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
-            <CardDescription>Common tasks and navigation</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-12"
-                onClick={() => onNavigateToLeads({ status: 'New' })}
-              >
-                <Users className="h-4 w-4 mr-3" />
-                <div className="text-left">
-                  <div className="font-medium">Review New Leads</div>
-                  <div className="text-xs text-muted-foreground">{metrics.newLeads} waiting</div>
+          {/* System Overview */}
+          <Card className="apple-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-semibold">System Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <FileText className="h-5 w-5 mx-auto mb-1 text-blue-600" />
+                  <div className="font-semibold">{metrics.totalTemplates}</div>
+                  <div className="text-xs text-muted-foreground">Templates</div>
                 </div>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-12"
-                onClick={() => onNavigateToLeads({ status: 'Contacted' })}
-              >
-                <Mail className="h-4 w-4 mr-3" />
-                <div className="text-left">
-                  <div className="font-medium">Follow Up</div>
-                  <div className="text-xs text-muted-foreground">{metrics.contactedLeads} contacted</div>
+                
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <Database className="h-5 w-5 mx-auto mb-1 text-green-600" />
+                  <div className="font-semibold">{metrics.totalImportBatches}</div>
+                  <div className="text-xs text-muted-foreground">Imports</div>
                 </div>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-12"
-                onClick={() => onNavigateToLeads({ status: 'Interested' })}
-              >
-                <TrendingUp className="h-4 w-4 mr-3" />
-                <div className="text-left">
-                  <div className="font-medium">Hot Prospects</div>
-                  <div className="text-xs text-muted-foreground">{metrics.interestedLeads} interested</div>
+                
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <Users className="h-5 w-5 mx-auto mb-1 text-purple-600" />
+                  <div className="font-semibold">{metrics.totalCategories}</div>
+                  <div className="text-xs text-muted-foreground">Categories</div>
                 </div>
-              </Button>
-
-              <Button 
-                variant="outline" 
-                className="w-full justify-start h-12"
-                onClick={() => onNavigateToLeads({})}
-              >
-                <Database className="h-4 w-4 mr-3" />
-                <div className="text-left">
-                  <div className="font-medium">View All Leads</div>
-                  <div className="text-xs text-muted-foreground">{metrics.totalLeads} total</div>
+                
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <Mail className="h-5 w-5 mx-auto mb-1 text-orange-600" />
+                  <div className="font-semibold">{metrics.totalEmailsSent}</div>
+                  <div className="text-xs text-muted-foreground">Emails Sent</div>
                 </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* System Status */}
-      <Card className="apple-card">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">System Overview</CardTitle>
-          <CardDescription>Current system status and resources</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <FileText className="h-6 w-6 mx-auto mb-2 text-blue-600" />
-              <div className="font-semibold text-lg">{metrics.totalTemplates}</div>
-              <div className="text-sm text-muted-foreground">Email Templates</div>
-            </div>
-            
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <Database className="h-6 w-6 mx-auto mb-2 text-green-600" />
-              <div className="font-semibold text-lg">{metrics.totalImportBatches}</div>
-              <div className="text-sm text-muted-foreground">Import Batches</div>
-            </div>
-            
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <Users className="h-6 w-6 mx-auto mb-2 text-purple-600" />
-              <div className="font-semibold text-lg">{metrics.totalCategories}</div>
-              <div className="text-sm text-muted-foreground">Categories</div>
-            </div>
-            
-            <div className="text-center p-4 bg-muted/30 rounded-lg">
-              <Mail className="h-6 w-6 mx-auto mb-2 text-orange-600" />
-              <div className="font-semibold text-lg">{metrics.totalEmailsSent}</div>
-              <div className="text-sm text-muted-foreground">Emails Sent</div>
-            </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        /* Desktop Layout */
+        <div className="space-y-6">
+          {/* Header Section */}
+          <div className="text-center lg:text-left">
+            <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard Overview</h1>
+            <p className="text-muted-foreground">Track your lead generation performance and insights</p>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Key Performance Metrics */}
+          <div className="grid grid-cols-4 gap-6">
+            <Card className="apple-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Leads</CardTitle>
+                <Users className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{metrics.totalLeads}</div>
+                <div className="flex items-center gap-1 mt-1">
+                  <Badge variant="secondary" className="text-xs">
+                    +{metrics.thisWeekLeads} this week
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="apple-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Conversion Rate</CardTitle>
+                <Target className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{metrics.conversionRate.toFixed(1)}%</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {metrics.qualifiedLeads} qualified leads
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="apple-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Response Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{metrics.responseRate.toFixed(1)}%</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  From contacted leads
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="apple-card">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Data Quality</CardTitle>
+                <CheckCircle className="h-4 w-4 text-emerald-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-foreground">{metrics.dataCompleteness.toFixed(0)}%</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {metrics.leadsWithPhone} have phone numbers
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Status Overview Cards */}
+          <div className="grid grid-cols-5 gap-4">
+            <Card 
+              className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+              onClick={() => onNavigateToLeads({ status: 'New' })}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Clock className="h-5 w-5 text-gray-500" />
+                </div>
+                <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.newLeads}</div>
+                <p className="text-xs text-muted-foreground">New Leads</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+              onClick={() => onNavigateToLeads({ status: 'Contacted' })}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Mail className="h-5 w-5 text-blue-500" />
+                </div>
+                <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.contactedLeads}</div>
+                <p className="text-xs text-muted-foreground">Contacted</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+              onClick={() => onNavigateToLeads({ status: 'Qualified' })}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                </div>
+                <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.qualifiedLeads}</div>
+                <p className="text-xs text-muted-foreground">Qualified</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+              onClick={() => onNavigateToLeads({ status: 'Interested' })}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <Eye className="h-5 w-5 text-purple-500" />
+                </div>
+                <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.interestedLeads}</div>
+                <p className="text-xs text-muted-foreground">Interested</p>
+              </CardContent>
+            </Card>
+
+            <Card 
+              className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+              onClick={() => onNavigateToLeads({ status: 'Not Interested' })}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <XCircle className="h-5 w-5 text-red-500" />
+                </div>
+                <div className="text-xl lg:text-2xl font-bold text-foreground">{metrics.notInterestedLeads}</div>
+                <p className="text-xs text-muted-foreground">Not Interested</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Lead Status Distribution */}
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Lead Status Distribution</CardTitle>
+                <CardDescription>Current breakdown of all lead statuses</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statusData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percentage }) => `${name} (${percentage}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {statusData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Weekly Performance */}
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Weekly Performance</CardTitle>
+                <CardDescription>Lead generation and conversion over the last 4 weeks</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={weeklyData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="week" />
+                      <YAxis />
+                      <Tooltip />
+                      <Area type="monotone" dataKey="newLeads" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} name="New Leads" />
+                      <Area type="monotone" dataKey="contacted" stackId="2" stroke="#10B981" fill="#10B981" fillOpacity={0.6} name="Contacted" />
+                      <Area type="monotone" dataKey="qualified" stackId="3" stroke="#F59E0B" fill="#F59E0B" fillOpacity={0.6} name="Qualified" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Category Performance & Quick Actions */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Category Performance */}
+            {categoryPerformance.length > 0 && (
+              <Card className="apple-card lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg font-semibold">Category Performance</CardTitle>
+                  <CardDescription>Qualification rates by lead category</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={categoryPerformance} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip formatter={(value, name) => [value, name === 'total' ? 'Total Leads' : 'Qualified Leads']} />
+                        <Bar dataKey="total" fill="#E5E7EB" name="Total Leads" />
+                        <Bar dataKey="qualified" fill="#10B981" name="Qualified Leads" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Quick Actions */}
+            <Card className="apple-card">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold">Quick Actions</CardTitle>
+                <CardDescription>Common tasks and navigation</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-12"
+                    onClick={() => onNavigateToLeads({ status: 'New' })}
+                  >
+                    <Users className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div className="font-medium">Review New Leads</div>
+                      <div className="text-xs text-muted-foreground">{metrics.newLeads} waiting</div>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-12"
+                    onClick={() => onNavigateToLeads({ status: 'Contacted' })}
+                  >
+                    <Mail className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div className="font-medium">Follow Up</div>
+                      <div className="text-xs text-muted-foreground">{metrics.contactedLeads} contacted</div>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-12"
+                    onClick={() => onNavigateToLeads({ status: 'Interested' })}
+                  >
+                    <TrendingUp className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div className="font-medium">Hot Prospects</div>
+                      <div className="text-xs text-muted-foreground">{metrics.interestedLeads} interested</div>
+                    </div>
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-12"
+                    onClick={() => onNavigateToLeads({})}
+                  >
+                    <Database className="h-4 w-4 mr-3" />
+                    <div className="text-left">
+                      <div className="font-medium">View All Leads</div>
+                      <div className="text-xs text-muted-foreground">{metrics.totalLeads} total</div>
+                    </div>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* System Status */}
+          <Card className="apple-card">
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">System Overview</CardTitle>
+              <CardDescription>Current system status and resources</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-muted/30 rounded-lg">
+                  <FileText className="h-6 w-6 mx-auto mb-2 text-blue-600" />
+                  <div className="font-semibold text-lg">{metrics.totalTemplates}</div>
+                  <div className="text-sm text-muted-foreground">Email Templates</div>
+                </div>
+                
+                <div className="text-center p-4 bg-muted/30 rounded-lg">
+                  <Database className="h-6 w-6 mx-auto mb-2 text-green-600" />
+                  <div className="font-semibold text-lg">{metrics.totalImportBatches}</div>
+                  <div className="text-sm text-muted-foreground">Import Batches</div>
+                </div>
+                
+                <div className="text-center p-4 bg-muted/30 rounded-lg">
+                  <Users className="h-6 w-6 mx-auto mb-2 text-purple-600" />
+                  <div className="font-semibold text-lg">{metrics.totalCategories}</div>
+                  <div className="text-sm text-muted-foreground">Categories</div>
+                </div>
+                
+                <div className="text-center p-4 bg-muted/30 rounded-lg">
+                  <Mail className="h-6 w-6 mx-auto mb-2 text-orange-600" />
+                  <div className="font-semibold text-lg">{metrics.totalEmailsSent}</div>
+                  <div className="text-sm text-muted-foreground">Emails Sent</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
