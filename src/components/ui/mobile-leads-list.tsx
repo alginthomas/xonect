@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -153,6 +152,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [selectedDataFilter, setSelectedDataFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
   const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<DuplicatePhoneFilter>('all');
+  const [remarksFilter, setRemarksFilter] = useState<'all' | 'has-remarks' | 'no-remarks'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
 
@@ -182,6 +182,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     selectedDataFilter,
     countryFilter,
     duplicatePhoneFilter,
+    remarksFilter,
     currentPage,
     itemsPerPage,
     sortField: 'createdAt',
@@ -201,6 +202,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     setSelectedDataFilter('all');
     setCountryFilter('all');
     setDuplicatePhoneFilter('all');
+    setRemarksFilter('all');
   };
 
   const getActiveFiltersCount = () => {
@@ -214,6 +216,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     if (selectedDataFilter !== 'all') count++;
     if (countryFilter !== 'all') count++;
     if (duplicatePhoneFilter !== 'all') count++;
+    if (remarksFilter !== 'all') count++;
     return count;
   };
 
@@ -259,6 +262,10 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     setDuplicatePhoneFilter(filter as DuplicatePhoneFilter);
   };
 
+  const handleRemarksFilterChange = (filter: string) => {
+    setRemarksFilter(filter as 'all' | 'has-remarks' | 'no-remarks');
+  };
+
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
     setItemsPerPage(newItemsPerPage);
     setCurrentPage(1); // Reset to first page when changing items per page
@@ -293,6 +300,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         onCountryChange={setCountryFilter}
         duplicatePhoneFilter={duplicatePhoneFilter}
         onDuplicatePhoneChange={handleDuplicatePhoneFilterChange}
+        remarksFilter={remarksFilter}
+        onRemarksFilterChange={handleRemarksFilterChange}
       />
 
       {/* Bulk Actions Bar */}
