@@ -25,10 +25,6 @@ interface UseLeadsFilteringProps {
   itemsPerPage: number;
   sortField: string;
   sortDirection: 'asc' | 'desc';
-  // Add missing filter properties with proper types
-  statusFilter?: LeadStatus | 'all';
-  categoryFilter?: string;
-  dataAvailabilityFilter?: string;
   setCurrentPage?: (page: number) => void;
 }
 
@@ -51,10 +47,6 @@ export const useLeadsFiltering = ({
   itemsPerPage,
   sortField,
   sortDirection,
-  // Accept the additional filter properties
-  statusFilter,
-  categoryFilter,
-  dataAvailabilityFilter,
   setCurrentPage
 }: UseLeadsFilteringProps) => {
   // Filter leads based on various criteria
@@ -91,17 +83,15 @@ export const useLeadsFiltering = ({
       console.log('After search filter:', filtered.length);
     }
 
-    // Filter by status - use statusFilter or selectedStatus
-    const statusToFilter = statusFilter || selectedStatus;
-    if (statusToFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.status === statusToFilter);
+    // Filter by status
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(lead => lead.status === selectedStatus);
       console.log('After status filter:', filtered.length);
     }
 
-    // Filter by category - use categoryFilter or selectedCategory
-    const categoryToFilter = categoryFilter || selectedCategory;
-    if (categoryToFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.categoryId === categoryToFilter);
+    // Filter by category
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(lead => lead.categoryId === selectedCategory);
       console.log('After category filter:', filtered.length);
     }
 
@@ -131,13 +121,12 @@ export const useLeadsFiltering = ({
       console.log('After country filter:', filtered.length);
     }
 
-    // Filter by data availability - use dataAvailabilityFilter or selectedDataFilter
-    const dataFilterToUse = dataAvailabilityFilter || selectedDataFilter;
-    if (dataFilterToUse === 'has-phone') {
+    // Filter by data availability
+    if (selectedDataFilter === 'has-phone') {
       filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '');
-    } else if (dataFilterToUse === 'has-email') {
+    } else if (selectedDataFilter === 'has-email') {
       filtered = filtered.filter(lead => lead.email && lead.email.trim() !== '');
-    } else if (dataFilterToUse === 'has-both') {
+    } else if (selectedDataFilter === 'has-both') {
       filtered = filtered.filter(lead => 
         lead.phone && lead.phone.trim() !== '' && 
         lead.email && lead.email.trim() !== ''
@@ -155,7 +144,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter, statusFilter, categoryFilter, dataAvailabilityFilter]);
+  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {

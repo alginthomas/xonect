@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
@@ -230,6 +229,10 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     clearSelection();
   };
 
+  const handleDuplicatePhoneFilterChange = (filter: string) => {
+    setDuplicatePhoneFilter(filter as DuplicatePhoneFilter);
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       <MobileSearchFilters
@@ -258,7 +261,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         countryFilter={countryFilter}
         onCountryChange={setCountryFilter}
         duplicatePhoneFilter={duplicatePhoneFilter}
-        onDuplicatePhoneChange={setDuplicatePhoneFilter}
+        onDuplicatePhoneChange={handleDuplicatePhoneFilterChange}
       />
 
       {/* Bulk Actions Bar */}

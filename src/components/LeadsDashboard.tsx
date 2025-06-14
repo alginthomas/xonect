@@ -102,7 +102,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     importBatches,
     selectedBatchId,
     searchTerm,
-    selectedStatus: statusFilter,
+    selectedStatus: statusFilter as 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested' | 'Send Email' | 'all',
     selectedCategory: categoryFilter,
     selectedSeniority: 'all',
     selectedCompanySize: 'all',
@@ -433,6 +433,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     }
   };
 
+  const handleDuplicatePhoneChange = (value: string) => {
+    setDuplicatePhoneFilter(value as 'all' | 'unique-only' | 'duplicates-only');
+  };
+
   return (
     <div className="space-y-3 lg:space-y-6">
       {/* Mobile Search Toolbar - Only show on mobile */}
@@ -467,7 +471,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           countryFilter={countryFilter}
           onCountryChange={setCountryFilter}
           duplicatePhoneFilter={duplicatePhoneFilter}
-          onDuplicatePhoneChange={(value: string) => setDuplicatePhoneFilter(value as 'all' | 'unique-only' | 'duplicates-only')}
+          onDuplicatePhoneChange={handleDuplicatePhoneChange}
           categories={categories}
           leads={leads}
           onExport={handleExport}
