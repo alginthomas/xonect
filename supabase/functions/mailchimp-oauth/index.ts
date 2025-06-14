@@ -40,6 +40,10 @@ const handler = async (req: Request): Promise<Response> => {
     if (req.method === 'GET') {
       // Generate OAuth URL
       const clientId = Deno.env.get('MAILCHIMP_CLIENT_ID');
+      if (!clientId) {
+        throw new Error('Mailchimp Client ID not configured');
+      }
+      
       const redirectUri = `${req.url.split('/functions/')[0]}/functions/v1/mailchimp-oauth`;
       
       const oauthUrl = `https://login.mailchimp.com/oauth2/authorize?` +
@@ -63,6 +67,11 @@ const handler = async (req: Request): Promise<Response> => {
       // Exchange code for access token
       const clientId = Deno.env.get('MAILCHIMP_CLIENT_ID');
       const clientSecret = Deno.env.get('MAILCHIMP_CLIENT_SECRET');
+      
+      if (!clientId || !clientSecret) {
+        throw new Error('Mailchimp credentials not configured');
+      }
+      
       const redirectUri = `${req.url.split('/functions/')[0]}/functions/v1/mailchimp-oauth`;
 
       const tokenResponse = await fetch('https://login.mailchimp.com/oauth2/token', {
@@ -72,8 +81,8 @@ const handler = async (req: Request): Promise<Response> => {
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
-          client_id: clientId!,
-          client_secret: clientSecret!,
+          client_id: clientId,
+          client_secret: clientSecret,
           code,
           redirect_uri: redirectUri,
         }),
