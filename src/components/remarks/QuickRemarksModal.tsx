@@ -11,8 +11,9 @@ import type { RemarkEntry } from '@/types/lead';
 import { QuickRemarksModalHeader } from './QuickRemarksModalHeader';
 import { RemarkHistoryView } from './RemarkHistoryView';
 import { QuickRemarksModalControls } from './QuickRemarksModalControls';
+import { useIsMobile } from '@/hooks/use-mobile';
 
-// Improved modal layout to ensure controls never overflow
+// Improved modal layout to ensure controls never overflow and better mobile support
 interface QuickRemarksModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -34,6 +35,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   const [editValue, setEditValue] = useState(''); // Always start with empty string for new remarks
   const [showHistory, setShowHistory] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
@@ -54,7 +56,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   useEffect(() => {
     if (!open || !isEditing) return;
     function onKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if ((e.ctrlKey || e.metaCmd) && e.key === 'Enter') {
         handleSave();
       }
       if (e.key === 'Escape') {
@@ -104,7 +106,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleModalCloseIntent(); }}>
-      <DialogContent className="max-w-screen-sm w-full px-3 py-5 sm:p-6 rounded-2xl space-y-3 flex flex-col animate-fade-in">
+      <DialogContent className={`w-full ${isMobile ? 'max-w-[95vw] mx-2 max-h-[90vh]' : 'max-w-screen-sm'} px-3 py-5 sm:p-6 rounded-2xl space-y-3 flex flex-col animate-fade-in`}>
 
         <DialogHeader>
           <QuickRemarksModalHeader
@@ -120,20 +122,20 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
               ref={textareaRef}
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
-              className="w-full min-h-[90px] max-h-[160px] text-base resize-none border-primary/30 focus:border-primary/50 whitespace-pre-wrap break-words shadow-sm"
+              className={`w-full ${isMobile ? 'min-h-[80px] max-h-[120px] text-sm' : 'min-h-[90px] max-h-[160px] text-base'} resize-none border-primary/30 focus:border-primary/50 whitespace-pre-wrap break-words shadow-sm`}
               placeholder="Type a new remark..."
               tabIndex={0}
               aria-label="Add New Remark"
             />
           ) : (
-            <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10">
+            <div className={`w-full ${isMobile ? 'text-sm' : 'text-base'} whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10`}>
               {initialRemarks || <span className="text-muted-foreground italic">No remark. Click 'Add New Remark' to add.</span>}
             </div>
           )}
         </div>
 
         {/* Controls are always at the bottom, never floating outside modal */}
-        <DialogFooter className="gap-2 mt-2 w-full">
+        <DialogFooter className={`gap-2 mt-2 w-full ${isMobile ? 'flex-col space-y-2' : ''}`}>
           <QuickRemarksModalControls
             isEditing={isEditing}
             remarksHistoryCount={initialRemarksHistory.length}
@@ -155,9 +157,11 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
           </div>
         )}
 
-        <div className="block sm:hidden text-xs text-center text-muted-foreground mt-2">
-          Tap outside or swipe down to close
-        </div>
+        {isMobile && (
+          <div className="text-xs text-center text-muted-foreground mt-2">
+            Tap outside or swipe down to close
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

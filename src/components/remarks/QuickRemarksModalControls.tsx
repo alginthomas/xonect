@@ -3,6 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, History, Save, X } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface QuickRemarksModalControlsProps {
   isEditing: boolean;
@@ -23,14 +24,25 @@ export const QuickRemarksModalControls: React.FC<QuickRemarksModalControlsProps>
   onSave,
   onCancelEditing,
 }) => {
-  // Layout update: always stack buttons horizontally, inline with Apple/HIG and keep within modal at all sizes
+  const isMobile = useIsMobile();
+
+  // Mobile-first layout: stack buttons for better touch interaction
   if (isEditing) {
     return (
-      <div className="flex gap-3 w-full justify-end">
-        <Button size="lg" className="px-5 py-2 text-base" onClick={onSave}>
+      <div className={`flex w-full ${isMobile ? 'flex-col gap-2' : 'gap-3 justify-end'}`}>
+        <Button 
+          size={isMobile ? "default" : "lg"} 
+          className={`${isMobile ? 'w-full h-11' : 'px-5 py-2'} text-base`} 
+          onClick={onSave}
+        >
           <Save className="h-4 w-4 mr-2" /> Save
         </Button>
-        <Button size="lg" variant="outline" className="px-5 py-2 text-base" onClick={onCancelEditing}>
+        <Button 
+          size={isMobile ? "default" : "lg"} 
+          variant="outline" 
+          className={`${isMobile ? 'w-full h-11' : 'px-5 py-2'} text-base`} 
+          onClick={onCancelEditing}
+        >
           <X className="h-4 w-4 mr-2" /> Cancel
         </Button>
       </div>
@@ -38,17 +50,21 @@ export const QuickRemarksModalControls: React.FC<QuickRemarksModalControlsProps>
   }
 
   return (
-    <div className="flex w-full gap-3 justify-end">
-      <Button size="lg" className="px-5 py-2 text-base" onClick={() => onSetIsEditing(true)}>
+    <div className={`flex w-full ${isMobile ? 'flex-col gap-2' : 'gap-3 justify-end'}`}>
+      <Button 
+        size={isMobile ? "default" : "lg"} 
+        className={`${isMobile ? 'w-full h-11' : 'px-5 py-2'} text-base`} 
+        onClick={() => onSetIsEditing(true)}
+      >
         <Plus className="h-4 w-4 mr-2" />
         Add New Remark
       </Button>
       {remarksHistoryCount > 0 && (
         <Button
-          size="lg"
+          size={isMobile ? "default" : "lg"}
           variant={showHistory ? "default" : "outline"}
           onClick={onToggleHistory}
-          className="px-4 py-2 text-base flex items-center"
+          className={`${isMobile ? 'w-full h-11' : 'px-4 py-2'} text-base flex items-center ${isMobile ? 'justify-center' : ''}`}
         >
           <History className="h-4 w-4 mr-2" />
           {showHistory ? 'Hide History' : 'Show History'}
