@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { generateFileHash } from '@/utils/duplicateDetection';
+import { generateFileHash, preventDuplicateImport } from '@/utils/duplicateDetection';
 import type { Category } from '@/types/category';
 
 interface UseCSVImportProps {
@@ -127,6 +127,19 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
         throw new Error('User not authenticated');
       }
 
+      // Fetch existing leads for duplicate detection
+      const { data: existingLeads, error: leadsError } = await supabase
+        .from('leads')
+        .select('id, email, phone, first_name, last_name, company, created_at, status, completeness_score, emails_sent, last_contact_date')
+        .eq('user_id', user.id);
+
+      if (leadsError) {
+        console.error('Error fetching existing leads:', leadsError);
+        throw leadsError;
+      }
+
+      console.log('📊 Fetched existing leads for duplicate check:', existingLeads?.length || 0);
+
       let categoryId: string | undefined;
 
       // Create or find category if provided
@@ -157,6 +170,33 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
         }
       }
 
+      // Map CSV data to leads format
+      const potentialLeads = csvData.map(row => mapCSVToLead(row, categoryId, null, user.id));
+
+      // Filter out duplicates using enhanced duplicate detection
+      const { allowedLeads, blockedLeads, warnings } = preventDuplicateImport(
+        potentialLeads,
+        existingLeads || [],
+        true // Use strict mode for better duplicate prevention
+      );
+
+      console.log('🔍 Duplicate detection results:', {
+        totalProcessed: potentialLeads.length,
+        allowedLeads: allowedLeads.length,
+        blockedLeads: blockedLeads.length,
+        warnings
+      });
+
+      // Show warnings to user if there are duplicates
+      if (blockedLeads.length > 0) {
+        const duplicateCount = blockedLeads.length;
+        toast({
+          title: "Duplicates Detected",
+          description: `${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} found and skipped. ${allowedLeads.length} unique leads will be imported.`,
+          variant: "default"
+        });
+      }
+
       // Create import batch record
       const fileHash = generateFileHash(JSON.stringify(csvData));
       const { data: importBatch, error: batchError } = await supabase
@@ -166,7 +206,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
           source_file: fileName,
           total_leads: csvData.length,
           successful_imports: 0,
-          failed_imports: 0,
+          failed_imports: blockedLeads.length,
           category_id: categoryId,
           user_id: user.id,
           metadata: {
@@ -174,7 +214,10 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
             importDate: new Date().toISOString(),
             fileName,
             originalRowCount: csvData.length,
-            columnNames: Object.keys(csvData[0] || {})
+            uniqueLeadsCount: allowedLeads.length,
+            duplicatesSkipped: blockedLeads.length,
+            columnNames: Object.keys(csvData[0] || {}),
+            duplicateReasons: blockedLeads.map(b => b.reason)
           }
         })
         .select()
@@ -183,18 +226,40 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       if (batchError) throw batchError;
       console.log('📦 Created import batch:', importBatch);
 
-      // Process and insert leads
-      const leads = csvData.map(row => mapCSVToLead(row, categoryId, importBatch.id, user.id));
+      // Only process unique leads
+      if (allowedLeads.length === 0) {
+        toast({
+          title: "No New Leads",
+          description: "All leads in the CSV already exist in your database. No new leads were imported.",
+          variant: "default"
+        });
+        
+        // Update import batch with final counts
+        await supabase
+          .from('import_batches')
+          .update({
+            successful_imports: 0,
+            failed_imports: blockedLeads.length
+          })
+          .eq('id', importBatch.id);
 
-      console.log('📊 Sample mapped lead for debugging:', leads[0]);
+        onImportComplete();
+        return true;
+      }
+
+      // Add import batch ID to allowed leads
+      const leadsToInsert = allowedLeads.map(lead => ({
+        ...lead,
+        import_batch_id: importBatch.id
+      }));
 
       // Insert leads in batches to avoid overwhelming the database
       const batchSize = 100;
       let successfulImports = 0;
-      let failedImports = 0;
+      let failedImports = blockedLeads.length; // Start with duplicates count
 
-      for (let i = 0; i < leads.length; i += batchSize) {
-        const batch = leads.slice(i, i + batchSize);
+      for (let i = 0; i < leadsToInsert.length; i += batchSize) {
+        const batch = leadsToInsert.slice(i, i + batchSize);
         
         console.log(`📥 Inserting batch ${Math.floor(i/batchSize) + 1}:`, {
           batchStart: i,
@@ -228,12 +293,17 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       console.log('🎉 Import completed:', {
         successfulImports,
         failedImports,
-        totalProcessed: successfulImports + failedImports
+        totalProcessed: successfulImports + failedImports,
+        duplicatesSkipped: blockedLeads.length
       });
 
+      const message = successfulImports > 0 
+        ? `"${importName}" has been imported successfully. ${successfulImports} unique leads imported${blockedLeads.length > 0 ? `, ${blockedLeads.length} duplicates skipped` : ''}.`
+        : `Import completed. ${blockedLeads.length} duplicates were detected and skipped. No new leads were added.`;
+
       toast({
-        title: "Import Successful",
-        description: `"${importName}" has been imported successfully. ${successfulImports} leads imported${failedImports > 0 ? `, ${failedImports} failed` : ''}.`
+        title: "Import Completed",
+        description: message
       });
 
       onImportComplete();
