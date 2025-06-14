@@ -11,7 +11,8 @@ import {
   User, 
   Download, 
   MessageSquare, 
-  LogOut
+  LogOut,
+  Copy
 } from 'lucide-react';
 
 interface MobileNavigationProps {
@@ -32,6 +33,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
     { id: 'leads', label: 'Leads', icon: User },
     { id: 'import', label: 'Import', icon: Download },
     { id: 'categories', label: 'Categories', icon: MessageSquare },
+    { id: 'duplicates', label: 'Duplicates', icon: Copy },
   ];
 
   const handleNavigation = (tabId: string) => {

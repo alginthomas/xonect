@@ -30,9 +30,6 @@ const Header: React.FC<HeaderProps> = ({
   }, {
     id: 'duplicates',
     label: 'Duplicates'
-  }, {
-    id: 'history',
-    label: 'History'
   }];
 
   return (

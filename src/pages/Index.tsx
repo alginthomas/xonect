@@ -654,17 +654,6 @@ const Index = () => {
           }}
         />
       )}
-
-      {activeTab === 'history' && (
-        <ImportHistory 
-          leads={leads}
-          importBatches={importBatches}
-          categories={categories}
-          onDeleteBatch={handleDeleteBatchWrapper}
-          onViewBatchLeads={setSelectedBatchId}
-          onRefreshData={handleRefreshAllData}
-        />
-      )}
     </AppleLayout>
   );
 };
