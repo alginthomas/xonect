@@ -93,7 +93,11 @@ const Index = () => {
         facebookUrl: lead.facebook_url || '',
         organizationFounded: lead.organization_founded,
         remarksHistory: Array.isArray(lead.remarks_history) 
-          ? (lead.remarks_history as unknown as RemarkEntry[]) 
+          ? (lead.remarks_history as any[]).map((entry: any) => ({
+              id: entry.id,
+              text: entry.text,
+              timestamp: typeof entry.timestamp === 'string' ? new Date(entry.timestamp) : entry.timestamp
+            }))
           : [],
         activityLog: Array.isArray(lead.activity_log) 
           ? (lead.activity_log as unknown as ActivityEntry[]) 
@@ -340,14 +344,8 @@ const Index = () => {
 
       if (error) throw error;
 
-      // Update the local state
-      setLeads(prevLeads => 
-        prevLeads.map(lead => 
-          lead.id === leadId 
-            ? { ...lead, ...updates }
-            : lead
-        )
-      );
+      // Refresh the leads data from the database
+      await refetchLeads();
 
       console.log('Lead updated successfully:', leadId, updates);
     } catch (error: any) {
