@@ -43,8 +43,8 @@ export const useLeadsCache = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.CATEGORY_FILTER, 'all'));
   const [dataAvailabilityFilter, setDataAvailabilityFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.DATA_AVAILABILITY_FILTER, 'all'));
   const [countryFilter, setCountryFilter] = useState<string>(() => loadFromCache(CACHE_KEYS.COUNTRY_FILTER, 'all'));
-  const [sortField, setSortField] = useState<string>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, 'createdAt'));
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
+  const [sortField, setSortField] = useState<string>(() => loadFromCache(CACHE_KEYS.SORT_FIELD, ''));
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'asc'));
   const [currentPage, setCurrentPage] = useState(() => loadFromCache(CACHE_KEYS.CURRENT_PAGE, 1));
   const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 25));
   const [navigationFilter, setNavigationFilter] = useState<{ status?: string; [key: string]: any } | undefined>(() => loadFromCache(CACHE_KEYS.NAVIGATION_FILTER, undefined));
