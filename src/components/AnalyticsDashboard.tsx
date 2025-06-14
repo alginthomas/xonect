@@ -14,7 +14,7 @@ interface AnalyticsDashboardProps {
   templates: EmailTemplate[];
   categories: Category[];
   importBatches: ImportBatch[];
-  onNavigateToLeads: (filter?: any) => void;
+  onNavigateToLeads: (filter?: { status?: string; [key: string]: any }) => void;
 }
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6'];
@@ -94,7 +94,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }));
   }, [leads]);
 
-  // Weekly performance data
   const weeklyData = useMemo(() => {
     const last4Weeks = Array.from({ length: 4 }, (_, i) => {
       const weekStart = startOfWeek(subDays(new Date(), i * 7));
@@ -115,7 +114,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return last4Weeks;
   }, [leads]);
 
-  // Top performing categories
   const categoryPerformance = useMemo(() => {
     return categories.slice(0, 5).map(category => {
       const categoryLeads = leads.filter(l => l.categoryId === category.id);
@@ -197,7 +195,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Status Overview Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
-        <Card className="apple-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigateToLeads({ status: 'New' })}>
+        <Card 
+          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => onNavigateToLeads({ status: 'New' })}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
               <Clock className="h-5 w-5 text-gray-500" />
@@ -207,7 +208,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="apple-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigateToLeads({ status: 'Contacted' })}>
+        <Card 
+          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => onNavigateToLeads({ status: 'Contacted' })}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
               <Mail className="h-5 w-5 text-blue-500" />
@@ -217,7 +221,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="apple-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigateToLeads({ status: 'Qualified' })}>
+        <Card 
+          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => onNavigateToLeads({ status: 'Qualified' })}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
@@ -227,7 +234,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="apple-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigateToLeads({ status: 'Interested' })}>
+        <Card 
+          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => onNavigateToLeads({ status: 'Interested' })}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
               <Eye className="h-5 w-5 text-purple-500" />
@@ -237,7 +247,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           </CardContent>
         </Card>
 
-        <Card className="apple-card cursor-pointer hover:shadow-md transition-shadow" onClick={() => onNavigateToLeads({ status: 'Not Interested' })}>
+        <Card 
+          className="apple-card cursor-pointer hover:shadow-md transition-shadow" 
+          onClick={() => onNavigateToLeads({ status: 'Not Interested' })}
+        >
           <CardContent className="p-4 text-center">
             <div className="flex items-center justify-center mb-2">
               <XCircle className="h-5 w-5 text-red-500" />
@@ -378,7 +391,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
               <Button 
                 variant="outline" 
                 className="w-full justify-start h-12"
-                onClick={() => onNavigateToLeads()}
+                onClick={() => onNavigateToLeads({})}
               >
                 <Database className="h-4 w-4 mr-3" />
                 <div className="text-left">
