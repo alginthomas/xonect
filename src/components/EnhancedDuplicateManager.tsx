@@ -103,14 +103,14 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
       <div className="flex-1 flex flex-col overflow-hidden">
         <Tabs defaultValue="groups" className="flex-1 flex flex-col">
           <div className="flex-shrink-0 px-4 py-3 border-b bg-background">
-            <TabsList className="grid w-full grid-cols-3 h-9">
-              <TabsTrigger value="groups" className="text-sm px-3">
+            <TabsList className="grid w-full grid-cols-3 h-9 p-1 bg-muted">
+              <TabsTrigger value="groups" className="text-sm px-3 data-[state=active]:bg-background">
                 Groups
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="text-sm px-3">
+              <TabsTrigger value="analytics" className="text-sm px-3 data-[state=active]:bg-background">
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="bulk" className="text-sm px-3">
+              <TabsTrigger value="bulk" className="text-sm px-3 data-[state=active]:bg-background">
                 Actions
               </TabsTrigger>
             </TabsList>
