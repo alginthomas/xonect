@@ -22,12 +22,27 @@ export const exportLeadsToCSV = (leads: Lead[], categories: Category[], filename
     'Category',
     'Completeness Score',
     'Tags',
+    'Remarks',
+    'Remarks History',
     'Created At'
   ];
 
   // Convert leads to CSV rows
   const rows = leads.map(lead => {
     const category = categories.find(cat => cat.id === lead.categoryId);
+    
+    // Format remarks history into a readable string
+    const formatRemarksHistory = (remarksHistory?: import('@/types/lead').RemarkEntry[]) => {
+      if (!remarksHistory || remarksHistory.length === 0) return '';
+      
+      return remarksHistory
+        .map(entry => {
+          const date = new Date(entry.timestamp).toLocaleDateString();
+          const time = new Date(entry.timestamp).toLocaleTimeString();
+          return `${date} ${time}: ${entry.text}`;
+        })
+        .join(' | ');
+    };
     
     return [
       lead.firstName || '',
@@ -47,6 +62,8 @@ export const exportLeadsToCSV = (leads: Lead[], categories: Category[], filename
       category?.name || '',
       lead.completenessScore?.toString() || '0',
       lead.tags?.join('; ') || '',
+      lead.remarks || '',
+      formatRemarksHistory(lead.remarksHistory),
       new Date(lead.createdAt).toLocaleDateString()
     ];
   });
