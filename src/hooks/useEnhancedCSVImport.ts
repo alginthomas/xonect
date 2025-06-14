@@ -230,20 +230,26 @@ export const useEnhancedCSVImport = ({
         user.id,
         csvData.length,
         0,
-        totalDuplicates
+        totalDuplicates,
+        fileHash || undefined
       );
 
       // Update batch metadata with enhanced file hash
       if (fileHash) {
+        const updatedMetadata = {
+          ...importBatch.metadata,
+          contentHash: fileHash.contentHash,
+          structureHash: fileHash.structureHash,
+          combinedHash: fileHash.combinedHash,
+          fileMetadata: fileHash.metadata,
+          validationResult,
+          importDate: new Date().toISOString()
+        };
+
         await supabase
           .from('import_batches')
           .update({
-            metadata: {
-              ...importBatch.metadata,
-              ...fileHash,
-              validationResult,
-              importDate: new Date().toISOString()
-            }
+            metadata: updatedMetadata
           })
           .eq('id', importBatch.id);
       }
