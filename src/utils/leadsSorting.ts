@@ -16,10 +16,27 @@ export const sortLeads = (leads: Lead[], sortField: string, sortDirection: 'asc'
     if (aValue == null) return sortDirection === 'asc' ? 1 : -1;
     if (bValue == null) return sortDirection === 'asc' ? -1 : 1;
 
+    // Handle special field mappings for nested data
+    if (sortField === 'category') {
+      // For category sorting, we would need category names but since we don't have access to categories here,
+      // we'll sort by categoryId for now
+      aValue = a.categoryId || '';
+      bValue = b.categoryId || '';
+    }
+
+    // Handle date fields
     if (aValue instanceof Date) aValue = aValue.getTime();
     if (bValue instanceof Date) bValue = bValue.getTime();
+    
+    // Handle string fields (case-insensitive)
     if (typeof aValue === 'string') aValue = aValue.toLowerCase();
     if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+    // Handle numeric fields
+    if (sortField === 'emailsSent' || sortField === 'companySize') {
+      aValue = Number(aValue) || 0;
+      bValue = Number(bValue) || 0;
+    }
 
     if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;

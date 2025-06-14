@@ -17,7 +17,7 @@ import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/le
 import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('dashboard'); // Default to 'dashboard'
+  const [activeTab, setActiveTab] = useState('leads'); // Changed from 'dashboard' to 'leads'
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
   const { deleteBatch } = useImportBatchOperations();
