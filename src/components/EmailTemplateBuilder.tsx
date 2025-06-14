@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -84,7 +85,6 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
         content: templateContent,
         variables: availableVariables,
         createdAt: selectedTemplate?.createdAt || new Date(),
-        updatedAt: new Date(),
         lastUsed: selectedTemplate?.lastUsed
       };
 
