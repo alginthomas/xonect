@@ -1,4 +1,3 @@
-
 import { useMemo, useRef, useEffect } from 'react';
 import type { LeadsFilteringProps, FilteringResult } from '@/types/filtering';
 import { filterLeads } from '@/utils/leadsFiltering';
@@ -26,9 +25,9 @@ export const useLeadsFiltering = ({
   setCurrentPage,
   navigationFilter
 }: LeadsFilteringProps): FilteringResult => {
-  // Keep track of the previous sorted order to maintain stability
-  const previousSortedLeadsRef = useRef<string[]>([]);
-  const previousLeadsDataRef = useRef<Map<string, { remarks: string; status: string }>>(new Map());
+  // Keep track of the stable order when no explicit sorting is applied
+  const stableOrderRef = useRef<string[]>([]);
+  const lastSortCriteriaRef = useRef<{ field?: string; direction?: 'asc' | 'desc' }>({});
   
   // Memoized filtering to improve performance
   const filteredLeads = useMemo(() => {
@@ -67,79 +66,70 @@ export const useLeadsFiltering = ({
     navigationFilter
   ]);
 
-  // Memoized sorting with stability for remarks and status updates
+  // Check if sort criteria has changed
+  const sortCriteriaChanged = useMemo(() => {
+    const current = { field: sortField, direction: sortDirection };
+    const previous = lastSortCriteriaRef.current;
+    return current.field !== previous.field || current.direction !== previous.direction;
+  }, [sortField, sortDirection]);
+
+  // Memoized sorting with complete stability preservation
   const sortedLeads = useMemo(() => {
-    const newSorted = sortLeads(filteredLeads, sortField, sortDirection);
-    const newSortedIds = newSorted.map(lead => lead.id);
-    
-    // Create current data map for comparison
-    const currentLeadsData = new Map(
-      newSorted.map(lead => [
-        lead.id, 
-        { remarks: lead.remarks || '', status: lead.status }
-      ])
-    );
-    
-    // If we have the same leads as before, try to preserve order for minor updates
-    if (previousSortedLeadsRef.current.length === newSortedIds.length) {
-      const sameLeads = previousSortedLeadsRef.current.every(id => newSortedIds.includes(id));
+    // If sort criteria changed, apply new sort and update stable order
+    if (sortCriteriaChanged) {
+      console.log('Sort criteria changed, applying new sort order');
+      const newSorted = sortLeads(filteredLeads, sortField, sortDirection);
+      const newOrder = newSorted.map(lead => lead.id);
       
-      if (sameLeads) {
-        // Check if only remarks or status changed (not other sortable fields)
-        let onlyMinorChanges = true;
+      // Update references
+      stableOrderRef.current = newOrder;
+      lastSortCriteriaRef.current = { field: sortField, direction: sortDirection };
+      
+      return newSorted;
+    }
+
+    // If we have a stable order and same leads, preserve it completely
+    if (stableOrderRef.current.length > 0) {
+      const currentIds = new Set(filteredLeads.map(lead => lead.id));
+      const stableIds = stableOrderRef.current.filter(id => currentIds.has(id));
+      
+      // Check if we have the same set of leads
+      if (stableIds.length === filteredLeads.length && 
+          filteredLeads.every(lead => stableIds.includes(lead.id))) {
         
-        for (const id of previousSortedLeadsRef.current) {
-          const prevData = previousLeadsDataRef.current.get(id);
-          const currentData = currentLeadsData.get(id);
-          
-          if (!prevData || !currentData) {
-            onlyMinorChanges = false;
-            break;
-          }
-          
-          // Only preserve order if ONLY remarks or status changed
-          const remarksChanged = prevData.remarks !== currentData.remarks;
-          const statusChanged = prevData.status !== currentData.status;
-          
-          // If neither remarks nor status changed, but lead is in different position,
-          // it means other fields changed that affect sorting
-          if (!remarksChanged && !statusChanged) {
-            const prevIndex = previousSortedLeadsRef.current.indexOf(id);
-            const newIndex = newSortedIds.indexOf(id);
-            if (prevIndex !== newIndex) {
-              onlyMinorChanges = false;
-              break;
-            }
-          }
-        }
+        console.log('Preserving stable order for status/remarks updates');
         
-        if (onlyMinorChanges) {
-          const preservedOrder = previousSortedLeadsRef.current.map(id => 
-            newSorted.find(lead => lead.id === id)
-          ).filter(Boolean);
-          
-          if (preservedOrder.length === newSorted.length) {
-            console.log('Preserving lead order for minor updates');
-            previousSortedLeadsRef.current = newSortedIds;
-            previousLeadsDataRef.current = currentLeadsData;
-            return preservedOrder;
-          }
-        }
+        // Preserve the exact order from stable reference
+        const preservedOrder = stableIds.map(id => 
+          filteredLeads.find(lead => lead.id === id)
+        ).filter(Boolean);
+        
+        return preservedOrder;
       }
     }
-    
-    // Update the references for next comparison
-    console.log('Applying new sort order');
-    previousSortedLeadsRef.current = newSortedIds;
-    previousLeadsDataRef.current = currentLeadsData;
-    return newSorted;
-  }, [filteredLeads, sortField, sortDirection]);
 
-  // Reset references when sort criteria changes
+    // Fallback: apply sort and establish new stable order
+    console.log('Establishing new stable order');
+    const newSorted = sortLeads(filteredLeads, sortField, sortDirection);
+    stableOrderRef.current = newSorted.map(lead => lead.id);
+    lastSortCriteriaRef.current = { field: sortField, direction: sortDirection };
+    
+    return newSorted;
+  }, [filteredLeads, sortField, sortDirection, sortCriteriaChanged]);
+
+  // Reset stable order when filters change (not just sort)
   useEffect(() => {
-    previousSortedLeadsRef.current = [];
-    previousLeadsDataRef.current = new Map();
-  }, [sortField, sortDirection]);
+    // Only reset if filters actually changed, not just status/remarks updates
+    const hasFilterChanges = selectedBatchId || searchQuery || searchTerm || 
+      selectedStatus !== 'all' || selectedCategory !== 'all' || 
+      countryFilter !== 'all' || duplicatePhoneFilter !== 'all' || 
+      selectedDataFilter !== 'all' || navigationFilter;
+    
+    if (hasFilterChanges) {
+      stableOrderRef.current = [];
+    }
+  }, [selectedBatchId, searchQuery, searchTerm, selectedCategory, 
+      countryFilter, duplicatePhoneFilter, selectedDataFilter, navigationFilter]);
 
   // Pagination calculations
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
