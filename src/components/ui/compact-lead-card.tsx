@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -10,7 +11,8 @@ import {
   Globe,
   MessageSquare,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  MoreHorizontal
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { QuickRemarksCell } from '@/components/QuickRemarksCell';
@@ -45,6 +47,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 }) => {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
   const [showRemarks, setShowRemarks] = useState(false);
+  const [showFullRemarks, setShowFullRemarks] = useState(false);
 
   const handleCallAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -106,6 +109,13 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   const handleRemarksUpdateWrapper = (remarks: string, remarksHistory: import('@/types/lead').RemarkEntry[]) => {
     onRemarksUpdate(remarks);
   };
+
+  // Truncate remarks for preview
+  const remarksPreview = lead.remarks && lead.remarks.length > 100 
+    ? lead.remarks.substring(0, 100) + '...' 
+    : lead.remarks;
+
+  const hasLongRemarks = lead.remarks && lead.remarks.length > 100;
 
   return (
     <Card 
@@ -182,7 +192,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           )}
         </div>
 
-        {/* Remarks Section */}
+        {/* Compact Remarks Section */}
         <div className="mb-4 sm:mb-5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -194,20 +204,42 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
                 </Badge>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2"
-              onClick={() => setShowRemarks(!showRemarks)}
-            >
-              {showRemarks ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
+            <div className="flex items-center gap-1">
+              {hasLongRemarks && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-xs"
+                  onClick={() => setShowFullRemarks(!showFullRemarks)}
+                >
+                  {showFullRemarks ? 'Show Less' : 'Show More'}
+                </Button>
               )}
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2"
+                onClick={() => setShowRemarks(!showRemarks)}
+              >
+                {showRemarks ? (
+                  <ChevronUp className="h-3 w-3" />
+                ) : (
+                  <ChevronDown className="h-3 w-3" />
+                )}
+              </Button>
+            </div>
           </div>
           
+          {/* Remarks Preview */}
+          {lead.remarks && !showRemarks && (
+            <div className="bg-muted/20 rounded-lg p-2 border border-border/20">
+              <p className="text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap">
+                {showFullRemarks ? lead.remarks : remarksPreview}
+              </p>
+            </div>
+          )}
+          
+          {/* Full Remarks Editor */}
           {showRemarks && (
             <div className="bg-muted/30 rounded-lg p-3">
               <QuickRemarksCell
