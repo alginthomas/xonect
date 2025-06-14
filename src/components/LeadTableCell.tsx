@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,7 +10,7 @@ import { QuickActionsCell } from '@/components/QuickActionsCell';
 import { Mail, Phone, Linkedin, Globe, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { copyEmailOnly } from '@/utils/emailUtils';
-import type { Lead, LeadStatus } from '@/types/lead';
+import type { Lead, LeadStatus, RemarkEntry } from '@/types/lead';
 import type { Category } from '@/types/category';
 
 interface LeadTableCellProps {
