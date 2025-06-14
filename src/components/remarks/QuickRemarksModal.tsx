@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -56,7 +55,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   useEffect(() => {
     if (!open || !isEditing) return;
     function onKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaCmd) && e.key === 'Enter') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         handleSave();
       }
       if (e.key === 'Escape') {
