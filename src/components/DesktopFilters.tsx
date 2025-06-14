@@ -23,6 +23,8 @@ interface DesktopFiltersProps {
   onCountryChange?: (value: string) => void;
   duplicatePhoneFilter?: string;
   onDuplicatePhoneChange?: (value: string) => void;
+  remarksFilter?: string;
+  onRemarksChange?: (value: string) => void;
   categories: Category[];
   leads: Lead[];
   onExport: () => void;
@@ -46,6 +48,8 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onCountryChange,
   duplicatePhoneFilter = 'all',
   onDuplicatePhoneChange,
+  remarksFilter = 'all',
+  onRemarksChange,
   categories,
   leads,
   onExport,
@@ -55,8 +59,11 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onToggleColumnVisibility,
   onResetColumns
 }) => {
-  // Calculate total active filters including country and duplicate phone filter
-  const totalActiveFilters = activeFiltersCount + (countryFilter !== 'all' ? 1 : 0) + (duplicatePhoneFilter !== 'all' ? 1 : 0);
+  // Calculate total active filters including country, duplicate phone, and remarks filter
+  const totalActiveFilters = activeFiltersCount + 
+    (countryFilter !== 'all' ? 1 : 0) + 
+    (duplicatePhoneFilter !== 'all' ? 1 : 0) + 
+    (remarksFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -89,6 +96,8 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                 onCountryChange={onCountryChange}
                 duplicatePhoneFilter={duplicatePhoneFilter}
                 onDuplicatePhoneChange={onDuplicatePhoneChange}
+                remarksFilter={remarksFilter}
+                onRemarksChange={onRemarksChange}
                 leads={leads}
               />
 
@@ -115,6 +124,8 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
               onCountryChange={onCountryChange}
               duplicatePhoneFilter={duplicatePhoneFilter}
               onDuplicatePhoneChange={onDuplicatePhoneChange}
+              remarksFilter={remarksFilter}
+              onRemarksChange={onRemarksChange}
               categories={categories}
             />
           </div>

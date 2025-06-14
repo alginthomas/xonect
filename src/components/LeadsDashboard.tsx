@@ -74,6 +74,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setCountryFilter,
     duplicatePhoneFilter,
     setDuplicatePhoneFilter,
+    remarksFilter,
+    setRemarksFilter,
     sortField,
     setSortField,
     sortDirection,
@@ -149,6 +151,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   const handleDuplicatePhoneChange = (value: string) => {
     setDuplicatePhoneFilter(value as 'all' | 'unique-only' | 'duplicates-only');
+  };
+
+  const handleRemarksChange = (value: string) => {
+    setRemarksFilter(value as 'all' | 'has-remarks' | 'no-remarks');
   };
 
   const clearNavigationFilter = () => {
@@ -338,6 +344,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             onCountryChange={setCountryFilter}
             duplicatePhoneFilter={duplicatePhoneFilter}
             onDuplicatePhoneChange={handleDuplicatePhoneChange}
+            remarksFilter={remarksFilter}
+            onRemarksChange={handleRemarksChange}
             categories={categories}
             leads={leads}
             onExport={handleExport}
