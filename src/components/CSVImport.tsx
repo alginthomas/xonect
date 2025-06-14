@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag, Trash2 } from 'lucide-react';
+import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag, Trash2, Eye } from 'lucide-react';
 import { generateFileHash, checkFileAlreadyImported } from '@/utils/duplicateDetection';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogAction,
 } from '@/components/ui/alert-dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface CSVImportProps {
   categories: Category[];
@@ -32,7 +33,7 @@ interface CSVImportProps {
   onCreateCategory: (categoryData: Partial<Category>) => Promise<void>;
   existingLeads: Lead[];
   importBatches: ImportBatch[];
-  onDeleteBatch?: (batchId: string, batchName?: string) => void; // ADDED
+  onDeleteBatch?: (batchId: string, batchName?: string) => void;
 }
 
 export const CSVImport: React.FC<CSVImportProps> = ({
@@ -41,7 +42,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   onCreateCategory,
   existingLeads,
   importBatches,
-  onDeleteBatch // ADDED
+  onDeleteBatch
 }) => {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
@@ -54,6 +55,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [deletingBatchName, setDeletingBatchName] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const clearFile = useCallback(() => {
     setCsvData([]);
@@ -170,7 +172,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       
       toast({
         title: "Import Successful",
-        description: `"${importName}" has been imported successfully.`
+        description: `"${importName}" has been imported successfully."
       });
     } catch (error) {
       toast({
@@ -197,19 +199,21 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     return "destructive";
   };
 
-  const isReadyToImport = csvData.length > 0 && 
-                         !isDuplicateFile && 
-                         !fileError && 
-                         importName.trim() !== '';
+  const getBatchLeadCount = (batchId: string) => {
+    return existingLeads.filter(lead => lead.importBatchId === batchId).length;
+  };
 
-  // ADD THIS HANDLER FOR DELETE BUTTON
+  const handleViewBatchLeads = (batchId: string) => {
+    // Navigate to leads page with the specific batch selected
+    navigate(`/?tab=leads&batch=${batchId}`);
+  };
+
   const handleDeleteBatch = (batchId: string, batchName?: string) => {
     setDeletingBatchId(batchId);
     setDeletingBatchName(batchName || '');
     setDeleteDialogOpen(true);
   };
 
-  // ADD THIS HANDLER FOR CONFIRM DELETE BUTTON
   const handleConfirmDelete = async () => {
     if (deletingBatchId && onDeleteBatch) {
       await onDeleteBatch(deletingBatchId, deletingBatchName || undefined);
@@ -222,6 +226,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     setDeletingBatchId(null);
     setDeletingBatchName(null);
   };
+
+  const isReadyToImport = csvData.length > 0 && 
+                         !isDuplicateFile && 
+                         !fileError && 
+                         importName.trim() !== '';
 
   return (
     <div className="h-full flex flex-col">
@@ -455,7 +464,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
               </div>
               <h1 className="text-2xl font-semibold">Import History</h1>
               <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base">
-                Review your previous CSV imports and their status.
+                Review your previous CSV imports and manage your batches.
               </p>
             </div>
 
@@ -472,65 +481,104 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   </CardContent>
                 </Card>
               ) : (
-                importBatches.map((batch) => (
-                  <Card key={batch.id}>
-                    <CardContent className="p-4 sm:p-6">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div className="space-y-2 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-medium text-base truncate">{batch.name}</h3>
-                            <Badge variant={getStatusBadgeVariant(batch)} className="text-xs">
-                              {batch.failedImports === 0 ? 'Complete' : 'Partial'}
-                            </Badge>
-                          </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              <span>{format(batch.createdAt, 'MMM d, yyyy')}</span>
+                importBatches.map((batch) => {
+                  const leadCount = getBatchLeadCount(batch.id);
+                  
+                  return (
+                    <Card key={batch.id} className="border-l-4 border-l-blue-500">
+                      <CardContent className="p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                          <div className="space-y-2 min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-medium text-base truncate">{batch.name}</h3>
+                              <Badge variant={getStatusBadgeVariant(batch)} className="text-xs">
+                                {batch.failedImports === 0 ? 'Complete' : 'Partial'}
+                              </Badge>
+                              {batch.categoryId && (
+                                <Badge variant="outline" className="text-xs">
+                                  {categories.find(cat => cat.id === batch.categoryId)?.name || 'Unknown Category'}
+                                </Badge>
+                              )}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Users className="h-4 w-4" />
-                              <span>{batch.totalLeads} leads</span>
+                            <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                <span>{format(batch.createdAt, 'MMM d, yyyy')}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Users className="h-4 w-4" />
+                                <span>{batch.totalLeads} total leads</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Eye className="h-4 w-4" />
+                                <span>{leadCount} current leads</span>
+                              </div>
                             </div>
+                            {batch.sourceFile && (
+                              <div className="text-sm text-muted-foreground">
+                                Source: {batch.sourceFile}
+                              </div>
+                            )}
                           </div>
-                        </div>
-                        <div className="text-right space-y-1 flex flex-col items-end">
-                          <div className="text-sm font-medium">
-                            {batch.successfulImports} / {batch.totalLeads} imported
-                          </div>
-                          {batch.failedImports > 0 && (
-                            <div className="text-sm text-destructive">
-                              {batch.failedImports} failed
-                            </div>
-                          )}
-                          {/* Delete button - visible if onDeleteBatch is provided */}
-                          {onDeleteBatch && (
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="text-destructive mt-1 hover:bg-destructive/5 focus-visible:ring-destructive"
-                              onClick={() => handleDeleteBatch(batch.id, batch.name)}
-                              title="Delete Import Batch"
-                              aria-label="Delete Import Batch"
+                          <div className="flex flex-col sm:flex-row gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleViewBatchLeads(batch.id)}
+                              className="flex items-center gap-2"
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Eye className="h-4 w-4" />
+                              View Leads
                             </Button>
-                          )}
+                            
+                            {onDeleteBatch && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex items-center gap-2 text-destructive hover:text-destructive"
+                                onClick={() => handleDeleteBatch(batch.id, batch.name)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                Delete
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
+                        
+                        {/* Progress Info */}
+                        <div className="mt-4 pt-4 border-t">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-center">
+                            <div>
+                              <div className="text-lg font-semibold text-green-600">{batch.successfulImports}</div>
+                              <div className="text-xs text-muted-foreground">Successful</div>
+                            </div>
+                            <div>
+                              <div className="text-lg font-semibold text-red-600">{batch.failedImports || 0}</div>
+                              <div className="text-xs text-muted-foreground">Failed</div>
+                            </div>
+                            <div className="col-span-2 sm:col-span-1">
+                              <div className="text-lg font-semibold text-blue-600">
+                                {batch.totalLeads > 0 ? Math.round((batch.successfulImports / batch.totalLeads) * 100) : 0}%
+                              </div>
+                              <div className="text-xs text-muted-foreground">Success Rate</div>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
               )}
             </div>
+
             {/* AlertDialog for delete confirmation */}
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete Import Batch</AlertDialogTitle>
                   <AlertDialogDescription>
-                    {`Are you sure you want to delete the import batch "${deletingBatchName || ""}"? `}
-                    This will delete all leads associated with this batch and cannot be undone.
+                    Are you sure you want to delete the import batch "{deletingBatchName}"? 
+                    This will permanently delete all leads associated with this batch and cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

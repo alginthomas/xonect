@@ -20,7 +20,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState('leads'); // Changed from 'dashboard' to 'leads'
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
-  const { deleteBatch } = useImportBatchOperations();
+  const { handleDeleteBatch } = useImportBatchOperations(); // Fixed: use handleDeleteBatch instead of deleteBatch
   const { user } = useAuth();
 
   // Set active tab from URL on mount
@@ -462,8 +462,8 @@ const Index = () => {
     });
   };
 
-  const handleDeleteBatch = async (batchId: string) => {
-    const success = await deleteBatch(batchId);
+  const handleDeleteBatchWrapper = async (batchId: string, batchName?: string) => {
+    const success = await handleDeleteBatch(batchId, batchName);
     if (success) {
       refetchLeads();
       refetchImportBatches();
@@ -551,6 +551,7 @@ const Index = () => {
           onCreateCategory={handleCreateCategory}
           existingLeads={leads}
           importBatches={importBatches}
+          onDeleteBatch={handleDeleteBatchWrapper} // Added: pass the delete handler
         />
       )}
 
@@ -596,7 +597,7 @@ const Index = () => {
           leads={leads}
           importBatches={importBatches}
           categories={categories}
-          onDeleteBatch={handleDeleteBatch}
+          onDeleteBatch={handleDeleteBatchWrapper} // Fixed: use handleDeleteBatchWrapper
           onViewBatchLeads={setSelectedBatchId}
         />
       )}
