@@ -7,7 +7,7 @@ import {
   Users, 
   Upload, 
   FolderOpen,
-  BarChart3
+  Copy
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -24,7 +24,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'leads', label: 'Leads', icon: Users },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+    { id: 'duplicates', label: 'Duplicates', icon: Copy },
     { id: 'import', label: 'Import', icon: Upload },
     { id: 'categories', label: 'Categories', icon: FolderOpen },
   ];
