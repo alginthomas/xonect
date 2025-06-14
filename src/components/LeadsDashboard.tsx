@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
@@ -81,7 +82,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setCategoryFilter,
     dataAvailabilityFilter,
     setDataAvailabilityFilter,
-    
     countryFilter,
     setCountryFilter,
     sortField,
@@ -91,25 +91,25 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     currentPage,
     setCurrentPage,
     itemsPerPage,
-    setItemsPerPage
+    setItemsPerPage,
+    navigationFilter,
+    setNavigationFilter
   } = useLeadsCache();
 
   // Add duplicate phone filter state with proper type
   const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<'all' | 'unique-only' | 'duplicates-only'>('all');
-  
-  // Add navigation filter state to handle dashboard clicks
-  const [navigationFilter, setNavigationFilter] = useState<{ status?: string; [key: string]: any } | undefined>(undefined);
 
   // Check URL parameters for navigation filter on component mount
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const statusParam = urlParams.get('status');
-    if (statusParam) {
+    if (statusParam && !navigationFilter) {
+      console.log('Setting navigation filter from URL:', statusParam);
       setNavigationFilter({ status: statusParam });
       // Also update the status filter to show the filter is active
       setStatusFilter(statusParam as any);
     }
-  }, [setStatusFilter]);
+  }, [navigationFilter, setNavigationFilter, setStatusFilter]);
 
   const { filteredLeads, sortedLeads } = useLeadsFiltering({
     leads,

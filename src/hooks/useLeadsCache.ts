@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 
 // Cache keys for localStorage
@@ -10,7 +11,8 @@ const CACHE_KEYS = {
   SORT_FIELD: 'leads_sort_field',
   SORT_DIRECTION: 'leads_sort_direction',
   CURRENT_PAGE: 'leads_current_page',
-  ITEMS_PER_PAGE: 'leads_items_per_page'
+  ITEMS_PER_PAGE: 'leads_items_per_page',
+  NAVIGATION_FILTER: 'leads_navigation_filter'
 };
 
 // Cache utilities
@@ -42,6 +44,7 @@ export const useLeadsCache = () => {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(() => loadFromCache(CACHE_KEYS.SORT_DIRECTION, 'desc'));
   const [currentPage, setCurrentPage] = useState(() => loadFromCache(CACHE_KEYS.CURRENT_PAGE, 1));
   const [itemsPerPage, setItemsPerPage] = useState(() => loadFromCache(CACHE_KEYS.ITEMS_PER_PAGE, 25));
+  const [navigationFilter, setNavigationFilter] = useState<{ status?: string; [key: string]: any } | undefined>(() => loadFromCache(CACHE_KEYS.NAVIGATION_FILTER, undefined));
 
   // Cache state changes
   useEffect(() => {
@@ -80,6 +83,10 @@ export const useLeadsCache = () => {
     saveToCache(CACHE_KEYS.ITEMS_PER_PAGE, itemsPerPage);
   }, [itemsPerPage]);
 
+  useEffect(() => {
+    saveToCache(CACHE_KEYS.NAVIGATION_FILTER, navigationFilter);
+  }, [navigationFilter]);
+
   return {
     searchTerm,
     setSearchTerm,
@@ -98,6 +105,8 @@ export const useLeadsCache = () => {
     currentPage,
     setCurrentPage,
     itemsPerPage,
-    setItemsPerPage
+    setItemsPerPage,
+    navigationFilter,
+    setNavigationFilter
   };
 };
