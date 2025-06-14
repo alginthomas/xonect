@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +18,7 @@ import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/le
 import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('leads');
+  const [activeTab, setActiveTab] = useState('leads'); // Default to 'leads' instead of 'dashboard'
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
   const { deleteBatch } = useImportBatchOperations();
@@ -455,7 +456,8 @@ const Index = () => {
     leadsLoading,
     leadsError,
     selectedBatchId,
-    user: user?.id
+    user: user?.id,
+    activeTab // Add activeTab to debug output
   });
 
   if (!user) {

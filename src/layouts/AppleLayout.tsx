@@ -12,7 +12,7 @@ interface AppleLayoutProps {
 
 const AppleLayout: React.FC<AppleLayoutProps> = ({ 
   children, 
-  activeTab = 'dashboard', 
+  activeTab = 'leads', // Changed default from 'dashboard' to 'leads'
   onTabChange = () => {}
 }) => {
   const isMobile = useIsMobile();
