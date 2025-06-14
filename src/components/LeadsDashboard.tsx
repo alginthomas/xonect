@@ -128,6 +128,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   });
 
   const openLeadSidebar = (lead: Lead) => {
+    console.log('Opening sidebar for lead:', lead.id);
     setSelectedLead(lead);
     setShowSidebar(true);
   };
@@ -166,8 +167,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     handleSelectLead(leadId, selected);
   };
 
-  // Create a wrapper for handleRemarksUpdate that matches the expected signature
-  const handleRemarksUpdateWrapper = async (leadId: string, remarks: string) => {
+  // Create a wrapper for handleRemarksUpdate that includes the full signature for mobile
+  const handleRemarksUpdateMobile = async (leadId: string, remarks: string) => {
     const currentLead = leads.find(lead => lead.id === leadId);
     if (!currentLead) return;
 
@@ -184,6 +185,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
     // Call the actual handler with all required parameters
     await handleRemarksUpdate(leadId, remarks, updatedHistory);
+  };
+
+  // Create a wrapper for handleRemarksUpdate that includes the full signature for desktop
+  const handleRemarksUpdateDesktop = async (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
+    await handleRemarksUpdate(leadId, remarks, remarksHistory);
   };
 
   return (
@@ -258,7 +264,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   onSelectLead={handleSelectLeadWrapper}
                   onViewDetails={openLeadSidebar}
                   onStatusChange={handleStatusChange}
-                  onRemarksUpdate={handleRemarksUpdateWrapper}
+                  onRemarksUpdate={handleRemarksUpdateMobile}
                   onEmailClick={(lead) => {
                     setSelectedLeadForEmail(lead);
                     setShowEmailDialog(true);
@@ -364,7 +370,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 onSelectLead={handleSelectLeadWrapper}
                 onSelectAll={handleSelectAllWrapper}
                 onStatusChange={handleStatusChange}
-                onRemarksUpdate={handleRemarksUpdateWrapper}
+                onRemarksUpdate={handleRemarksUpdateDesktop}
                 onEmailClick={(lead) => {
                   setSelectedLeadForEmail(lead);
                   setShowEmailDialog(true);
