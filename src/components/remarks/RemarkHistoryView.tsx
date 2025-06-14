@@ -16,19 +16,18 @@ export const RemarkHistoryView: React.FC<RemarkHistoryViewProps> = ({ remarksHis
   }
 
   return (
-    <div className="w-full space-y-2 rounded-lg bg-muted/10 px-2 py-2 border border-muted max-h-40 overflow-y-auto">
+    <div className="w-full space-y-2 rounded-xl bg-muted/20 px-2 py-2 border border-muted max-h-48 overflow-y-auto">
       {remarksHistory
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
         .map((entry, idx) => (
           <div
             key={entry.id}
-            className="p-2 rounded-md bg-white/80 dark:bg-white/10 border border-border/10"
+            className="p-2 rounded-md bg-white/90 dark:bg-white/5 border border-border/10"
           >
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 gap-2">
               <span className="block text-xs text-foreground break-words font-medium w-full whitespace-pre-wrap">
                 {entry.text}
               </span>
-              {/* Show "Current" badge if this history entry's text matches the current main remark text AND it's the most recent entry in the sorted list */}
               {idx === 0 && currentRemarkText === entry.text && (
                 <Badge variant="outline" className="h-5 px-2 text-xs ml-2 flex-shrink-0">
                   Current

@@ -18,7 +18,7 @@ export const QuickRemarksModalHeader: React.FC<QuickRemarksModalHeaderProps> = (
 }) => {
   return (
     <>
-      <DialogTitle>
+      <DialogTitle className="flex items-center gap-3">
         {isEditing ? 'Edit Remark' : 'Quick Remark'}
       </DialogTitle>
       {!isEditing && remarksPresent && latestHistoryEntry && (

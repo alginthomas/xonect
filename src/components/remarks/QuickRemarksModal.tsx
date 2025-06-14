@@ -49,55 +49,63 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
     }
   }, [open, isEditing]);
 
+  // Keyboard shortcuts for save/cancel
+  useEffect(() => {
+    if (!open || !isEditing) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        handleSave();
+      }
+      if (e.key === 'Escape') {
+        handleCancelEditing();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line
+  }, [isEditing, editValue, open]);
 
   const handleSave = () => {
     const trimmed = editValue.trim();
-    if (!trimmed && !initialRemarks) { // Don't save if new and empty
-      // Closing modal or staying in edit mode is an option. For now, just return.
+    if (!trimmed && !initialRemarks) {
       return;
     }
-    if (trimmed === initialRemarks) { // If content is unchanged
+    if (trimmed === initialRemarks) {
       setIsEditing(false);
       onOpenChange(false);
       return;
     }
-
     const newEntry: RemarkEntry = {
       id: crypto.randomUUID(),
       text: trimmed,
       timestamp: new Date()
     };
-    
     const updatedHistory = [...initialRemarksHistory, newEntry].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-    
     onUpdate(trimmed, updatedHistory);
-    setIsEditing(false); // Exit edit mode
-    onOpenChange(false); // Close modal
+    setIsEditing(false);
+    onOpenChange(false);
   };
 
   const handleCancelEditing = () => {
     setIsEditing(false);
-    setEditValue(initialRemarks); // Reset edit value to what it was before editing started
-    // If modal should close on canceling edit, call onOpenChange(false)
-    // For now, just exits edit mode, stays in modal.
+    setEditValue(initialRemarks);
   };
-  
+
   const handleModalCloseIntent = () => {
-    // This is called when the Dialog signals a close (e.g., overlay click, Esc key)
-    setIsEditing(false); // Ensure edit mode is exited
-    setShowHistory(false); // Reset history view
-    onOpenChange(false); // Propagate close
+    setIsEditing(false);
+    setShowHistory(false);
+    onOpenChange(false);
   };
 
   const handleToggleHistory = () => setShowHistory((v) => !v);
 
   const latestHistoryEntry = initialRemarksHistory.length > 0 
-    ? [...initialRemarksHistory].sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0] 
+    ? [...initialRemarksHistory].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0] 
     : null;
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleModalCloseIntent(); }}>
-      <DialogContent className="max-w-lg w-full p-6 rounded-2xl space-y-2">
+      <DialogContent className="max-w-screen-sm w-full px-3 py-5 sm:p-6 rounded-2xl space-y-3 flex flex-col animate-fade-in">
         <DialogHeader>
           <QuickRemarksModalHeader
             isEditing={isEditing}
@@ -106,23 +114,25 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
           />
         </DialogHeader>
         
-        <div className="w-full">
+        <div className="w-full min-h-20">
           {isEditing ? (
             <Textarea
               ref={textareaRef}
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
-              className="w-full min-h-[80px] max-h-[120px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words"
-              placeholder="Edit your remark..."
+              className="w-full min-h-[90px] max-h-[160px] text-base resize-none border-primary/30 focus:border-primary/50 whitespace-pre-wrap break-words shadow-sm"
+              placeholder="Type a remark..."
+              tabIndex={0}
+              aria-label="Edit Remark"
             />
           ) : (
-            <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[48px] max-h-40 overflow-y-auto">
+            <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-x-auto overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10">
               {initialRemarks || <span className="text-muted-foreground italic">No remark. Click 'Edit' to add.</span>}
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col gap-2">
+        <DialogFooter className="flex flex-col gap-3 mt-0">
           <QuickRemarksModalControls
             isEditing={isEditing}
             remarksHistoryCount={initialRemarksHistory.length}
@@ -133,12 +143,18 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
             onCancelEditing={handleCancelEditing}
           />
           {!isEditing && showHistory && (
-            <RemarkHistoryView
-              remarksHistory={initialRemarksHistory}
-              currentRemarkText={initialRemarks}
-            />
+            <div className="w-full">
+              <RemarkHistoryView
+                remarksHistory={initialRemarksHistory}
+                currentRemarkText={initialRemarks}
+              />
+            </div>
           )}
         </DialogFooter>
+        {/* Mobile bar hint */}
+        <div className="block sm:hidden text-xs text-center text-muted-foreground mt-2">
+          Tap outside or swipe down to close
+        </div>
       </DialogContent>
     </Dialog>
   );

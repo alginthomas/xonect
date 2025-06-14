@@ -21,8 +21,13 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [modalInitialEditMode, setModalInitialEditMode] = useState(false);
 
-  const isLong = remarks.length > 50 || remarks.includes('\n');
-  const showViewIcon = isLong || remarks.length > 0;
+  // Truncate with ellipsis and a tooltip for overflow
+  const TRUNCATE_LENGTH = 50;
+  const isLong = remarks.length > TRUNCATE_LENGTH || remarks.includes('\n');
+  const truncated = remarks.length > TRUNCATE_LENGTH
+    ? `${remarks.slice(0, TRUNCATE_LENGTH)}...`
+    : remarks;
+  const showViewIcon = isLong || !!remarks;
 
   const handleViewFull = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -38,23 +43,25 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
   return (
     <div className={`flex items-center gap-1 ${className}`}>
+      {/* Preview or Add button */}
       {remarks ? (
         <>
           <div
             className="flex-1 min-w-0 cursor-pointer group"
-            onClick={isLong ? handleViewFull : undefined}
-            style={{ maxWidth: 260 }} 
+            onClick={isLong ? handleViewFull : handleEditClick}
+            style={{ maxWidth: 240 }}
             title={remarks}
           >
-            <span className="block text-sm line-clamp-1 break-all truncate pr-7 transition-colors">
-              {remarks}
+            <span className="block text-sm line-clamp-1 break-all truncate pr-6 transition-colors">
+              {isLong ? truncated : remarks}
             </span>
           </div>
+          {/* Eye icon for full view if truncated/long */}
           {showViewIcon && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 p-0 ml-[-1.5rem] opacity-70 hover:opacity-100 transition-opacity"
+              className="h-7 w-7 p-0 ml-[-1.5rem] opacity-80 hover:opacity-100 transition-opacity"
               onClick={handleViewFull}
               aria-label="View full remark"
               tabIndex={0}
@@ -62,22 +69,23 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
               <Eye className="h-4 w-4" />
             </Button>
           )}
+          {/* Always show edit icon at end */}
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 p-0 opacity-70 hover:opacity-100 transition-opacity"
+            className="h-7 w-7 p-0 opacity-80 hover:opacity-100 transition-opacity"
             onClick={handleEditClick}
             aria-label="Edit remarks"
             tabIndex={0}
           >
-            <Edit3 className="h-3 w-3" />
+            <Edit3 className="h-4 w-4" />
           </Button>
         </>
       ) : (
         <Button
           variant="ghost"
           size="sm"
-          className="w-full text-left opacity-70 hover:opacity-100"
+          className="w-full text-left opacity-90 hover:opacity-100"
           onClick={handleEditClick}
         >
           <span className="text-muted-foreground text-sm flex items-center gap-2">
@@ -86,6 +94,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
         </Button>
       )}
 
+      {/* Modal for full editing/view */}
       {showModal && (
         <QuickRemarksModal
           open={showModal}
