@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -14,7 +15,7 @@ import { useLeadsDashboardLogic } from '@/hooks/useLeadsDashboardLogic';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
+import type { Lead, EmailTemplate, LeadStatus, RemarkEntry } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
 interface BrandingData {
@@ -160,6 +161,26 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     handleSelectAll(paginatedLeads);
   };
 
+  // Create a wrapper for handleRemarksUpdate that matches the expected signature
+  const handleRemarksUpdateWrapper = async (leadId: string, remarks: string) => {
+    const currentLead = leads.find(lead => lead.id === leadId);
+    if (!currentLead) return;
+
+    // Create new remark entry
+    const newEntry: RemarkEntry = {
+      id: crypto.randomUUID(),
+      text: remarks,
+      timestamp: new Date()
+    };
+
+    // Get existing history and add new entry
+    const existingHistory = currentLead.remarksHistory || [];
+    const updatedHistory = [...existingHistory, newEntry];
+
+    // Call the actual handler with all required parameters
+    await handleRemarksUpdate(leadId, remarks, updatedHistory);
+  };
+
   return (
     <div className="w-full h-full bg-background">
       {/* Mobile Layout */}
@@ -232,7 +253,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   onSelectLead={handleSelectLead}
                   onViewDetails={openLeadSidebar}
                   onStatusChange={handleStatusChange}
-                  onRemarksUpdate={handleRemarksUpdate}
+                  onRemarksUpdate={handleRemarksUpdateWrapper}
                   onEmailClick={(lead) => {
                     setSelectedLeadForEmail(lead);
                     setShowEmailDialog(true);
@@ -338,7 +359,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 onSelectLead={handleSelectLead}
                 onSelectAll={handleSelectAllWrapper}
                 onStatusChange={handleStatusChange}
-                onRemarksUpdate={handleRemarksUpdate}
+                onRemarksUpdate={handleRemarksUpdateWrapper}
                 onEmailClick={(lead) => {
                   setSelectedLeadForEmail(lead);
                   setShowEmailDialog(true);
