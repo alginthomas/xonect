@@ -1,5 +1,4 @@
-
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
 import { useLeadsSelection } from '@/hooks/useLeadsSelection';
@@ -188,10 +187,28 @@ export const useLeadsDashboardLogic = ({
     clearSelection
   });
 
+  // STATE: Track the last updated lead (for highlight & scroll)
+  const [lastUpdatedLeadId, setLastUpdatedLeadId] = useState<string | null>(null);
+
   // Create a wrapper for handleRemarksUpdate to match the expected signature
   const handleRemarksUpdateWrapper = async (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
     await handleRemarksUpdate(leadId, remarks, remarksHistory);
+    setLastUpdatedLeadId(leadId);
   };
+
+  // Also wrap status updates to set last updated lead
+  const handleStatusChangeWrapper = async (leadId: string, status: LeadStatus) => {
+    await handleStatusChange(leadId, status);
+    setLastUpdatedLeadId(leadId);
+  };
+
+  // Optionally, clear highlight after a brief period (discuss with user to tweak)
+  useEffect(() => {
+    if (lastUpdatedLeadId) {
+      const timeout = setTimeout(() => setLastUpdatedLeadId(null), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [lastUpdatedLeadId]);
 
   // Pagination calculations
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
@@ -258,7 +275,7 @@ export const useLeadsDashboardLogic = ({
     handleSort,
     handleBulkAction,
     handleExport,
-    handleStatusChange,
+    handleStatusChange: handleStatusChangeWrapper,
     handleRemarksUpdate: handleRemarksUpdateWrapper,
     handleSelectAll,
     handleSelectLead,
@@ -266,6 +283,8 @@ export const useLeadsDashboardLogic = ({
     clearAllFilters,
     reorderColumns,
     toggleColumnVisibility,
-    resetToDefault
+    resetToDefault,
+    lastUpdatedLeadId,
+    setLastUpdatedLeadId
   };
 };

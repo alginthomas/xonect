@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableRow, AppleTableCell } from '@/components/ui/apple-table';
@@ -26,6 +26,7 @@ interface LeadsTableProps {
   onViewDetails: (lead: Lead) => void;
   onDeleteLead: (leadId: string) => void;
   onDragEnd: (event: any) => void;
+  lastUpdatedLeadId?: string | null;
 }
 
 export const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -44,7 +45,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   onEmailClick,
   onViewDetails,
   onDeleteLead,
-  onDragEnd
+  onDragEnd,
+  lastUpdatedLeadId
 }) => {
   const isMobile = useIsMobile();
   
@@ -61,6 +63,19 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
   if (isMobile) {
     return null; // Mobile uses DateGroupedLeads component instead
   }
+
+  // Refs for each lead row
+  const leadRowRefs = useRef<{ [id: string]: HTMLTableRowElement | null }>({});
+
+  // Effect: After table renders, if last updated lead is present, scroll & highlight
+  useEffect(() => {
+    if (lastUpdatedLeadId && leadRowRefs.current[lastUpdatedLeadId]) {
+      leadRowRefs.current[lastUpdatedLeadId]?.scrollIntoView({
+        block: 'center', behavior: 'smooth'
+      });
+      // Focus/visual highlight handled by css class below
+    }
+  }, [lastUpdatedLeadId, leads.map(l => l.id).join(',')]);
 
   return (
     <DndContext
@@ -89,7 +104,11 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
         </AppleTableHeader>
         <AppleTableBody>
           {leads.map((lead) => (
-            <AppleTableRow key={lead.id}>
+            <AppleTableRow
+              key={lead.id}
+              ref={el => { leadRowRefs.current[lead.id] = el; }}
+              className={lastUpdatedLeadId === lead.id ? 'animate-pulse bg-yellow-100/60 transition-colors' : ''}
+            >
               {visibleColumns.map((column) => (
                 <AppleTableCell key={`${lead.id}-${column.id}`} className={column.width || ''}>
                   <LeadTableCell

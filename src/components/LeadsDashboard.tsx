@@ -118,7 +118,9 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     clearAllFilters,
     reorderColumns,
     toggleColumnVisibility,
-    resetToDefault
+    resetToDefault,
+    lastUpdatedLeadId,
+    setLastUpdatedLeadId
   } = useLeadsDashboardLogic({
     leads,
     categories,
@@ -404,6 +406,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 onViewDetails={openLeadSidebar}
                 onDeleteLead={onDeleteLead}
                 onDragEnd={handleDragEnd}
+                lastUpdatedLeadId={lastUpdatedLeadId}
               />
 
               {/* Pagination */}
