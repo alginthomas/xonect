@@ -8,7 +8,8 @@ interface UseLeadsFilteringProps {
   leads: Lead[];
   importBatches: ImportBatch[];
   selectedBatchId?: string | null;
-  searchQuery: string;
+  searchQuery?: string;
+  searchTerm?: string; // Add searchTerm as an alternative
   selectedStatus: LeadStatus | 'all';
   selectedCategory: string;
   selectedSeniority: Seniority | 'all';
@@ -29,6 +30,7 @@ export const useLeadsFiltering = ({
   importBatches,
   selectedBatchId,
   searchQuery,
+  searchTerm, // Accept searchTerm
   selectedStatus,
   selectedCategory,
   selectedSeniority,
@@ -47,7 +49,7 @@ export const useLeadsFiltering = ({
   const filteredLeads = useMemo(() => {
     console.log('Filtering leads:', {
       totalLeads: leads.length,
-      searchQuery,
+      searchQuery: searchQuery || searchTerm || '', // Use either searchQuery or searchTerm
       selectedStatus,
       selectedCategory,
       selectedDataFilter: selectedDataFilter,
@@ -63,9 +65,10 @@ export const useLeadsFiltering = ({
       console.log('After batch filter:', filtered.length);
     }
 
-    // Filter by search term - add null check
-    if (searchQuery && searchQuery.trim()) {
-      const term = searchQuery.toLowerCase().trim();
+    // Filter by search term - add null check and use either searchQuery or searchTerm
+    const searchText = searchQuery || searchTerm || '';
+    if (searchText && searchText.trim()) {
+      const term = searchText.toLowerCase().trim();
       filtered = filtered.filter(lead =>
         lead.firstName?.toLowerCase().includes(term) ||
         lead.lastName?.toLowerCase().includes(term) ||
@@ -137,7 +140,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, importBatches, selectedBatchId, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
+  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {

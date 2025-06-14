@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
@@ -103,6 +102,9 @@ interface MobileLeadsListProps {
   onBulkStatusUpdate: (leadIds: string[], status: LeadStatus) => Promise<void>;
   onBulkCategoryUpdate: (leadIds: string[], categoryId: string) => Promise<void>;
   onBulkDelete: (leadIds: string[]) => Promise<void>;
+  onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
+  onEmailClick?: (leadId: string) => Promise<void>;
+  onViewDetails?: (lead: Lead) => void;
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
@@ -112,7 +114,10 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onLeadDelete,
   onBulkStatusUpdate,
   onBulkCategoryUpdate,
-  onBulkDelete
+  onBulkDelete,
+  onUpdateLead,
+  onEmailClick,
+  onViewDetails
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
@@ -189,19 +194,29 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handleStatusChange = async (leadId: string, status: LeadStatus) => {
-    await onLeadUpdate(leadId, { status });
+    const updateFn = onUpdateLead || onLeadUpdate;
+    await updateFn(leadId, { status });
   };
 
   const handleRemarksUpdate = async (leadId: string, remarks: string) => {
-    await onLeadUpdate(leadId, { remarks });
+    const updateFn = onUpdateLead || onLeadUpdate;
+    await updateFn(leadId, { remarks });
   };
 
   const handleEmailClick = (lead: Lead) => {
-    navigator.clipboard.writeText(lead.email);
+    if (onEmailClick) {
+      onEmailClick(lead.id);
+    } else {
+      navigator.clipboard.writeText(lead.email);
+    }
   };
 
   const handleViewDetails = (lead: Lead) => {
-    window.location.href = `/lead/${lead.id}`;
+    if (onViewDetails) {
+      onViewDetails(lead);
+    } else {
+      window.location.href = `/lead/${lead.id}`;
+    }
   };
 
   const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
