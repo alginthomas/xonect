@@ -32,6 +32,13 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [isDuplicateFile, setIsDuplicateFile] = useState(false);
   const { toast } = useToast();
 
+  const clearFile = useCallback(() => {
+    setCsvData([]);
+    setFileName('');
+    setFileError(null);
+    setIsDuplicateFile(false);
+  }, []);
+
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     setFileName(file.name);
@@ -222,12 +229,23 @@ export const CSVImport: React.FC<CSVImportProps> = ({
             </Alert>
           )}
 
-          {/* Import Button */}
-          <div className="flex justify-end pt-4">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
+            {fileName && (
+              <Button
+                variant="outline"
+                onClick={clearFile}
+                className="w-full sm:w-auto min-w-[140px] order-2 sm:order-1"
+                size="lg"
+              >
+                <XCircle className="h-4 w-4 mr-2" />
+                Clear File
+              </Button>
+            )}
             <Button
               onClick={handleImport}
               disabled={csvData.length === 0 || isDuplicateFile || !!fileError}
-              className="w-full sm:w-auto min-w-[140px]"
+              className={`w-full min-w-[140px] order-1 sm:order-2 ${fileName ? 'sm:w-auto' : ''}`}
               size="lg"
             >
               <Upload className="h-4 w-4 mr-2" />
