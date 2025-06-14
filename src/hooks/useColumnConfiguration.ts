@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 
 export interface ColumnConfig {
@@ -17,6 +18,7 @@ const defaultColumns: ColumnConfig[] = [
   { id: 'name', label: 'Name', sortable: true, visible: true },
   { id: 'company', label: 'Company', sortable: true, visible: true },
   { id: 'phone', label: 'Phone', sortable: false, visible: true },
+  { id: 'email', label: 'Email', sortable: false, visible: true },
   { id: 'category', label: 'Category', sortable: false, visible: true },
   { id: 'created', label: 'Created', sortable: true, visible: true },
 ];
@@ -24,7 +26,38 @@ const defaultColumns: ColumnConfig[] = [
 export const useColumnConfiguration = () => {
   const [columns, setColumns] = useState<ColumnConfig[]>(() => {
     const saved = localStorage.getItem('leadsTableColumns');
-    return saved ? JSON.parse(saved) : defaultColumns;
+    if (saved) {
+      try {
+        const parsedColumns = JSON.parse(saved);
+        // Check if saved columns have the old 'contact' column and fix it
+        const updatedColumns = parsedColumns.map((col: ColumnConfig) => {
+          if (col.id === 'contact') {
+            return { ...col, id: 'phone', label: 'Phone' };
+          }
+          return col;
+        });
+        
+        // Ensure we have the email column if it's missing
+        const hasEmailColumn = updatedColumns.some((col: ColumnConfig) => col.id === 'email');
+        if (!hasEmailColumn) {
+          const phoneIndex = updatedColumns.findIndex((col: ColumnConfig) => col.id === 'phone');
+          if (phoneIndex !== -1) {
+            updatedColumns.splice(phoneIndex + 1, 0, { 
+              id: 'email', 
+              label: 'Email', 
+              sortable: false, 
+              visible: true 
+            });
+          }
+        }
+        
+        return updatedColumns;
+      } catch (e) {
+        console.warn('Failed to parse saved columns, using defaults');
+        return defaultColumns;
+      }
+    }
+    return defaultColumns;
   });
 
   useEffect(() => {
