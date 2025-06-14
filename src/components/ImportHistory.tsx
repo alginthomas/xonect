@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Search, Trash2, Download, Eye, Calendar, Users, TrendingUp, FileText, BarChart3 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
+import { useBatchSelection } from '@/hooks/useBatchSelection';
+import { BulkBatchActions } from '@/components/BulkBatchActions';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -34,6 +36,15 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'leads'>('date');
   const { toast } = useToast();
   const navigate = useNavigate();
+  
+  const {
+    selectedBatchIds,
+    toggleBatch,
+    selectAll,
+    clearSelection,
+    isSelected,
+    selectedCount
+  } = useBatchSelection();
 
   const filteredBatches = useMemo(() => {
     if (!importBatches || !Array.isArray(importBatches)) {
@@ -79,6 +90,25 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       successRate,
       engagementRate: batchLeads.length > 0 ? (contactedCount / batchLeads.length) * 100 : 0
     };
+  };
+
+  const handleBulkDelete = async () => {
+    for (const batchId of selectedBatchIds) {
+      await onDeleteBatch(batchId);
+    }
+    clearSelection();
+    toast({
+      title: "Batches deleted",
+      description: `Successfully deleted ${selectedBatchIds.length} import batch${selectedBatchIds.length === 1 ? '' : 'es'}`
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedCount === filteredBatches.length) {
+      clearSelection();
+    } else {
+      selectAll(filteredBatches.map(batch => batch.id));
+    }
   };
 
   const handleExportBatch = (batch: ImportBatch) => {
@@ -180,6 +210,13 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
         </Card>
       </div>
 
+      {/* Bulk Actions */}
+      <BulkBatchActions
+        selectedCount={selectedCount}
+        onClearSelection={clearSelection}
+        onBulkDelete={handleBulkDelete}
+      />
+
       {/* Search and Controls */}
       <Card>
         <CardHeader>
@@ -201,16 +238,29 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
               />
             </div>
 
-            <Select value={sortBy} onValueChange={(value: 'date' | 'name' | 'leads') => setSortBy(value)}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Sort by..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">Sort by Date</SelectItem>
-                <SelectItem value="name">Sort by Name</SelectItem>
-                <SelectItem value="leads">Sort by Lead Count</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={(value: 'date' | 'name' | 'leads') => setSortBy(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">Sort by Date</SelectItem>
+                  <SelectItem value="name">Sort by Name</SelectItem>
+                  <SelectItem value="leads">Sort by Lead Count</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {filteredBatches.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="whitespace-nowrap"
+                >
+                  {selectedCount === filteredBatches.length ? 'Deselect All' : 'Select All'}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Batch List */}
@@ -239,24 +289,32 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                   <Card key={batch.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
                     <CardContent className="pt-6">
                       <div className="flex flex-col space-y-4">
-                        {/* Header */}
+                        {/* Header with Checkbox */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                              <h3 className="font-semibold text-lg">{batch.name}</h3>
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                {getCategoryName(batch.categoryId)}
-                              </Badge>
-                            </div>
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={isSelected(batch.id)}
+                              onCheckedChange={() => toggleBatch(batch.id)}
+                              className="mt-1"
+                            />
                             
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{format(new Date(batch.createdAt), 'MMM dd, yyyy')}</span>
+                            <div className="space-y-2 flex-1">
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-semibold text-lg">{batch.name}</h3>
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                  {getCategoryName(batch.categoryId)}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                <span>{batch.totalLeads || 0} leads</span>
+                              
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{format(new Date(batch.createdAt), 'MMM dd, yyyy')}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" />
+                                  <span>{batch.totalLeads || 0} leads</span>
+                                </div>
                               </div>
                             </div>
                           </div>
