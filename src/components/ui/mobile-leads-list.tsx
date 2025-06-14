@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
@@ -112,7 +113,6 @@ interface MobileLeadsListProps {
   onLeadUpdate?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
   onLeadDelete?: (leadId: string) => Promise<void>;
   onBulkStatusUpdate?: (leadIds: string[], status: LeadStatus) => Promise<void>;
-  onBulkUpdateStatus?: (leadIds: string[], status: LeadStatus) => Promise<void>;
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
@@ -127,8 +127,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onEmailClick,
   onViewDetails,
   onLeadDelete,
-  onBulkStatusUpdate,
-  onBulkUpdateStatus
+  onBulkStatusUpdate
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
@@ -241,7 +240,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
       await onBulkDelete(selectedIds);
     } else if (action === 'status' && value) {
       // Use any available bulk status update function
-      const bulkStatusFn = onBulkUpdateStatus || onBulkStatusUpdate || onBulkUpdateStatus;
+      const bulkStatusFn = onBulkStatusUpdate || onBulkUpdateStatus;
       await bulkStatusFn(selectedIds, value as LeadStatus);
     }
     clearSelection();
