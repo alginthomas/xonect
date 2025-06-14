@@ -14,7 +14,7 @@ import { ImportHistory } from '@/components/ImportHistory';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
-import type { Lead, EmailTemplate } from '@/types/lead';
+import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
@@ -28,9 +28,14 @@ const Index = () => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
+    const batchId = urlParams.get('batch');
     if (tab) {
       console.log('Setting active tab from URL:', tab);
       setActiveTab(tab);
+    }
+    if (batchId) {
+      console.log('Setting selected batch from URL:', batchId);
+      setSelectedBatchId(batchId);
     }
   }, []);
 
@@ -38,25 +43,25 @@ const Index = () => {
   const { data: leads = [], isLoading: leadsLoading, error: leadsError, refetch: refetchLeads } = useQuery({
     queryKey: ['leads'],
     queryFn: async () => {
-      console.log('Fetching leads...');
+      console.log('🔍 Fetching leads...');
       
       const { data: sessionData } = await supabase.auth.getSession();
-      console.log('Current session:', sessionData.session?.user?.id);
+      console.log('👤 Current session:', sessionData.session?.user?.id);
       
       const { data, error } = await supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
       
-      console.log('Leads query result:', { data, error });
-      console.log('Number of leads returned:', data?.length || 0);
+      console.log('📊 Leads query result:', { data, error });
+      console.log('📈 Number of leads returned:', data?.length || 0);
       
       if (error) {
-        console.error('Error fetching leads:', error);
+        console.error('❌ Error fetching leads:', error);
         throw error;
       }
       
-      // Map database fields to TypeScript interface
+      // Map database fields to TypeScript interface with proper type handling
       const mappedLeads: Lead[] = (data || []).map(lead => ({
         id: lead.id,
         firstName: lead.first_name,
@@ -91,11 +96,11 @@ const Index = () => {
         twitterUrl: lead.twitter_url || '',
         facebookUrl: lead.facebook_url || '',
         organizationFounded: lead.organization_founded,
-        remarksHistory: lead.remarks_history || [],
-        activityLog: lead.activity_log || []
+        remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history as RemarkEntry[] : [],
+        activityLog: Array.isArray(lead.activity_log) ? lead.activity_log as ActivityEntry[] : []
       }));
       
-      console.log('Mapped leads:', mappedLeads);
+      console.log('🔄 Mapped leads:', mappedLeads);
       return mappedLeads;
     },
   });
@@ -104,30 +109,31 @@ const Index = () => {
   const { data: categories = [], refetch: refetchCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
-      console.log('Fetching categories...');
+      console.log('🏷️ Fetching categories...');
       const { data, error } = await supabase
         .from('categories')
         .select('*')
         .order('name');
       
-      console.log('Categories query result:', { data, error });
+      console.log('📊 Categories query result:', { data, error });
       
       if (error) {
-        console.error('Error fetching categories:', error);
+        console.error('❌ Error fetching categories:', error);
         throw error;
       }
       
-      // Map database fields to TypeScript interface
+      // Map database fields to TypeScript interface with proper type handling
       const mappedCategories: Category[] = (data || []).map(category => ({
         id: category.id,
         name: category.name,
         description: category.description || '',
         color: category.color,
-        criteria: category.criteria || {},
+        criteria: typeof category.criteria === 'object' && category.criteria !== null ? category.criteria as Record<string, any> : {},
         createdAt: new Date(category.created_at),
         updatedAt: new Date(category.updated_at)
       }));
       
+      console.log('🔄 Mapped categories:', mappedCategories);
       return mappedCategories;
     },
   });
@@ -136,20 +142,20 @@ const Index = () => {
   const { data: importBatches = [], refetch: refetchImportBatches } = useQuery({
     queryKey: ['import_batches'],
     queryFn: async () => {
-      console.log('Fetching import batches...');
+      console.log('📦 Fetching import batches...');
       const { data, error } = await supabase
         .from('import_batches')
         .select('*')
         .order('created_at', { ascending: false });
       
-      console.log('Import batches query result:', { data, error });
+      console.log('📊 Import batches query result:', { data, error });
       
       if (error) {
-        console.error('Error fetching import batches:', error);
+        console.error('❌ Error fetching import batches:', error);
         throw error;
       }
       
-      // Map database fields to TypeScript interface
+      // Map database fields to TypeScript interface with proper type handling
       const mappedBatches: ImportBatch[] = (data || []).map(batch => ({
         id: batch.id,
         name: batch.name,
@@ -159,13 +165,14 @@ const Index = () => {
         successfulImports: batch.successful_imports || 0,
         failedImports: batch.failed_imports || 0,
         createdAt: new Date(batch.created_at),
-        metadata: batch.metadata || {}
+        metadata: typeof batch.metadata === 'object' && batch.metadata !== null ? batch.metadata as Record<string, any> : {}
       }));
       
       // Check linking between batches and leads for debugging
+      console.log('🔗 Checking batch-to-leads linking...');
       for (const batch of mappedBatches) {
         const linkedLeads = leads.filter(lead => lead.importBatchId === batch.id);
-        console.log(`Batch "${batch.name}" (${batch.id}) has ${linkedLeads.length} linked leads in current data`);
+        console.log(`📦 Batch "${batch.name}" (${batch.id}) has ${linkedLeads.length} linked leads in current data`);
         
         // Also check directly in database
         const { data: dbLinkedLeads } = await supabase
@@ -173,9 +180,10 @@ const Index = () => {
           .select('id, first_name, last_name')
           .eq('import_batch_id', batch.id);
         
-        console.log(`Batch "${batch.name}" has ${dbLinkedLeads?.length || 0} leads linked in database:`, dbLinkedLeads);
+        console.log(`🔍 Batch "${batch.name}" has ${dbLinkedLeads?.length || 0} leads linked in database:`, dbLinkedLeads);
       }
       
+      console.log('🔄 Mapped import batches:', mappedBatches);
       return mappedBatches;
     },
   });
@@ -184,16 +192,16 @@ const Index = () => {
   const { data: templates = [] } = useQuery({
     queryKey: ['email_templates'],
     queryFn: async () => {
-      console.log('Fetching email templates...');
+      console.log('📧 Fetching email templates...');
       const { data, error } = await supabase
         .from('email_templates')
         .select('*')
         .order('name');
       
-      console.log('Email templates query result:', { data, error });
+      console.log('📊 Email templates query result:', { data, error });
       
       if (error) {
-        console.error('Error fetching email templates:', error);
+        console.error('❌ Error fetching email templates:', error);
         throw error;
       }
       
@@ -209,6 +217,7 @@ const Index = () => {
         lastUsed: template.last_used ? new Date(template.last_used) : undefined
       }));
       
+      console.log('🔄 Mapped email templates:', mappedTemplates);
       return mappedTemplates;
     },
   });
@@ -352,13 +361,14 @@ const Index = () => {
   };
 
   // Debug output
-  console.log('Current data state:', {
+  console.log('📊 Current data state:', {
     leads: leads.length,
     categories: categories.length,
     importBatches: importBatches.length,
     templates: templates.length,
     leadsLoading,
-    leadsError
+    leadsError,
+    selectedBatchId
   });
 
   return (
@@ -366,7 +376,6 @@ const Index = () => {
       <Header 
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        isMobile={isMobile}
       />
       
       <main className="container mx-auto px-4 py-6">
@@ -388,7 +397,16 @@ const Index = () => {
         )}
 
         {activeTab === 'analytics' && (
-          <AnalyticsDashboard leads={leads} />
+          <AnalyticsDashboard 
+            leads={leads} 
+            templates={templates}
+            categories={categories}
+            importBatches={importBatches}
+            onNavigateToLeads={(filter) => {
+              setActiveTab('leads');
+              // Handle navigation filter if needed
+            }}
+          />
         )}
 
         {activeTab === 'import' && (
@@ -407,7 +425,15 @@ const Index = () => {
         {activeTab === 'categories' && (
           <CategoryManager 
             categories={categories}
-            onCategoryChange={() => {
+            onCategoryCreated={() => {
+              refetchCategories();
+              refetchLeads();
+            }}
+            onCategoryUpdated={() => {
+              refetchCategories();
+              refetchLeads();
+            }}
+            onCategoryDeleted={() => {
               refetchCategories();
               refetchLeads();
             }}
@@ -417,7 +443,8 @@ const Index = () => {
         {activeTab === 'duplicates' && (
           <DuplicateManager 
             leads={leads}
-            onLeadsChange={refetchLeads}
+            onLeadDeleted={refetchLeads}
+            onLeadUpdated={refetchLeads}
           />
         )}
 
