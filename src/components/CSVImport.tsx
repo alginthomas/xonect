@@ -7,10 +7,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag } from 'lucide-react';
 import { generateFileHash, checkFileAlreadyImported } from '@/utils/duplicateDetection';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { CategoryCombobox } from '@/components/CategoryCombobox';
 import type { Category, ImportBatch } from '@/types/category';
 import type { Lead } from '@/types/lead';
 
@@ -33,6 +36,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [fileName, setFileName] = useState('');
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDuplicateFile, setIsDuplicateFile] = useState(false);
+  const [importName, setImportName] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
 
   const clearFile = useCallback(() => {
@@ -40,6 +46,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     setFileName('');
     setFileError(null);
     setIsDuplicateFile(false);
+    setImportName('');
+    setSelectedCategory('');
   }, []);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -47,6 +55,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     setFileName(file.name);
     setFileError(null);
     setIsDuplicateFile(false);
+    
+    // Auto-generate import name from file name
+    const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
+    setImportName(nameWithoutExtension);
 
     const reader = new FileReader();
     reader.onload = async (e) => {
@@ -98,25 +110,63 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       return;
     }
 
-    // Generate file hash for duplicate detection
-    const fileHash = generateFileHash(JSON.stringify(csvData));
-    
-    // Metadata for import batch
-    const metadata = {
-      fileHash: fileHash,
-      importDate: new Date().toISOString()
-    };
+    if (!importName.trim()) {
+      setFileError('Please provide a name for this import.');
+      return;
+    }
 
-    // Here you would typically call your import function
-    // For now, just simulate success
-    onImportComplete();
-    setCsvData([]);
-    setFileName('');
-    
-    toast({
-      title: "Import Successful",
-      description: "Your CSV data has been imported."
-    });
+    setIsImporting(true);
+
+    try {
+      // Create category if it doesn't exist
+      if (selectedCategory && selectedCategory.trim()) {
+        const existingCategory = categories.find(cat => 
+          cat.name.toLowerCase() === selectedCategory.toLowerCase()
+        );
+        
+        if (!existingCategory) {
+          await onCreateCategory({
+            name: selectedCategory,
+            description: `Auto-created from import: ${importName}`,
+            color: '#3B82F6'
+          });
+        }
+      }
+
+      // Generate file hash for duplicate detection
+      const fileHash = generateFileHash(JSON.stringify(csvData));
+      
+      // Metadata for import batch
+      const metadata = {
+        fileHash: fileHash,
+        importDate: new Date().toISOString(),
+        fileName: fileName,
+        importName: importName,
+        category: selectedCategory
+      };
+
+      // Here you would typically call your import function with the metadata
+      // For now, just simulate success
+      onImportComplete();
+      
+      setCsvData([]);
+      setFileName('');
+      setImportName('');
+      setSelectedCategory('');
+      
+      toast({
+        title: "Import Successful",
+        description: `"${importName}" has been imported successfully.`
+      });
+    } catch (error) {
+      toast({
+        title: "Import Failed",
+        description: "There was an error importing your data. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const getStatusIcon = () => {
@@ -132,6 +182,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     if (successRate >= 80) return "secondary";
     return "destructive";
   };
+
+  const isReadyToImport = csvData.length > 0 && 
+                         !isDuplicateFile && 
+                         !fileError && 
+                         importName.trim() !== '';
 
   return (
     <div className="h-full flex flex-col">
@@ -226,6 +281,51 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   )}
                 </div>
 
+                {/* Import Configuration */}
+                {fileName && csvData.length > 0 && !fileError && !isDuplicateFile && (
+                  <Card className="border-green-200 bg-green-50/50">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-2 text-lg text-green-800">
+                        <Tag className="h-5 w-5" />
+                        Configure Import
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="import-name" className="text-sm font-medium">
+                          Import Name
+                        </Label>
+                        <Input
+                          id="import-name"
+                          placeholder="Enter a name for this import..."
+                          value={importName}
+                          onChange={(e) => setImportName(e.target.value)}
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          This helps you identify the import in your history
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="category" className="text-sm font-medium">
+                          Category (Optional)
+                        </Label>
+                        <CategoryCombobox
+                          categories={categories}
+                          value={selectedCategory}
+                          onChange={setSelectedCategory}
+                          placeholder="Select or create a category..."
+                          className="w-full"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Assign leads to a category or create a new one
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* File Status Messages */}
                 {fileError && (
                   <Alert variant="destructive">
@@ -245,12 +345,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   </Alert>
                 )}
 
-                {fileName && csvData.length > 0 && !fileError && !isDuplicateFile && (
+                {fileName && csvData.length > 0 && !fileError && !isDuplicateFile && isReadyToImport && (
                   <Alert className="border-green-200 bg-green-50">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-800">File Ready for Import</AlertTitle>
+                    <AlertTitle className="text-green-800">Ready for Import</AlertTitle>
                     <AlertDescription className="text-green-700 text-sm">
-                      Found {csvData.length} rows in your CSV file. Click "Import Data" to proceed.
+                      Found {csvData.length} rows. Import will be named "{importName}"{selectedCategory && ` and assigned to "${selectedCategory}" category`}.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -261,6 +361,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                     <Button
                       variant="outline"
                       onClick={clearFile}
+                      disabled={isImporting}
                       className="w-full sm:w-auto min-w-[140px] order-2 sm:order-1"
                       size="lg"
                     >
@@ -270,12 +371,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   )}
                   <Button
                     onClick={handleImport}
-                    disabled={csvData.length === 0 || isDuplicateFile || !!fileError}
+                    disabled={!isReadyToImport || isImporting}
                     className={`w-full min-w-[140px] order-1 sm:order-2 ${fileName ? 'sm:w-auto' : ''}`}
                     size="lg"
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Import Data
+                    {isImporting ? 'Importing...' : 'Import Data'}
                   </Button>
                 </div>
               </CardContent>
