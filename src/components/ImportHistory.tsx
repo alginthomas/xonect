@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +13,8 @@ import { format } from 'date-fns';
 import { exportLeadsToCSV } from '@/utils/csvExport';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
+import { useBatchSelection } from '@/hooks/useBatchSelection';
+import { BulkBatchActions } from './BulkBatchActions';
 
 interface ImportHistoryProps {
   leads: Lead[];
@@ -34,6 +35,17 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'leads'>('date');
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // ========== BATCH SELECTION HOOK ===========
+  const { 
+    selectedBatchIds,
+    isSelected,
+    toggleSelection,
+    clearSelection,
+    selectAll,
+    isAllSelected,
+    isPartiallySelected
+  } = useBatchSelection(importBatches);
 
   const filteredBatches = useMemo(() => {
     if (!importBatches || !Array.isArray(importBatches)) {
@@ -117,6 +129,8 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
     return category?.name || 'Unknown Category';
   };
 
+  // ============= STORAGE DASHBOARD ==============
+  // Compute storage/lead count per batch
   const totalBatches = filteredBatches.length;
   const totalImportedLeads = filteredBatches.reduce((sum, batch) => sum + (batch.totalLeads || 0), 0);
   const averageSuccessRate = totalBatches > 0 
@@ -127,9 +141,74 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       }, 0) / totalBatches) 
     : 0;
   const activeCategories = new Set(filteredBatches.map(batch => batch.categoryId).filter(Boolean)).size;
+  const totalFailedImports = filteredBatches.reduce((sum, batch) => sum + (batch.failedImports || 0), 0);
+
+  // ============= BULK DELETE ACTION ============
+  const handleBulkDelete = () => {
+    if (selectedBatchIds.size === 0) return;
+    // Get batch list
+    const deletedNames = filteredBatches
+      .filter(b => selectedBatchIds.has(b.id))
+      .map(b => b.name)
+      .join(", ");
+    if (!window.confirm(
+      `Delete ${selectedBatchIds.size} batches:\n${deletedNames}\n\nAll associated leads will be deleted as well!`)) {
+      return;
+    }
+    selectedBatchIds.forEach(id => {
+      const batch = filteredBatches.find(b => b.id === id);
+      if (batch) onDeleteBatch(batch.id);
+    });
+    toast({
+      title: "Batches deleted",
+      description: `${selectedBatchIds.size} batches have been successfully deleted`,
+    });
+    clearSelection();
+  };
 
   return (
     <div className="space-y-8">
+      {/* Storage Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-3">
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-3">
+            <div className="text-2xl font-bold text-blue-600">{totalBatches}</div>
+            <p className="text-sm font-medium">Total Batches</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-3">
+            <div className="text-2xl font-bold text-green-600">{totalImportedLeads}</div>
+            <p className="text-sm font-medium">Imported Leads</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-3">
+            <div className="text-2xl font-bold text-purple-600">{averageSuccessRate}%</div>
+            <p className="text-sm font-medium">Avg Success Rate</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-3">
+            <div className="text-2xl font-bold text-orange-600">{activeCategories}</div>
+            <p className="text-sm font-medium">Active Categories</p>
+          </CardContent>
+        </Card>
+        <Card className="text-center">
+          <CardContent className="pt-6 pb-3">
+            <div className="text-2xl font-bold text-red-600">{totalFailedImports}</div>
+            <p className="text-sm font-medium">Failed Imports</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bulk Batch Actions Bar */}
+      <BulkBatchActions
+        selectedCount={selectedBatchIds.size}
+        onBulkDelete={handleBulkDelete}
+        onClearSelection={clearSelection}
+      />
+
       {/* Header */}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
@@ -141,49 +220,22 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
         </p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="text-center">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-blue-600">{totalBatches}</div>
-              <p className="text-sm font-medium">Total Batches</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-green-600">{totalImportedLeads}</div>
-              <p className="text-sm font-medium">Imported Leads</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-purple-600">{averageSuccessRate}%</div>
-              <p className="text-sm font-medium">Avg Success Rate</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center">
-          <CardContent className="pt-6">
-            <div className="space-y-2">
-              <div className="text-2xl font-bold text-orange-600">{activeCategories}</div>
-              <p className="text-sm font-medium">Active Categories</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Search and Controls */}
       <Card>
         <CardHeader>
-          <CardTitle>Manage Import Batches</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Manage Import Batches</CardTitle>
+            <div className="flex gap-2 items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => (isAllSelected ? clearSelection() : selectAll())}
+                className="px-3"
+              >
+                {isAllSelected ? "Deselect All" : "Select All"}
+              </Button>
+            </div>
+          </div>
           <CardDescription>
             Search, sort, and manage your imported lead batches
           </CardDescription>
@@ -236,31 +288,46 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                 const batchLeads = getBatchLeads(batch.id);
 
                 return (
-                  <Card key={batch.id} className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+                  <Card key={batch.id}
+                    className={`border-l-4 border-l-blue-500 hover:shadow-md transition-shadow ${
+                      isSelected(batch.id) ? "bg-primary/10 border-l-emerald-600" : ""
+                    }`}
+                  >
                     <CardContent className="pt-6">
                       <div className="flex flex-col space-y-4">
                         {/* Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                              <h3 className="font-semibold text-lg">{batch.name}</h3>
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                {getCategoryName(batch.categoryId)}
-                              </Badge>
-                            </div>
-                            
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{format(new Date(batch.createdAt), 'MMM dd, yyyy')}</span>
+                          <div className="flex items-start gap-3">
+                            {/* Checkbox for multi-select */}
+                            <input
+                              type="checkbox"
+                              checked={isSelected(batch.id)}
+                              onChange={() => toggleSelection(batch.id)}
+                              className="accent-blue-500 h-5 w-5 mt-1"
+                              aria-label="Select batch"
+                            />
+                            <div className="space-y-2">
+                              {/* ... keep Batch name and badge ... */}
+                              <div className="flex items-center gap-3">
+                                <h3 className="font-semibold text-lg">{batch.name}</h3>
+                                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                                  {getCategoryName(batch.categoryId)}
+                                </Badge>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Users className="h-4 w-4" />
-                                <span>{batch.totalLeads || 0} leads</span>
+                              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{format(new Date(batch.createdAt), 'MMM dd, yyyy')}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Users className="h-4 w-4" />
+                                  <span>{batch.totalLeads || 0} leads</span>
+                                </div>
                               </div>
                             </div>
                           </div>
 
+                          {/* ... keep existing Actions ... */}
                           <div className="flex flex-wrap gap-2">
                             <Button 
                               variant="outline" 
@@ -271,7 +338,6 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                               <Eye className="h-4 w-4" />
                               View ({batchLeads.length})
                             </Button>
-                            
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -281,7 +347,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                               <Download className="h-4 w-4" />
                               Export
                             </Button>
-
+                            {/* ... keep existing AlertDialog for single delete ... */}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button 
@@ -294,6 +360,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
+                                {/* ... keep existing alert dialog content ... */}
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Delete Import Batch</AlertDialogTitle>
                                   <AlertDialogDescription>
@@ -315,8 +382,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
                             </AlertDialog>
                           </div>
                         </div>
-
-                        {/* Stats */}
+                        {/* ... keep Stats, Progress, etc ... */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t">
                           <div className="text-center space-y-1">
                             <div className="text-2xl font-bold text-green-600">{stats.contactedCount}</div>
