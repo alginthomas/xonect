@@ -5,6 +5,11 @@ import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { LeadStatus, Seniority, CompanySize, Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
 import { MobileSearchFilters } from './mobile-search-filters';
+import { DateGroupedLeads } from './date-grouped-leads';
+import { MobilePagination } from './mobile-pagination';
+import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
+import { useLeadsSelection } from '@/hooks/useLeadsSelection';
+import { BulkActionsBar } from '@/components/BulkActionsBar';
 
 interface MobileLeadsListProps {
   leads: Lead[];
@@ -14,17 +19,6 @@ interface MobileLeadsListProps {
   onBulkStatusUpdate: (leadIds: string[], status: LeadStatus) => Promise<void>;
   onBulkCategoryUpdate: (leadIds: string[], categoryId: string) => Promise<void>;
   onBulkDelete: (leadIds: string[]) => Promise<void>;
-  onClearSelection: () => void;
-  selectedLeads: Set<string>;
-  onLeadSelect: (leadId: string, isSelected: boolean) => void;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  totalLeads: number;
-  itemsPerPage: number;
-  sortField: string;
-  sortDirection: 'asc' | 'desc';
-  onSort: (field: string) => void;
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
@@ -34,18 +28,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onLeadDelete,
   onBulkStatusUpdate,
   onBulkCategoryUpdate,
-  onBulkDelete,
-  onClearSelection,
-  selectedLeads,
-  onLeadSelect,
-  currentPage,
-  totalPages,
-  onPageChange,
-  totalLeads,
-  itemsPerPage,
-  sortField,
-  sortDirection,
-  onSort
+  onBulkDelete
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
@@ -57,6 +40,38 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [selectedDataFilter, setSelectedDataFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
   const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  const {
+    selectedLeads,
+    selectLead,
+    selectAllLeads,
+    clearSelection,
+    isAllSelected
+  } = useLeadsSelection();
+
+  const {
+    filteredLeads,
+    totalPages,
+    totalLeads
+  } = useLeadsFiltering({
+    leads,
+    searchQuery,
+    selectedStatus,
+    selectedCategory,
+    selectedSeniority,
+    selectedCompanySize,
+    selectedLocation,
+    selectedIndustry,
+    selectedDataFilter,
+    countryFilter,
+    duplicatePhoneFilter,
+    currentPage,
+    itemsPerPage,
+    sortField: 'createdAt',
+    sortDirection: 'desc'
+  });
 
   const availableLocations = [...new Set(leads.map(lead => lead.location).filter(Boolean) as string[])];
   const availableIndustries = [...new Set(leads.map(lead => lead.industry).filter(Boolean) as string[])];
@@ -85,6 +100,24 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     if (countryFilter !== 'all') count++;
     if (duplicatePhoneFilter !== 'all') count++;
     return count;
+  };
+
+  const handleStatusChange = async (leadId: string, status: LeadStatus) => {
+    await onLeadUpdate(leadId, { status });
+  };
+
+  const handleRemarksUpdate = async (leadId: string, remarks: string) => {
+    await onLeadUpdate(leadId, { remarks });
+  };
+
+  const handleEmailClick = (lead: Lead) => {
+    // Copy email to clipboard or open email client
+    navigator.clipboard.writeText(lead.email);
+  };
+
+  const handleViewDetails = (lead: Lead) => {
+    // Navigate to lead details page
+    window.location.href = `/lead/${lead.id}`;
   };
 
   return (
@@ -118,22 +151,45 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         onDuplicatePhoneChange={setDuplicatePhoneFilter}
       />
 
-      {/* Lead List Content */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="space-y-4">
-          {leads.map((lead) => (
-            <div key={lead.id} className="bg-white border rounded-lg p-4 shadow-sm">
-              <div className="flex justify-between items-start mb-2">
-                <h3 className="font-semibold text-lg">{lead.first_name} {lead.last_name}</h3>
-                <Badge variant="outline">{lead.status}</Badge>
-              </div>
-              <p className="text-gray-600 text-sm mb-1">{lead.title} at {lead.company}</p>
-              <p className="text-gray-500 text-sm">{lead.email}</p>
-              {lead.phone && <p className="text-gray-500 text-sm">{lead.phone}</p>}
-            </div>
-          ))}
-        </div>
+      {/* Bulk Actions Bar */}
+      {selectedLeads.size > 0 && (
+        <BulkActionsBar
+          selectedCount={selectedLeads.size}
+          onClearSelection={clearSelection}
+          onBulkStatusUpdate={(status) => onBulkStatusUpdate(Array.from(selectedLeads), status)}
+          onBulkCategoryUpdate={(categoryId) => onBulkCategoryUpdate(Array.from(selectedLeads), categoryId)}
+          onBulkDelete={() => onBulkDelete(Array.from(selectedLeads))}
+          categories={categories}
+        />
+      )}
+
+      {/* Lead List Content with Date Grouping */}
+      <div className="flex-1 overflow-auto px-4">
+        <DateGroupedLeads
+          leads={filteredLeads}
+          categories={categories}
+          selectedLeads={selectedLeads}
+          onSelectLead={selectLead}
+          onStatusChange={handleStatusChange}
+          onRemarksUpdate={handleRemarksUpdate}
+          onEmailClick={handleEmailClick}
+          onViewDetails={handleViewDetails}
+          onDeleteLead={onLeadDelete}
+        />
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="p-4 border-t bg-background">
+          <MobilePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            totalItems={totalLeads}
+            itemsPerPage={itemsPerPage}
+          />
+        </div>
+      )}
     </div>
   );
 };
