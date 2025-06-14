@@ -23,6 +23,7 @@ interface ImportHistoryProps {
   categories: Category[];
   onDeleteBatch: (batchId: string, batchName?: string) => void;
   onViewBatchLeads?: (batchId: string) => void;
+  onRefreshData?: () => void;
 }
 
 export const ImportHistory: React.FC<ImportHistoryProps> = ({
@@ -30,7 +31,8 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   importBatches = [],
   categories = [],
   onDeleteBatch,
-  onViewBatchLeads
+  onViewBatchLeads,
+  onRefreshData
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'leads'>('date');
@@ -96,6 +98,12 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
       await onDeleteBatch(batchId);
     }
     clearSelection();
+    
+    // Refresh data after bulk deletion
+    if (onRefreshData) {
+      onRefreshData();
+    }
+    
     toast({
       title: "Batches deleted",
       description: `Successfully deleted ${selectedBatchIds.length} import batch${selectedBatchIds.length === 1 ? '' : 'es'}`
@@ -128,8 +136,14 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
     });
   };
 
-  const handleDeleteBatch = (batchId: string, batchName: string) => {
-    onDeleteBatch(batchId, batchName);
+  const handleDeleteBatch = async (batchId: string, batchName: string) => {
+    await onDeleteBatch(batchId, batchName);
+    
+    // Refresh data after single batch deletion
+    if (onRefreshData) {
+      onRefreshData();
+    }
+    
     toast({
       title: "Batch deleted",
       description: `Import batch "${batchName}" has been deleted`

@@ -513,8 +513,7 @@ const Index = () => {
         setSelectedBatchId(null);
         clearBatchFromURL();
       }
-      refetchLeads();
-      refetchImportBatches();
+      // Don't manually call refetch here since we'll pass a refresh function
     }
   };
 
@@ -537,6 +536,12 @@ const Index = () => {
       description: "Now showing all leads",
       variant: "default"
     });
+  };
+
+  const handleRefreshAllData = () => {
+    refetchLeads();
+    refetchImportBatches();
+    refetchCategories();
   };
 
   // Debug output
@@ -657,6 +662,7 @@ const Index = () => {
           categories={categories}
           onDeleteBatch={handleDeleteBatchWrapper}
           onViewBatchLeads={setSelectedBatchId}
+          onRefreshData={handleRefreshAllData}
         />
       )}
     </AppleLayout>
