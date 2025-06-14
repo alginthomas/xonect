@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -241,13 +240,23 @@ export const useEnhancedCSVImport = ({
           ? importBatch.metadata as Record<string, any>
           : {};
 
+        // Convert validation result to a JSON-serializable format
+        const serializableValidationResult = validationResult ? {
+          isValid: validationResult.isValid,
+          duplicateCount: validationResult.duplicateCount,
+          canProceed: validationResult.canProceed,
+          recommendations: validationResult.recommendations,
+          withinFileCount: validationResult.duplicateDetails.withinFile.length,
+          againstDatabaseCount: validationResult.duplicateDetails.againstDatabase.length
+        } : null;
+
         const updatedMetadata = {
           ...existingMetadata,
           contentHash: fileHash.contentHash,
           structureHash: fileHash.structureHash,
           combinedHash: fileHash.combinedHash,
           fileMetadata: fileHash.metadata,
-          validationResult,
+          validationSummary: serializableValidationResult,
           importDate: new Date().toISOString()
         };
 
