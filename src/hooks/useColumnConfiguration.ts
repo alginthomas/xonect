@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 
 export interface ColumnConfig {
@@ -18,7 +17,7 @@ const defaultColumns: ColumnConfig[] = [
   { id: 'phone', label: 'Phone', width: 'w-36', sortable: false, visible: true },
   { id: 'email', label: 'Email', width: 'w-48', sortable: false, visible: true },
   { id: 'category', label: 'Category', width: 'w-32', sortable: true, visible: true },
-  { id: 'remarks', label: 'Quick Remarks', width: 'w-48', sortable: false, visible: true },
+  { id: 'remarks', label: 'Quick Remarks', width: 'w-48', sortable: true, visible: true },
   { id: 'actions', label: 'Actions', width: 'w-32', sortable: false, visible: true, fixed: true },
   { id: 'linkedin', label: 'LinkedIn', width: 'w-32', sortable: false, visible: false },
   { id: 'location', label: 'Location', width: 'w-36', sortable: true, visible: false },

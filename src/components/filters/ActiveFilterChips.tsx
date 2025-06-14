@@ -22,6 +22,8 @@ interface ActiveFilterChipsProps {
   onCountryChange?: (value: string) => void;
   duplicatePhoneFilter?: string;
   onDuplicatePhoneChange?: (value: string) => void;
+  remarksFilter?: string;
+  onRemarksChange?: (value: string) => void;
   categories: Category[];
 }
 
@@ -36,6 +38,8 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
   onCountryChange,
   duplicatePhoneFilter = 'all',
   onDuplicatePhoneChange,
+  remarksFilter = 'all',
+  onRemarksChange,
   categories
 }) => {
   const getActiveFilterChips = (): FilterChip[] => {
@@ -76,6 +80,14 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         type: 'phone',
         label: `Phone: ${phoneLabel}`,
         onRemove: () => onDuplicatePhoneChange('all')
+      });
+    }
+    if (remarksFilter !== 'all' && onRemarksChange) {
+      const remarksLabel = remarksFilter === 'has-remarks' ? 'Has Remarks' : 'No Remarks';
+      chips.push({
+        type: 'remarks',
+        label: `Remarks: ${remarksLabel}`,
+        onRemove: () => onRemarksChange('all')
       });
     }
     return chips;

@@ -19,6 +19,7 @@ export interface LeadsFilteringProps {
   selectedDataFilter: string;
   countryFilter: string;
   duplicatePhoneFilter: DuplicatePhoneFilter;
+  remarksFilter: string;
   currentPage: number;
   itemsPerPage: number;
   sortField: string;

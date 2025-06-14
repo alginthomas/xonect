@@ -18,6 +18,7 @@ export const useLeadsFiltering = ({
   selectedDataFilter,
   countryFilter,
   duplicatePhoneFilter,
+  remarksFilter,
   currentPage,
   itemsPerPage,
   sortField,
@@ -54,6 +55,7 @@ export const useLeadsFiltering = ({
       selectedDataFilter,
       countryFilter,
       duplicatePhoneFilter,
+      remarksFilter,
       navigationFilter
     });
   }, [
@@ -71,6 +73,7 @@ export const useLeadsFiltering = ({
     selectedDataFilter,
     countryFilter,
     duplicatePhoneFilter,
+    remarksFilter,
     navigationFilter
   ]);
 

@@ -2,6 +2,7 @@
 import React from 'react';
 import { CountryFilter } from './CountryFilter';
 import { DuplicatePhoneFilter } from './DuplicatePhoneFilter';
+import { RemarksFilter } from './RemarksFilter';
 import type { Lead } from '@/types/lead';
 
 interface SecondaryFiltersProps {
@@ -9,6 +10,8 @@ interface SecondaryFiltersProps {
   onCountryChange?: (value: string) => void;
   duplicatePhoneFilter?: string;
   onDuplicatePhoneChange?: (value: string) => void;
+  remarksFilter?: string;
+  onRemarksChange?: (value: string) => void;
   leads: Lead[];
 }
 
@@ -17,6 +20,8 @@ export const SecondaryFilters: React.FC<SecondaryFiltersProps> = ({
   onCountryChange,
   duplicatePhoneFilter = 'all',
   onDuplicatePhoneChange,
+  remarksFilter = 'all',
+  onRemarksChange,
   leads
 }) => {
   return (
@@ -33,6 +38,13 @@ export const SecondaryFilters: React.FC<SecondaryFiltersProps> = ({
         <DuplicatePhoneFilter
           duplicatePhoneFilter={duplicatePhoneFilter}
           onDuplicatePhoneChange={onDuplicatePhoneChange}
+        />
+      )}
+
+      {onRemarksChange && (
+        <RemarksFilter
+          remarksFilter={remarksFilter}
+          onRemarksChange={onRemarksChange}
         />
       )}
     </div>

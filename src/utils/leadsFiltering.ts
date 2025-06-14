@@ -1,4 +1,3 @@
-
 import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 import type { DuplicatePhoneFilter } from '@/types/filtering';
@@ -20,6 +19,7 @@ interface FilterLeadsParams {
   selectedDataFilter: string;
   countryFilter: string;
   duplicatePhoneFilter: DuplicatePhoneFilter;
+  remarksFilter: string;
   navigationFilter?: { status?: string; [key: string]: any };
 }
 
@@ -38,6 +38,7 @@ export const filterLeads = ({
   selectedDataFilter,
   countryFilter,
   duplicatePhoneFilter,
+  remarksFilter,
   navigationFilter
 }: FilterLeadsParams): Lead[] => {
   console.log('Filtering leads with params:', {
@@ -47,7 +48,8 @@ export const filterLeads = ({
     selectedStatus,
     selectedCategory,
     countryFilter,
-    duplicatePhoneFilter
+    duplicatePhoneFilter,
+    remarksFilter
   });
   
   let filtered = [...leads];
@@ -124,6 +126,15 @@ export const filterLeads = ({
   // Filter by industry
   if (selectedIndustry && selectedIndustry.trim()) {
     filtered = filtered.filter(lead => lead.industry === selectedIndustry);
+  }
+
+  // Filter by remarks
+  if (remarksFilter === 'has-remarks') {
+    filtered = filtered.filter(lead => lead.remarks && lead.remarks.trim() !== '');
+    console.log('After remarks filter (has-remarks):', filtered.length);
+  } else if (remarksFilter === 'no-remarks') {
+    filtered = filtered.filter(lead => !lead.remarks || lead.remarks.trim() === '');
+    console.log('After remarks filter (no-remarks):', filtered.length);
   }
 
   // Enhanced country filter with proper fallback

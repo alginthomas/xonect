@@ -30,6 +30,20 @@ export const sortLeads = (leads: Lead[], sortField: string, sortDirection: 'asc'
       bValue = `${b.firstName || ''} ${b.lastName || ''}`.trim().toLowerCase();
     }
 
+    // Handle remarks sorting - prioritize leads with remarks, then sort alphabetically
+    if (sortField === 'remarks') {
+      const aHasRemarks = !!(a.remarks && a.remarks.trim());
+      const bHasRemarks = !!(b.remarks && b.remarks.trim());
+      
+      // If one has remarks and other doesn't, prioritize the one with remarks
+      if (aHasRemarks && !bHasRemarks) return sortDirection === 'asc' ? -1 : 1;
+      if (!aHasRemarks && bHasRemarks) return sortDirection === 'asc' ? 1 : -1;
+      
+      // If both have remarks or both don't have remarks, sort alphabetically
+      aValue = (a.remarks || '').toLowerCase();
+      bValue = (b.remarks || '').toLowerCase();
+    }
+
     // Handle date fields
     if (aValue instanceof Date) aValue = aValue.getTime();
     if (bValue instanceof Date) bValue = bValue.getTime();

@@ -7,11 +7,13 @@ interface UseLeadsDashboardFiltersProps {
   dataAvailabilityFilter: string;
   countryFilter: string;
   duplicatePhoneFilter: string;
+  remarksFilter: string;
   setStatusFilter: (value: string) => void;
   setCategoryFilter: (value: string) => void;
   setDataAvailabilityFilter: (value: string) => void;
   setCountryFilter: (value: string) => void;
   setDuplicatePhoneFilter: (value: 'all' | 'unique-only' | 'duplicates-only') => void;
+  setRemarksFilter: (value: 'all' | 'has-remarks' | 'no-remarks') => void;
   setSearchTerm: (value: string) => void;
   setNavigationFilter: (value: { status?: string; [key: string]: any } | undefined) => void;
 }
@@ -22,11 +24,13 @@ export const useLeadsDashboardFilters = ({
   dataAvailabilityFilter,
   countryFilter,
   duplicatePhoneFilter,
+  remarksFilter,
   setStatusFilter,
   setCategoryFilter,
   setDataAvailabilityFilter,
   setCountryFilter,
   setDuplicatePhoneFilter,
+  setRemarksFilter,
   setSearchTerm,
   setNavigationFilter
 }: UseLeadsDashboardFiltersProps) => {
@@ -38,8 +42,9 @@ export const useLeadsDashboardFilters = ({
     if (dataAvailabilityFilter !== 'all') count++;
     if (countryFilter !== 'all') count++;
     if (duplicatePhoneFilter !== 'all') count++;
+    if (remarksFilter !== 'all') count++;
     return count;
-  }, [statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter]);
+  }, [statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter, remarksFilter]);
 
   const clearAllFilters = () => {
     setStatusFilter('all');
@@ -47,6 +52,7 @@ export const useLeadsDashboardFilters = ({
     setDataAvailabilityFilter('all');
     setCountryFilter('all');
     setDuplicatePhoneFilter('all');
+    setRemarksFilter('all');
     setSearchTerm('');
     setNavigationFilter(undefined);
     
