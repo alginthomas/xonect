@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Save, X, Edit3, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Save, X, Edit3, Clock, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { format } from 'date-fns';
 import type { RemarkEntry } from '@/types/lead';
 
@@ -75,9 +75,14 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     return sortedHistory[0].timestamp;
   };
 
+  const handleToggleHistory = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowHistory(!showHistory);
+  };
+
   if (isEditing) {
     return (
-      <div className={`space-y-2 ${className}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`space-y-3 ${className}`} onClick={(e) => e.stopPropagation()}>
         <Textarea
           ref={textareaRef}
           value={editValue}
@@ -101,88 +106,101 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   }
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      {/* Current Remark - Constrained height */}
+    <div className={`space-y-3 ${className}`}>
+      {/* Current Remark Display with Edit Button */}
       <div className="relative group">
         {remarks ? (
-          <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors max-h-32 overflow-y-auto">
-            <p className="text-sm mb-2 leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
-              {remarks}
-            </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {getMostRecentTimestamp() && format(new Date(getMostRecentTimestamp()!), 'MMM dd, yyyy • HH:mm')}
-              </div>
+          <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <p className="text-sm leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere flex-1" 
+                 style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
+                {remarks}
+              </p>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleEditClick}
-                className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-6 w-6 p-0 flex-shrink-0 opacity-70 hover:opacity-100 transition-opacity"
+                title="Edit remarks"
               >
                 <Edit3 className="h-3 w-3" />
               </Button>
             </div>
+            
+            {getMostRecentTimestamp() && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>Last updated: {format(new Date(getMostRecentTimestamp()!), 'MMM dd, yyyy • HH:mm')}</span>
+              </div>
+            )}
           </div>
         ) : (
           <button
             onClick={handleAddClick}
-            className="w-full bg-muted/5 border border-dashed border-border/30 rounded-lg p-3 text-left hover:bg-muted/10 transition-colors"
+            className="w-full bg-muted/5 border border-dashed border-border/30 rounded-lg p-3 text-left hover:bg-muted/10 transition-colors group"
           >
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MessageSquare className="h-4 w-4" />
-              <span className="text-sm">Add remarks...</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <MessageSquare className="h-4 w-4" />
+                <span className="text-sm">Add remarks...</span>
+              </div>
+              <Edit3 className="h-3 w-3 opacity-0 group-hover:opacity-70 transition-opacity" />
             </div>
           </button>
         )}
       </div>
 
-      {/* History Toggle */}
-      {remarksHistory.length > 1 && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            setShowHistory(!showHistory);
-          }}
-          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
-        >
-          {showHistory ? (
-            <>
-              <ChevronUp className="h-3 w-3 mr-1" />
-              Hide History
-            </>
-          ) : (
-            <>
-              <ChevronDown className="h-3 w-3 mr-1" />
-              Show History
-              <Badge variant="secondary" className="ml-2 text-xs h-4 px-1.5">
-                {remarksHistory.length - 1}
-              </Badge>
-            </>
-          )}
-        </Button>
-      )}
+      {/* History Section */}
+      {remarksHistory.length > 0 && (
+        <div className="space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleToggleHistory}
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground w-full justify-between"
+          >
+            <div className="flex items-center gap-1">
+              <History className="h-3 w-3" />
+              <span>Remarks History</span>
+              {remarksHistory.length > 1 && (
+                <Badge variant="secondary" className="ml-1 text-xs h-4 px-1.5">
+                  {remarksHistory.length}
+                </Badge>
+              )}
+            </div>
+            {showHistory ? (
+              <ChevronUp className="h-3 w-3" />
+            ) : (
+              <ChevronDown className="h-3 w-3" />
+            )}
+          </Button>
 
-      {/* History - Constrained height */}
-      {showHistory && remarksHistory.length > 1 && (
-        <div className="space-y-2 max-h-32 overflow-y-auto">
-          <div className="text-xs font-medium text-muted-foreground px-1">Previous Remarks</div>
-          {remarksHistory
-            .slice(0, -1)
-            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            .map((entry) => (
-              <div key={entry.id} className="bg-muted/5 rounded-md p-2 border border-border/10">
-                <p className="text-xs mb-1 leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
-                  {entry.text}
-                </p>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="h-2.5 w-2.5" />
-                  {format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}
-                </div>
-              </div>
-            ))}
+          {/* History Items */}
+          {showHistory && remarksHistory.length > 0 && (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {remarksHistory
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                .map((entry, index) => (
+                  <div key={entry.id} className="bg-muted/5 rounded-md p-3 border border-border/10">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <p className="text-xs leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere flex-1" 
+                         style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
+                        {entry.text}
+                      </p>
+                      {index === 0 && (
+                        <Badge variant="outline" className="text-xs h-5 px-1.5 flex-shrink-0">
+                          Current
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-2.5 w-2.5" />
+                      <span>{format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       )}
     </div>
