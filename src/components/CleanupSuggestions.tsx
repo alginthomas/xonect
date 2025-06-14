@@ -117,15 +117,15 @@ export const CleanupSuggestions: React.FC<CleanupSuggestionsProps> = ({
       });
     }
 
-    // Find unused batches (no recent lead activity)
+    // Find unused batches (no recent lead activity) - Fixed property names
     const unusedBatches = importBatches.filter(batch => {
       const batchLeads = leads.filter(lead => 
         lead.categoryId === batch.categoryId || 
-        lead.import_batch_id === batch.id
+        lead.importBatchId === batch.id
       );
       const hasRecentActivity = batchLeads.some(lead => 
-        lead.last_contact_date && 
-        differenceInDays(now, new Date(lead.last_contact_date)) < 90
+        lead.lastContactDate && 
+        differenceInDays(now, new Date(lead.lastContactDate)) < 90
       );
       return !hasRecentActivity && batchLeads.length > 0;
     });
