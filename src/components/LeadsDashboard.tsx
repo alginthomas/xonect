@@ -12,9 +12,11 @@ import { LeadSidebar } from '@/components/LeadSidebar';
 import { EmailDialog } from '@/components/EmailDialog';
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { DateGroupedLeads } from '@/components/ui/date-grouped-leads';
+import { IntegrationsTab } from '@/components/IntegrationsTab';
 import { useLeadsDashboardLogic } from '@/hooks/useLeadsDashboardLogic';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Users } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Users, Mail, Linkedin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
@@ -163,163 +165,190 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     handleSelectAll(paginatedLeads);
   };
 
+  // Get selected leads data for integrations
+  const selectedLeadsData = Array.from(selectedLeads).map(leadId => 
+    leads.find(lead => lead.id === leadId)
+  ).filter(Boolean) as Lead[];
+
   return (
     <div className="space-y-3 lg:space-y-6">
-      {/* Mobile Search Toolbar */}
-      {isMobile && (
-        <MobileSearchToolbar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusChange={(status) => {
-            setStatusFilter(status);
-            setNavigationFilter(undefined);
-          }}
-          categoryFilter={categoryFilter}
-          onCategoryChange={setCategoryFilter}
-          dataAvailabilityFilter={dataAvailabilityFilter}
-          onDataAvailabilityChange={setDataAvailabilityFilter}
-          categories={categories}
-          onExport={handleExport}
-          onClearFilters={clearAllFilters}
-          activeFiltersCount={activeFiltersCount}
-        />
-      )}
-
-      {/* Desktop Filters */}
-      {!isMobile && (
-        <DesktopFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          statusFilter={statusFilter}
-          onStatusChange={(status) => {
-            setStatusFilter(status);
-            setNavigationFilter(undefined);
-          }}
-          categoryFilter={categoryFilter}
-          onCategoryChange={setCategoryFilter}
-          dataAvailabilityFilter={dataAvailabilityFilter}
-          onDataAvailabilityChange={setDataAvailabilityFilter}
-          countryFilter={countryFilter}
-          onCountryChange={setCountryFilter}
-          duplicatePhoneFilter={duplicatePhoneFilter}
-          onDuplicatePhoneChange={handleDuplicatePhoneChange}
-          categories={categories}
-          leads={leads}
-          onExport={handleExport}
-          onClearFilters={clearAllFilters}
-          activeFiltersCount={activeFiltersCount}
-          columns={columns}
-          onToggleColumnVisibility={toggleColumnVisibility}
-          onResetColumns={resetToDefault}
-        />
-      )}
-
-      {/* Navigation Filter Indicator */}
-      <NavigationFilterIndicator
-        navigationFilter={navigationFilter}
-        onClearFilter={clearNavigationFilter}
-      />
-
-      {/* Bulk Actions */}
-      <BulkActionsBar
-        selectedCount={selectedLeads.size}
-        onClearSelection={clearSelection}
-        onBulkAction={handleBulkAction}
-      />
-
-      {/* Main Content */}
-      <Card className="apple-card">
-        <ResultsOverview
-          filteredLeadsCount={filteredLeads.length}
-          selectedCount={selectedLeads.size}
-          selectedBatchId={selectedBatchId}
-          importBatches={importBatches}
-        />
-        <CardContent className="pt-0">
-          {/* Desktop Table */}
-          <LeadsTable
-            leads={paginatedLeads}
-            categories={categories}
-            selectedLeads={selectedLeads}
-            columns={columns}
-            visibleColumns={visibleColumns}
-            sortField={sortField}
-            sortDirection={sortDirection}
-            onSort={handleSort}
-            onSelectLead={handleSelectLead}
-            onSelectAll={handleSelectAllWrapper}
-            onStatusChange={handleStatusChange}
-            onRemarksUpdate={handleRemarksUpdate}
-            onEmailClick={(lead) => {
-              setSelectedLeadForEmail(lead);
-              setShowEmailDialog(true);
-            }}
-            onViewDetails={openLeadSidebar}
-            onDeleteLead={onDeleteLead}
-            onDragEnd={handleDragEnd}
-          />
-
-          {/* Mobile Date Grouped Leads */}
+      <Tabs defaultValue="leads" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="leads" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Leads
+          </TabsTrigger>
+          <TabsTrigger value="integrations" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Integrations
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="leads" className="space-y-3 lg:space-y-6">
+          {/* Mobile Search Toolbar */}
           {isMobile && (
-            <DateGroupedLeads
-              leads={paginatedLeads}
-              categories={categories}
-              selectedLeads={selectedLeads}
-              onSelectLead={handleSelectLead}
-              onViewDetails={openLeadSidebar}
-              onStatusChange={handleStatusChange}
-              onRemarksUpdate={handleRemarksUpdate}
-              onEmailClick={(lead) => {
-                setSelectedLeadForEmail(lead);
-                setShowEmailDialog(true);
+            <MobileSearchToolbar
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              statusFilter={statusFilter}
+              onStatusChange={(status) => {
+                setStatusFilter(status);
+                setNavigationFilter(undefined);
               }}
-              onDeleteLead={onDeleteLead}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+              dataAvailabilityFilter={dataAvailabilityFilter}
+              onDataAvailabilityChange={setDataAvailabilityFilter}
+              categories={categories}
+              onExport={handleExport}
+              onClearFilters={clearAllFilters}
+              activeFiltersCount={activeFiltersCount}
             />
           )}
 
-          {/* Pagination */}
-          <LeadsPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            itemsPerPage={itemsPerPage}
-            totalItems={sortedLeads.length}
-            startIndex={startIndex}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(newItemsPerPage) => {
-              setItemsPerPage(newItemsPerPage);
-              setCurrentPage(1);
-            }}
+          {/* Desktop Filters */}
+          {!isMobile && (
+            <DesktopFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              statusFilter={statusFilter}
+              onStatusChange={(status) => {
+                setStatusFilter(status);
+                setNavigationFilter(undefined);
+              }}
+              categoryFilter={categoryFilter}
+              onCategoryChange={setCategoryFilter}
+              dataAvailabilityFilter={dataAvailabilityFilter}
+              onDataAvailabilityChange={setDataAvailabilityFilter}
+              countryFilter={countryFilter}
+              onCountryChange={setCountryFilter}
+              duplicatePhoneFilter={duplicatePhoneFilter}
+              onDuplicatePhoneChange={handleDuplicatePhoneChange}
+              categories={categories}
+              leads={leads}
+              onExport={handleExport}
+              onClearFilters={clearAllFilters}
+              activeFiltersCount={activeFiltersCount}
+              columns={columns}
+              onToggleColumnVisibility={toggleColumnVisibility}
+              onResetColumns={resetToDefault}
+            />
+          )}
+
+          {/* Navigation Filter Indicator */}
+          <NavigationFilterIndicator
+            navigationFilter={navigationFilter}
+            onClearFilter={clearNavigationFilter}
           />
 
-          {/* No Results State */}
-          {sortedLeads.length === 0 && (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-medium mb-2">No leads found</h3>
-              <p className="text-muted-foreground">
-                {filteredLeads.length === 0 
-                  ? "Try adjusting your search or filters to find leads."
-                  : "All leads are filtered out by your current criteria."
-                }
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          {/* Bulk Actions */}
+          <BulkActionsBar
+            selectedCount={selectedLeads.size}
+            onClearSelection={clearSelection}
+            onBulkAction={handleBulkAction}
+          />
 
-      {/* Floating Action Button for Mobile */}
-      <FloatingActionButton
-        onClick={() => {
-          toast({
-            title: 'Add Lead',
-            description: 'Lead creation feature coming soon!'
-          });
-        }}
-        icon={<Plus className="h-5 w-5" />}
-        label="Add Lead"
-        className="bottom-20 right-4 h-12 w-12 shadow-xl"
-      />
+          {/* Main Content */}
+          <Card className="apple-card">
+            <ResultsOverview
+              filteredLeadsCount={filteredLeads.length}
+              selectedCount={selectedLeads.size}
+              selectedBatchId={selectedBatchId}
+              importBatches={importBatches}
+            />
+            <CardContent className="pt-0">
+              {/* Desktop Table */}
+              <LeadsTable
+                leads={paginatedLeads}
+                categories={categories}
+                selectedLeads={selectedLeads}
+                columns={columns}
+                visibleColumns={visibleColumns}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                onSelectLead={handleSelectLead}
+                onSelectAll={handleSelectAllWrapper}
+                onStatusChange={handleStatusChange}
+                onRemarksUpdate={handleRemarksUpdate}
+                onEmailClick={(lead) => {
+                  setSelectedLeadForEmail(lead);
+                  setShowEmailDialog(true);
+                }}
+                onViewDetails={openLeadSidebar}
+                onDeleteLead={onDeleteLead}
+                onDragEnd={handleDragEnd}
+              />
+
+              {/* Mobile Date Grouped Leads */}
+              {isMobile && (
+                <DateGroupedLeads
+                  leads={paginatedLeads}
+                  categories={categories}
+                  selectedLeads={selectedLeads}
+                  onSelectLead={handleSelectLead}
+                  onViewDetails={openLeadSidebar}
+                  onStatusChange={handleStatusChange}
+                  onRemarksUpdate={handleRemarksUpdate}
+                  onEmailClick={(lead) => {
+                    setSelectedLeadForEmail(lead);
+                    setShowEmailDialog(true);
+                  }}
+                  onDeleteLead={onDeleteLead}
+                />
+              )}
+
+              {/* Pagination */}
+              <LeadsPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                itemsPerPage={itemsPerPage}
+                totalItems={sortedLeads.length}
+                startIndex={startIndex}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={(newItemsPerPage) => {
+                  setItemsPerPage(newItemsPerPage);
+                  setCurrentPage(1);
+                }}
+              />
+
+              {/* No Results State */}
+              {sortedLeads.length === 0 && (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-medium mb-2">No leads found</h3>
+                  <p className="text-muted-foreground">
+                    {filteredLeads.length === 0 
+                      ? "Try adjusting your search or filters to find leads."
+                      : "All leads are filtered out by your current criteria."
+                    }
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Floating Action Button for Mobile */}
+          <FloatingActionButton
+            onClick={() => {
+              toast({
+                title: 'Add Lead',
+                description: 'Lead creation feature coming soon!'
+              });
+            }}
+            icon={<Plus className="h-5 w-5" />}
+            label="Add Lead"
+            className="bottom-20 right-4 h-12 w-12 shadow-xl"
+          />
+        </TabsContent>
+        
+        <TabsContent value="integrations">
+          <IntegrationsTab 
+            selectedLeads={selectedLeadsData}
+            onClearSelection={clearSelection}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Sidebar for Lead Details */}
       <LeadSidebar
