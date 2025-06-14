@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -11,8 +12,10 @@ import { QuickRemarksModalHeader } from './QuickRemarksModalHeader';
 import { RemarkHistoryView } from './RemarkHistoryView';
 import { QuickRemarksModalControls } from './QuickRemarksModalControls';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-// Improved modal layout to ensure controls never overflow and better mobile support
+// Apple-style responsive modal with improved mobile UX
 interface QuickRemarksModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,14 +34,13 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   initialIsEditing = false,
 }) => {
   const [isEditing, setIsEditing] = useState(initialIsEditing);
-  const [editValue, setEditValue] = useState(''); // Always start with empty string for new remarks
+  const [editValue, setEditValue] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isMobile = useIsMobile();
 
   useEffect(() => {
     if (open) {
-      // Always start with empty textarea when adding new remarks
       setEditValue('');
       setIsEditing(initialIsEditing);
       setShowHistory(false);
@@ -48,7 +50,6 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   useEffect(() => {
     if (open && isEditing && textareaRef.current) {
       textareaRef.current.focus();
-      // Don't pre-select text since we want empty textarea
     }
   }, [open, isEditing]);
 
@@ -69,7 +70,6 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   const handleSave = () => {
     const trimmed = editValue.trim();
     if (!trimmed) {
-      // If empty, just close without saving
       setIsEditing(false);
       onOpenChange(false);
       return;
@@ -105,60 +105,141 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleModalCloseIntent(); }}>
-      <DialogContent className={`w-full ${isMobile ? 'max-w-[95vw] mx-2 max-h-[90vh]' : 'max-w-screen-sm'} px-3 py-5 sm:p-6 rounded-2xl space-y-3 flex flex-col animate-fade-in`}>
+      <DialogContent 
+        className={`
+          ${isMobile 
+            ? 'fixed inset-x-2 bottom-0 top-auto h-[85vh] max-h-[85vh] w-auto max-w-none rounded-t-3xl rounded-b-none data-[state=open]:slide-in-from-bottom-[100%] data-[state=closed]:slide-out-to-bottom-[100%]' 
+            : 'max-w-md'
+          } 
+          p-0 gap-0 flex flex-col overflow-hidden border-0 shadow-2xl
+        `}
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        {/* Mobile header with close button - Apple style */}
+        {isMobile && (
+          <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleModalCloseIntent}
+              className="text-blue-600 font-medium"
+            >
+              Cancel
+            </Button>
+            <h3 className="font-semibold text-lg">
+              {isEditing ? 'Add Remark' : 'Remarks'}
+            </h3>
+            {isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className="text-blue-600 font-medium"
+                disabled={!editValue.trim()}
+              >
+                Save
+              </Button>
+            )}
+            {!isEditing && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleModalCloseIntent}
+                className="p-1"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        )}
 
-        <DialogHeader>
-          <QuickRemarksModalHeader
-            isEditing={isEditing}
-            remarksPresent={!!initialRemarks}
-            latestHistoryEntry={latestHistoryEntry}
-          />
-        </DialogHeader>
+        {/* Desktop header */}
+        {!isMobile && (
+          <DialogHeader className="p-6 pb-3">
+            <QuickRemarksModalHeader
+              isEditing={isEditing}
+              remarksPresent={!!initialRemarks}
+              latestHistoryEntry={latestHistoryEntry}
+            />
+          </DialogHeader>
+        )}
 
-        <div className="w-full flex-1 min-h-20">
+        {/* Content area */}
+        <div className="flex-1 px-4 pb-4 overflow-y-auto min-h-0">
+          {!isMobile && latestHistoryEntry && !isEditing && (
+            <div className="text-xs flex items-center gap-1 text-muted-foreground mb-3">
+              Last updated: {latestHistoryEntry.timestamp.toLocaleDateString()}
+            </div>
+          )}
+
           {isEditing ? (
             <Textarea
               ref={textareaRef}
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
-              className={`w-full ${isMobile ? 'min-h-[80px] max-h-[120px] text-sm' : 'min-h-[90px] max-h-[160px] text-base'} resize-none border-primary/30 focus:border-primary/50 whitespace-pre-wrap break-words shadow-sm`}
-              placeholder="Type a new remark..."
+              className={`
+                w-full resize-none border-0 shadow-none focus-visible:ring-0 p-0
+                ${isMobile ? 'min-h-[120px] text-base' : 'min-h-[100px] text-sm'}
+                bg-transparent placeholder:text-muted-foreground/60
+              `}
+              placeholder="Type your remark here..."
               tabIndex={0}
               aria-label="Add New Remark"
             />
           ) : (
-            <div className={`w-full ${isMobile ? 'text-sm' : 'text-base'} whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10`}>
-              {initialRemarks || <span className="text-muted-foreground italic">No remark. Click 'Add New Remark' to add.</span>}
+            <div className={`w-full ${isMobile ? 'text-base' : 'text-sm'} whitespace-pre-wrap break-words py-2`}>
+              {initialRemarks || (
+                <span className="text-muted-foreground italic">
+                  No remarks yet. Tap "Add Remark" to get started.
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* History section */}
+          {!isEditing && showHistory && (
+            <div className="mt-4 pt-4 border-t">
+              <RemarkHistoryView
+                remarksHistory={initialRemarksHistory}
+                currentRemarkText={initialRemarks}
+              />
             </div>
           )}
         </div>
 
-        {/* Controls are always at the bottom, never floating outside modal */}
-        <DialogFooter className={`gap-2 mt-2 w-full ${isMobile ? 'flex-col space-y-2' : ''}`}>
-          <QuickRemarksModalControls
-            isEditing={isEditing}
-            remarksHistoryCount={initialRemarksHistory.length}
-            showHistory={showHistory}
-            onSetIsEditing={setIsEditing}
-            onToggleHistory={handleToggleHistory}
-            onSave={handleSave}
-            onCancelEditing={handleCancelEditing}
-          />
-        </DialogFooter>
-
-        {/* History always within modal boundaries and scrollable if needed */}
-        {!isEditing && showHistory && (
-          <div className="w-full mt-2 max-h-40 overflow-y-auto">
-            <RemarkHistoryView
-              remarksHistory={initialRemarksHistory}
-              currentRemarkText={initialRemarks}
+        {/* Controls footer - Desktop only */}
+        {!isMobile && (
+          <DialogFooter className="p-6 pt-3 gap-2">
+            <QuickRemarksModalControls
+              isEditing={isEditing}
+              remarksHistoryCount={initialRemarksHistory.length}
+              showHistory={showHistory}
+              onSetIsEditing={setIsEditing}
+              onToggleHistory={handleToggleHistory}
+              onSave={handleSave}
+              onCancelEditing={handleCancelEditing}
             />
-          </div>
+          </DialogFooter>
         )}
 
-        {isMobile && (
-          <div className="text-xs text-center text-muted-foreground mt-2">
-            Tap outside or swipe down to close
+        {/* Mobile controls */}
+        {isMobile && !isEditing && (
+          <div className="p-4 border-t bg-background/95 backdrop-blur space-y-3">
+            <Button 
+              onClick={() => setIsEditing(true)}
+              className="w-full h-12 text-base font-medium rounded-xl bg-blue-600 hover:bg-blue-700"
+            >
+              Add Remark
+            </Button>
+            {initialRemarksHistory.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={handleToggleHistory}
+                className="w-full h-11 text-base rounded-xl"
+              >
+                {showHistory ? 'Hide' : 'Show'} History ({initialRemarksHistory.length})
+              </Button>
+            )}
           </div>
         )}
       </DialogContent>
