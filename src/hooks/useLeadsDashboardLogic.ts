@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
@@ -68,21 +69,38 @@ export const useLeadsDashboardLogic = ({
     setShowEmailDialog
   } = useLeadsDashboardState();
 
-  // Check URL parameters for navigation filter on component mount
+  // Check URL parameters for navigation filter on component mount and batch selection
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const statusParam = urlParams.get('status');
+    const batchParam = urlParams.get('batch');
+    
+    console.log('URL params:', { statusParam, batchParam, selectedBatchId });
+    
     if (statusParam && !navigationFilter) {
       console.log('Setting navigation filter from URL:', statusParam);
       setNavigationFilter({ status: statusParam });
       setStatusFilter(statusParam as any);
     }
-  }, [navigationFilter, setNavigationFilter, setStatusFilter]);
+    
+    // If we have a batch ID from URL but it doesn't match selectedBatchId, log it
+    if (batchParam && batchParam !== selectedBatchId) {
+      console.log('Batch ID mismatch - URL:', batchParam, 'Selected:', selectedBatchId);
+    }
+  }, [navigationFilter, setNavigationFilter, setStatusFilter, selectedBatchId]);
+
+  // Log when selectedBatchId changes
+  useEffect(() => {
+    if (selectedBatchId) {
+      console.log('Selected batch changed:', selectedBatchId);
+      console.log('Leads with this batch ID:', leads.filter(lead => lead.importBatchId === selectedBatchId).length);
+    }
+  }, [selectedBatchId, leads]);
 
   const { filteredLeads, sortedLeads } = useLeadsFiltering({
     leads,
     importBatches,
-    selectedBatchId,
+    selectedBatchId, // This should now properly filter by batch
     searchTerm,
     selectedStatus: navigationFilter?.status ? navigationFilter.status as any : statusFilter as LeadStatus | 'all',
     selectedCategory: categoryFilter,
@@ -100,6 +118,17 @@ export const useLeadsDashboardLogic = ({
     setCurrentPage,
     navigationFilter
   });
+
+  // Log filtered results
+  useEffect(() => {
+    console.log('Filtered leads result:', {
+      totalLeads: leads.length,
+      filteredLeads: filteredLeads.length,
+      sortedLeads: sortedLeads.length,
+      selectedBatchId,
+      batchFilteredLeads: selectedBatchId ? leads.filter(l => l.importBatchId === selectedBatchId).length : 'N/A'
+    });
+  }, [filteredLeads, sortedLeads, selectedBatchId, leads]);
 
   const { selectedLeads, handleSelectAll, handleSelectLead, clearSelection } = useLeadsSelection();
 

@@ -40,8 +40,9 @@ export const filterLeads = ({
   duplicatePhoneFilter,
   navigationFilter
 }: FilterLeadsParams): Lead[] => {
-  console.log('Filtering leads:', {
+  console.log('Filtering leads with params:', {
     totalLeads: leads.length,
+    selectedBatchId,
     searchQuery: searchQuery || searchTerm || '',
     selectedStatus,
     selectedCategory,
@@ -51,16 +52,31 @@ export const filterLeads = ({
   
   let filtered = [...leads];
 
-  // Apply navigation filter first (from dashboard clicks)
+  // Filter by import batch FIRST if selected (highest priority)
+  if (selectedBatchId && selectedBatchId.trim() !== '') {
+    console.log('Filtering by batch ID:', selectedBatchId);
+    filtered = filtered.filter(lead => {
+      const matches = lead.importBatchId === selectedBatchId;
+      if (matches) {
+        console.log('Lead matches batch:', lead.id, lead.firstName, lead.lastName, 'batch:', lead.importBatchId);
+      }
+      return matches;
+    });
+    console.log('After batch filter:', filtered.length, 'leads found');
+    
+    // If we're filtering by batch, find the batch details for category info
+    if (filtered.length > 0) {
+      const batch = importBatches.find(b => b.id === selectedBatchId);
+      if (batch) {
+        console.log('Batch details:', batch.name, 'category:', batch.categoryId);
+      }
+    }
+  }
+
+  // Apply navigation filter (from dashboard clicks)
   if (navigationFilter?.status) {
     filtered = filtered.filter(lead => lead.status === navigationFilter.status);
     console.log('After navigation filter:', filtered.length);
-  }
-
-  // Filter by import batch if selected
-  if (selectedBatchId) {
-    filtered = filtered.filter(lead => lead.importBatchId === selectedBatchId);
-    console.log('After batch filter:', filtered.length);
   }
 
   // Filter by search term
@@ -78,14 +94,14 @@ export const filterLeads = ({
     console.log('After search filter:', filtered.length);
   }
 
-  // Filter by status (only if no navigation filter is applied)
-  if (!navigationFilter?.status && selectedStatus !== 'all') {
+  // Filter by status (only if no navigation filter is applied and no batch filter)
+  if (!navigationFilter?.status && !selectedBatchId && selectedStatus !== 'all') {
     filtered = filtered.filter(lead => lead.status === selectedStatus);
     console.log('After status filter:', filtered.length);
   }
 
-  // Filter by category
-  if (selectedCategory !== 'all') {
+  // Filter by category (only if not filtering by batch)
+  if (!selectedBatchId && selectedCategory !== 'all') {
     filtered = filtered.filter(lead => lead.categoryId === selectedCategory);
     console.log('After category filter:', filtered.length);
   }
