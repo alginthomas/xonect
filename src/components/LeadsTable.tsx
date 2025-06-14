@@ -94,11 +94,11 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
               {visibleColumns.map((column) => (
                 <LeadTableCell
                   key={`${lead.id}-${column.id}`}
+                  columnId={column.id}
                   lead={lead}
-                  column={column}
                   categories={categories}
-                  isSelected={selectedLeads.has(lead.id)}
-                  onSelect={() => onSelectLead(lead.id)}
+                  selectedLeads={selectedLeads}
+                  onSelectLead={(leadId, selected) => onSelectLead(leadId)}
                   onStatusChange={onStatusChange}
                   onRemarksUpdate={onRemarksUpdate}
                   onEmailClick={() => onEmailClick(lead)}

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -98,6 +99,7 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
       );
 
     case 'phone':
+    case 'contact':
       return lead.phone ? (
         <Button
           variant="ghost"

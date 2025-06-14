@@ -161,6 +161,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     handleSelectAll(paginatedLeads);
   };
 
+  // Create a wrapper for handleSelectLead that matches the expected signature  
+  const handleSelectLeadWrapper = (leadId: string) => {
+    handleSelectLead(leadId);
+  };
+
   // Create a wrapper for handleRemarksUpdate that matches the expected signature
   const handleRemarksUpdateWrapper = async (leadId: string, remarks: string) => {
     const currentLead = leads.find(lead => lead.id === leadId);
@@ -250,7 +255,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                   leads={paginatedLeads}
                   categories={categories}
                   selectedLeads={selectedLeads}
-                  onSelectLead={handleSelectLead}
+                  onSelectLead={handleSelectLeadWrapper}
                   onViewDetails={openLeadSidebar}
                   onStatusChange={handleStatusChange}
                   onRemarksUpdate={handleRemarksUpdateWrapper}
@@ -356,7 +361,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 sortField={sortField}
                 sortDirection={sortDirection}
                 onSort={handleSort}
-                onSelectLead={handleSelectLead}
+                onSelectLead={handleSelectLeadWrapper}
                 onSelectAll={handleSelectAllWrapper}
                 onStatusChange={handleStatusChange}
                 onRemarksUpdate={handleRemarksUpdateWrapper}

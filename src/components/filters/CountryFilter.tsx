@@ -27,8 +27,8 @@ export const CountryFilter: React.FC<CountryFilterProps> = ({
       <SelectContent className="bg-white border border-border/40 shadow-lg max-h-60 overflow-y-auto">
         <SelectItem value="all" className="font-medium">All Countries</SelectItem>
         {availableCountries.map(country => (
-          <SelectItem key={country} value={country} className="font-medium">
-            {country}
+          <SelectItem key={country.name} value={country.name} className="font-medium">
+            {country.flag} {country.name}
           </SelectItem>
         ))}
       </SelectContent>
