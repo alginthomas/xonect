@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Header } from '@/components/Header';
+import Header from '@/components/Header';
 import { MobileNavigation } from '@/components/MobileNavigation';
 import { LeadsDashboard } from '@/components/LeadsDashboard';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
@@ -13,6 +13,7 @@ import { BrandingSettings } from '@/components/BrandingSettings';
 import { ImportHistory } from '@/components/ImportHistory';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -21,6 +22,7 @@ const Index = () => {
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const { deleteBatch } = useImportBatchOperations();
 
   // Set active tab from URL on mount
   useEffect(() => {
@@ -32,7 +34,7 @@ const Index = () => {
     }
   }, []);
 
-  // Fetch leads with enhanced debugging
+  // Fetch leads with enhanced debugging and proper type mapping
   const { data: leads = [], isLoading: leadsLoading, error: leadsError, refetch: refetchLeads } = useQuery({
     queryKey: ['leads'],
     queryFn: async () => {
@@ -54,11 +56,51 @@ const Index = () => {
         throw error;
       }
       
-      return data || [];
+      // Map database fields to TypeScript interface
+      const mappedLeads: Lead[] = (data || []).map(lead => ({
+        id: lead.id,
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        email: lead.email,
+        company: lead.company,
+        title: lead.title,
+        industry: lead.industry || '',
+        location: lead.location || '',
+        phone: lead.phone || '',
+        linkedin: lead.linkedin || '',
+        status: lead.status,
+        categoryId: lead.category_id,
+        importBatchId: lead.import_batch_id,
+        seniority: lead.seniority,
+        companySize: lead.company_size,
+        emailsSent: lead.emails_sent,
+        lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined,
+        completenessScore: lead.completeness_score,
+        remarks: lead.remarks || '',
+        tags: lead.tags || [],
+        createdAt: new Date(lead.created_at),
+        updatedAt: new Date(lead.updated_at),
+        userId: lead.user_id,
+        organizationId: lead.organization_id,
+        assignedTo: lead.assigned_to,
+        teamId: lead.team_id,
+        organizationWebsite: lead.organization_website || '',
+        department: lead.department || '',
+        personalEmail: lead.personal_email || '',
+        photoUrl: lead.photo_url || '',
+        twitterUrl: lead.twitter_url || '',
+        facebookUrl: lead.facebook_url || '',
+        organizationFounded: lead.organization_founded,
+        remarksHistory: lead.remarks_history || [],
+        activityLog: lead.activity_log || []
+      }));
+      
+      console.log('Mapped leads:', mappedLeads);
+      return mappedLeads;
     },
   });
 
-  // Fetch categories
+  // Fetch categories with proper type mapping
   const { data: categories = [], refetch: refetchCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -75,11 +117,22 @@ const Index = () => {
         throw error;
       }
       
-      return data || [];
+      // Map database fields to TypeScript interface
+      const mappedCategories: Category[] = (data || []).map(category => ({
+        id: category.id,
+        name: category.name,
+        description: category.description || '',
+        color: category.color,
+        criteria: category.criteria || {},
+        createdAt: new Date(category.created_at),
+        updatedAt: new Date(category.updated_at)
+      }));
+      
+      return mappedCategories;
     },
   });
 
-  // Fetch import batches
+  // Fetch import batches with proper type mapping and link checking
   const { data: importBatches = [], refetch: refetchImportBatches } = useQuery({
     queryKey: ['import_batches'],
     queryFn: async () => {
@@ -96,11 +149,38 @@ const Index = () => {
         throw error;
       }
       
-      return data || [];
+      // Map database fields to TypeScript interface
+      const mappedBatches: ImportBatch[] = (data || []).map(batch => ({
+        id: batch.id,
+        name: batch.name,
+        categoryId: batch.category_id,
+        sourceFile: batch.source_file,
+        totalLeads: batch.total_leads || 0,
+        successfulImports: batch.successful_imports || 0,
+        failedImports: batch.failed_imports || 0,
+        createdAt: new Date(batch.created_at),
+        metadata: batch.metadata || {}
+      }));
+      
+      // Check linking between batches and leads for debugging
+      for (const batch of mappedBatches) {
+        const linkedLeads = leads.filter(lead => lead.importBatchId === batch.id);
+        console.log(`Batch "${batch.name}" (${batch.id}) has ${linkedLeads.length} linked leads in current data`);
+        
+        // Also check directly in database
+        const { data: dbLinkedLeads } = await supabase
+          .from('leads')
+          .select('id, first_name, last_name')
+          .eq('import_batch_id', batch.id);
+        
+        console.log(`Batch "${batch.name}" has ${dbLinkedLeads?.length || 0} leads linked in database:`, dbLinkedLeads);
+      }
+      
+      return mappedBatches;
     },
   });
 
-  // Fetch email templates
+  // Fetch email templates with proper type mapping
   const { data: templates = [] } = useQuery({
     queryKey: ['email_templates'],
     queryFn: async () => {
@@ -117,7 +197,19 @@ const Index = () => {
         throw error;
       }
       
-      return data || [];
+      // Map database fields to TypeScript interface
+      const mappedTemplates: EmailTemplate[] = (data || []).map(template => ({
+        id: template.id,
+        name: template.name,
+        subject: template.subject,
+        content: template.content,
+        variables: template.variables || [],
+        createdAt: new Date(template.created_at),
+        updatedAt: new Date(template.updated_at),
+        lastUsed: template.last_used ? new Date(template.last_used) : undefined
+      }));
+      
+      return mappedTemplates;
     },
   });
 
@@ -226,7 +318,13 @@ const Index = () => {
   const handleCreateCategory = async (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
     const { error } = await supabase
       .from('categories')
-      .insert([categoryData]);
+      .insert([{
+        name: categoryData.name,
+        description: categoryData.description,
+        color: categoryData.color,
+        criteria: categoryData.criteria,
+        user_id: (await supabase.auth.getUser()).data.user?.id!
+      }]);
 
     if (error) {
       console.error('Error creating category:', error);
@@ -243,6 +341,14 @@ const Index = () => {
       title: 'Category created',
       description: 'Category has been created successfully'
     });
+  };
+
+  const handleDeleteBatch = async (batchId: string) => {
+    const success = await deleteBatch(batchId);
+    if (success) {
+      refetchLeads();
+      refetchImportBatches();
+    }
   };
 
   // Debug output
@@ -292,6 +398,9 @@ const Index = () => {
               refetchLeads();
               refetchImportBatches();
             }}
+            onCreateCategory={handleCreateCategory}
+            existingLeads={leads}
+            importBatches={importBatches}
           />
         )}
 
@@ -313,18 +422,35 @@ const Index = () => {
         )}
 
         {activeTab === 'templates' && (
-          <EmailTemplateBuilder />
+          <EmailTemplateBuilder 
+            templates={templates}
+            onSaveTemplate={() => {
+              // Refresh templates after saving
+              window.location.reload();
+            }}
+          />
         )}
 
         {activeTab === 'branding' && (
-          <BrandingSettings />
+          <BrandingSettings 
+            branding={branding}
+            onSave={(updatedBranding) => {
+              console.log('Updated branding:', updatedBranding);
+              toast({
+                title: 'Branding updated',
+                description: 'Your branding settings have been saved'
+              });
+            }}
+          />
         )}
 
         {activeTab === 'history' && (
           <ImportHistory 
+            leads={leads}
             importBatches={importBatches}
-            onBatchSelect={setSelectedBatchId}
-            selectedBatchId={selectedBatchId}
+            categories={categories}
+            onDeleteBatch={handleDeleteBatch}
+            onViewBatchLeads={setSelectedBatchId}
           />
         )}
       </main>
