@@ -18,12 +18,12 @@ interface LeadTableCellProps {
   lead: Lead;
   categories: Category[];
   selectedLeads: Set<string>;
-  onSelectLead: (leadId: string, selected: boolean) => void;
+  onSelectLead: (leadId: string, selected?: boolean) => void;
   onStatusChange: (leadId: string, status: LeadStatus) => void;
   onRemarksUpdate: (leadId: string, remarks: string) => void;
-  onEmailClick: (lead: Lead) => void;
-  onViewDetails: (lead: Lead) => void;
-  onDeleteLead: (leadId: string) => void;
+  onEmailClick: () => void;
+  onViewDetails: () => void;
+  onDeleteLead: () => void;
 }
 
 export const LeadTableCell: React.FC<LeadTableCellProps> = ({
@@ -99,7 +99,6 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
       );
 
     case 'phone':
-    case 'contact':
       return lead.phone ? (
         <Button
           variant="ghost"
@@ -112,6 +111,24 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
         >
           <Phone className="h-4 w-4 mr-2" />
           {lead.phone}
+        </Button>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      );
+
+    case 'email':
+      return lead.email ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            copyEmailOnly(lead.email);
+          }}
+          className="h-8 px-2 text-left justify-start"
+        >
+          <Mail className="h-4 w-4 mr-2" />
+          {lead.email}
         </Button>
       ) : (
         <span className="text-muted-foreground">-</span>
@@ -211,9 +228,9 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
       return (
         <QuickActionsCell
           lead={lead}
-          onEmailClick={() => onEmailClick(lead)}
-          onViewDetails={() => onViewDetails(lead)}
-          onDeleteLead={() => onDeleteLead(lead.id)}
+          onEmailClick={onEmailClick}
+          onViewDetails={onViewDetails}
+          onDeleteLead={onDeleteLead}
         />
       );
 

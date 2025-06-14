@@ -12,15 +12,23 @@ export interface ColumnConfig {
 
 const defaultColumns: ColumnConfig[] = [
   { id: 'select', label: 'Select', width: 'w-12', sortable: false, visible: true, fixed: true },
+  { id: 'name', label: 'Name', sortable: true, visible: true },
   { id: 'status', label: 'Status', width: 'w-24', sortable: true, visible: true },
   { id: 'remarks', label: 'Quick Remarks', width: 'w-48', sortable: false, visible: true },
   { id: 'actions', label: 'Actions', width: 'w-32', sortable: false, visible: true, fixed: true },
-  { id: 'name', label: 'Name', sortable: true, visible: true },
   { id: 'company', label: 'Company', sortable: true, visible: true },
   { id: 'phone', label: 'Phone', sortable: false, visible: true },
   { id: 'email', label: 'Email', sortable: false, visible: true },
   { id: 'category', label: 'Category', sortable: false, visible: true },
-  { id: 'created', label: 'Created', sortable: true, visible: true },
+  { id: 'linkedin', label: 'LinkedIn', sortable: false, visible: false },
+  { id: 'location', label: 'Location', sortable: false, visible: false },
+  { id: 'industry', label: 'Industry', sortable: false, visible: false },
+  { id: 'companySize', label: 'Company Size', sortable: false, visible: false },
+  { id: 'seniority', label: 'Seniority', sortable: false, visible: false },
+  { id: 'emailsSent', label: 'Emails Sent', sortable: true, visible: false },
+  { id: 'lastContact', label: 'Last Contact', sortable: true, visible: false },
+  { id: 'createdAt', label: 'Created', sortable: true, visible: false },
+  { id: 'website', label: 'Website', sortable: false, visible: false },
 ];
 
 export const useColumnConfiguration = () => {
@@ -35,11 +43,15 @@ export const useColumnConfiguration = () => {
           if (col.id === 'contact') {
             return { ...col, id: 'phone', label: 'Phone' };
           }
+          // Fix legacy 'created' column mapping to 'createdAt'
+          if (col.id === 'created') {
+            return { ...col, id: 'createdAt', label: 'Created' };
+          }
           return col;
         });
         
         // Ensure all required columns exist
-        const requiredColumns = ['select', 'status', 'remarks', 'actions', 'name', 'company', 'phone', 'email', 'category', 'created'];
+        const requiredColumns = defaultColumns.map(col => col.id);
         const missingColumns = requiredColumns.filter(id => !updatedColumns.some((col: ColumnConfig) => col.id === id));
         
         // Add missing columns from defaults
