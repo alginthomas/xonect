@@ -13,6 +13,7 @@ import { ImportHistory } from '@/components/ImportHistory';
 import { useToast } from '@/hooks/use-toast';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import { useAuth } from '@/contexts/AuthContext';
+import { getBatchFromURL, clearBatchFromURL, validateBatchExists } from '@/utils/batchNavigation';
 import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -23,20 +24,45 @@ const Index = () => {
   const { handleDeleteBatch } = useImportBatchOperations();
   const { user } = useAuth();
 
-  // Set active tab from URL on mount
+  // Set active tab and batch from URL on mount
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const tab = urlParams.get('tab');
-    const batchId = urlParams.get('batch');
-    if (tab) {
-      console.log('Setting active tab from URL:', tab);
-      setActiveTab(tab);
+    const { batchId, tabFromURL } = getBatchFromURL();
+    
+    console.log('URL params on mount:', { batchId, tabFromURL });
+    
+    if (tabFromURL) {
+      console.log('Setting active tab from URL:', tabFromURL);
+      setActiveTab(tabFromURL);
     }
+    
     if (batchId) {
       console.log('Setting selected batch from URL:', batchId);
       setSelectedBatchId(batchId);
     }
   }, []);
+
+  // Listen for batch navigation events
+  useEffect(() => {
+    const handleBatchNavigation = (event: CustomEvent) => {
+      const { batchId, batchName } = event.detail;
+      console.log('Batch navigation event received:', { batchId, batchName });
+      
+      setActiveTab('leads');
+      setSelectedBatchId(batchId);
+      
+      toast({
+        title: "Viewing Batch Leads",
+        description: `Now showing leads from "${batchName || 'selected batch'}"`,
+        variant: "default"
+      });
+    };
+
+    window.addEventListener('batchNavigated', handleBatchNavigation as EventListener);
+    
+    return () => {
+      window.removeEventListener('batchNavigated', handleBatchNavigation as EventListener);
+    };
+  }, [toast]);
 
   // Fetch leads with enhanced debugging and proper type mapping
   const { data: leads = [], isLoading: leadsLoading, error: leadsError, refetch: refetchLeads } = useQuery({
@@ -229,6 +255,23 @@ const Index = () => {
     },
     enabled: !!user
   });
+
+  // Validate selected batch exists when data loads
+  useEffect(() => {
+    if (selectedBatchId && importBatches.length > 0) {
+      const isValid = validateBatchExists(selectedBatchId, importBatches);
+      if (!isValid) {
+        console.warn('Selected batch ID is invalid:', selectedBatchId);
+        setSelectedBatchId(null);
+        clearBatchFromURL();
+        toast({
+          title: "Batch Not Found",
+          description: "The selected batch no longer exists. Showing all leads.",
+          variant: "default"
+        });
+      }
+    }
+  }, [selectedBatchId, importBatches, toast]);
 
   // Mock branding data for now
   const branding = {
@@ -465,6 +508,11 @@ const Index = () => {
   const handleDeleteBatchWrapper = async (batchId: string, batchName?: string) => {
     const success = await handleDeleteBatch(batchId, batchName);
     if (success) {
+      // Clear batch filter if we're currently viewing the deleted batch
+      if (selectedBatchId === batchId) {
+        setSelectedBatchId(null);
+        clearBatchFromURL();
+      }
       refetchLeads();
       refetchImportBatches();
     }
@@ -479,6 +527,16 @@ const Index = () => {
 
   const handleSaveTemplate = (template: EmailTemplate) => {
     refetchTemplates();
+  };
+
+  const handleClearBatchFilter = () => {
+    setSelectedBatchId(null);
+    clearBatchFromURL();
+    toast({
+      title: "Filter Cleared",
+      description: "Now showing all leads",
+      variant: "default"
+    });
   };
 
   // Debug output
@@ -526,6 +584,7 @@ const Index = () => {
           onSendEmail={handleSendEmail}
           selectedBatchId={selectedBatchId}
           onCreateCategory={handleCreateCategory}
+          onClearBatchFilter={handleClearBatchFilter}
         />
       )}
 

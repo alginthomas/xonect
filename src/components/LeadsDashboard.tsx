@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -8,6 +7,7 @@ import { ResultsOverview } from '@/components/ResultsOverview';
 import { LeadsTable } from '@/components/LeadsTable';
 import { LeadsPagination } from '@/components/LeadsPagination';
 import { NavigationFilterIndicator } from '@/components/NavigationFilterIndicator';
+import { BatchFilterIndicator } from '@/components/BatchFilterIndicator';
 import { LeadSidebar } from '@/components/LeadSidebar';
 import { EmailDialog } from '@/components/EmailDialog';
 import { DateGroupedLeads } from '@/components/ui/date-grouped-leads';
@@ -40,6 +40,7 @@ interface LeadsDashboardProps {
   onSendEmail: (leadId: string) => void;
   selectedBatchId?: string | null;
   onCreateCategory?: (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  onClearBatchFilter?: () => void;
 }
 
 export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
@@ -54,7 +55,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   onBulkDelete,
   onSendEmail,
   selectedBatchId,
-  onCreateCategory
+  onCreateCategory,
+  onClearBatchFilter
 }) => {
   const isMobile = useIsMobile();
 
@@ -223,6 +225,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             />
           </div>
 
+          {/* Batch Filter Indicator */}
+          {selectedBatchId && onClearBatchFilter && (
+            <div className="flex-shrink-0 px-4 pt-3">
+              <BatchFilterIndicator
+                batchId={selectedBatchId}
+                importBatches={importBatches}
+                onClearFilter={onClearBatchFilter}
+              />
+            </div>
+          )}
+
           {/* Navigation Filter Indicator */}
           {navigationFilter && (
             <div className="flex-shrink-0 px-4 pt-3">
@@ -334,6 +347,15 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             onToggleColumnVisibility={toggleColumnVisibility}
             onResetColumns={resetToDefault}
           />
+
+          {/* Batch Filter Indicator */}
+          {selectedBatchId && onClearBatchFilter && (
+            <BatchFilterIndicator
+              batchId={selectedBatchId}
+              importBatches={importBatches}
+              onClearFilter={onClearBatchFilter}
+            />
+          )}
 
           {/* Navigation Filter Indicator */}
           <NavigationFilterIndicator

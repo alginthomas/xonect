@@ -236,8 +236,13 @@ export const useEnhancedCSVImport = ({
 
       // Update batch metadata with enhanced file hash
       if (fileHash) {
+        // Safely handle metadata - ensure it's an object
+        const existingMetadata = importBatch.metadata && typeof importBatch.metadata === 'object' 
+          ? importBatch.metadata as Record<string, any>
+          : {};
+
         const updatedMetadata = {
-          ...importBatch.metadata,
+          ...existingMetadata,
           contentHash: fileHash.contentHash,
           structureHash: fileHash.structureHash,
           combinedHash: fileHash.combinedHash,
