@@ -103,16 +103,22 @@ export const useLeadsDashboardActions = ({
 
       console.log('Updating remarks for lead:', leadId);
       console.log('New remarks:', remarks);
-      console.log('Updated remarks history:', remarksHistory);
+      console.log('Updated remarks history length:', remarksHistory.length);
 
-      // Update lead with both current remarks and history
+      // Ensure all timestamp entries are proper Date objects
+      const processedHistory = remarksHistory.map(entry => ({
+        ...entry,
+        timestamp: entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp)
+      }));
+
+      // Update lead with both current remarks and processed history
       await onUpdateLead(leadId, { 
         remarks,
-        remarksHistory
+        remarksHistory: processedHistory
       });
       
       // Get the latest entry for the toast
-      const latestEntry = remarksHistory[remarksHistory.length - 1];
+      const latestEntry = processedHistory[processedHistory.length - 1];
       
       toast({
         title: 'Remarks updated',

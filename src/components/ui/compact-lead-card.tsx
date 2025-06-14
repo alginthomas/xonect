@@ -110,12 +110,12 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     onRemarksUpdate(remarks);
   };
 
-  // Truncate remarks for preview
-  const remarksPreview = lead.remarks && lead.remarks.length > 100 
-    ? lead.remarks.substring(0, 100) + '...' 
+  // Truncate remarks for preview - much more aggressive truncation
+  const remarksPreview = lead.remarks && lead.remarks.length > 60 
+    ? lead.remarks.substring(0, 60) + '...' 
     : lead.remarks;
 
-  const hasLongRemarks = lead.remarks && lead.remarks.length > 100;
+  const hasLongRemarks = lead.remarks && lead.remarks.length > 60;
 
   return (
     <Card 
@@ -192,7 +192,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           )}
         </div>
 
-        {/* Compact Remarks Section */}
+        {/* Compact Remarks Section - Fixed height and better spacing */}
         <div className="mb-4 sm:mb-5" onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
@@ -205,14 +205,14 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               )}
             </div>
             <div className="flex items-center gap-1">
-              {hasLongRemarks && (
+              {!showRemarks && hasLongRemarks && (
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2 text-xs"
                   onClick={() => setShowFullRemarks(!showFullRemarks)}
                 >
-                  {showFullRemarks ? 'Show Less' : 'Show More'}
+                  {showFullRemarks ? 'Less' : 'More'}
                 </Button>
               )}
               <Button
@@ -230,18 +230,18 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             </div>
           </div>
           
-          {/* Remarks Preview */}
+          {/* Remarks Preview - Fixed max height */}
           {lead.remarks && !showRemarks && (
-            <div className="bg-muted/20 rounded-lg p-2 border border-border/20">
-              <p className="text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap">
+            <div className="bg-muted/20 rounded-lg p-2 border border-border/20 max-h-16 overflow-hidden">
+              <p className="text-xs text-muted-foreground leading-relaxed break-words whitespace-pre-wrap line-clamp-3">
                 {showFullRemarks ? lead.remarks : remarksPreview}
               </p>
             </div>
           )}
           
-          {/* Full Remarks Editor */}
+          {/* Full Remarks Editor - Controlled height */}
           {showRemarks && (
-            <div className="bg-muted/30 rounded-lg p-3">
+            <div className="bg-muted/30 rounded-lg p-3 max-h-64 overflow-y-auto">
               <QuickRemarksCell
                 remarks={lead.remarks || ''}
                 remarksHistory={lead.remarksHistory || []}

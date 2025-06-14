@@ -35,13 +35,14 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   const handleSave = () => {
     if (!editValue.trim()) return;
 
+    // Create new entry with current timestamp
     const newEntry: RemarkEntry = {
       id: crypto.randomUUID(),
       text: editValue.trim(),
       timestamp: new Date()
     };
 
-    // Simply append the new entry to the existing history
+    // Append the new entry to the existing history
     const updatedHistory = [...remarksHistory, newEntry];
     onUpdate(editValue.trim(), updatedHistory);
     setEditValue('');
@@ -81,7 +82,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
           ref={textareaRef}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="min-h-[60px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words overflow-wrap-anywhere"
+          className="min-h-[80px] max-h-[120px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words overflow-wrap-anywhere"
           placeholder="Add your remarks..."
           style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}
         />
@@ -101,10 +102,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
   return (
     <div className={`space-y-2 ${className}`}>
-      {/* Current Remark */}
+      {/* Current Remark - Constrained height */}
       <div className="relative group">
         {remarks ? (
-          <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors">
+          <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors max-h-32 overflow-y-auto">
             <p className="text-sm mb-2 leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
               {remarks}
             </p>
@@ -164,9 +165,9 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
         </Button>
       )}
 
-      {/* History */}
+      {/* History - Constrained height */}
       {showHistory && remarksHistory.length > 1 && (
-        <div className="space-y-2 max-h-40 overflow-y-auto">
+        <div className="space-y-2 max-h-32 overflow-y-auto">
           <div className="text-xs font-medium text-muted-foreground px-1">Previous Remarks</div>
           {remarksHistory
             .slice(0, -1)
