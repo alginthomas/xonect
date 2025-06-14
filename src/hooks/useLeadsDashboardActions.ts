@@ -2,7 +2,7 @@
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { exportLeadsToCSV } from '@/utils/csvExport';
-import type { Lead, LeadStatus } from '@/types/lead';
+import type { Lead, LeadStatus, RemarkEntry } from '@/types/lead';
 import type { Category } from '@/types/category';
 
 interface UseLeadsDashboardActionsProps {
@@ -90,58 +90,33 @@ export const useLeadsDashboardActions = ({
     }
   };
 
-  const handleRemarksUpdate = async (leadId: string, remarks: string) => {
+  const handleRemarksUpdate = async (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
     try {
-      // Find the current lead to get existing remarks history
       const currentLead = leads.find(lead => lead.id === leadId);
       if (!currentLead) return;
 
-      // Only create a new remark entry if the remarks text has actually changed
+      // Check if remarks have actually changed
       if (currentLead.remarks === remarks) {
         console.log('Remarks unchanged, skipping update');
         return;
       }
 
-      // Helper function to normalize remarks history for legacy data
-      const normalizeRemarksHistory = (lead: Lead): import('@/types/lead').RemarkEntry[] => {
-        // If we have current remarks but no history, create a legacy entry
-        if (lead.remarks && (!lead.remarksHistory || lead.remarksHistory.length === 0)) {
-          return [{
-            id: 'legacy-' + crypto.randomUUID(),
-            text: lead.remarks,
-            timestamp: new Date() // Use current date as fallback for legacy remarks
-          }];
-        }
-
-        return lead.remarksHistory || [];
-      };
-
-      // Get normalized history
-      const normalizedHistory = normalizeRemarksHistory(currentLead);
-
-      // Create new remark entry with precise timestamp
-      const newRemarkEntry: import('@/types/lead').RemarkEntry = {
-        id: crypto.randomUUID(),
-        text: remarks,
-        timestamp: new Date() // This will capture the exact moment of creation
-      };
-
-      // Update remarks history with new entry
-      const updatedRemarksHistory = [...normalizedHistory, newRemarkEntry];
-
       console.log('Updating remarks for lead:', leadId);
-      console.log('New remark entry:', newRemarkEntry);
-      console.log('Updated remarks history:', updatedRemarksHistory);
+      console.log('New remarks:', remarks);
+      console.log('Updated remarks history:', remarksHistory);
 
       // Update lead with both current remarks and history
       await onUpdateLead(leadId, { 
         remarks,
-        remarksHistory: updatedRemarksHistory
+        remarksHistory
       });
+      
+      // Get the latest entry for the toast
+      const latestEntry = remarksHistory[remarksHistory.length - 1];
       
       toast({
         title: 'Remarks updated',
-        description: `Remark added at ${format(newRemarkEntry.timestamp, 'MMM dd, yyyy • HH:mm')}`
+        description: `Remark added at ${format(latestEntry.timestamp, 'MMM dd, yyyy • HH:mm')}`
       });
     } catch (error) {
       console.error('Error updating remarks:', error);

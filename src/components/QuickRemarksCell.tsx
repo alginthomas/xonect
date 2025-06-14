@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -31,33 +32,6 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     }
   }, [isEditing]);
 
-  // Helper function to ensure we have a proper remarks history structure
-  const getNormalizedRemarksHistory = (): RemarkEntry[] => {
-    // If we have current remarks but no history, create a legacy entry
-    if (remarks && (!remarksHistory || remarksHistory.length === 0)) {
-      return [{
-        id: 'legacy-' + crypto.randomUUID(),
-        text: remarks,
-        timestamp: new Date() // Use current date as fallback for legacy remarks
-      }];
-    }
-
-    // If we have current remarks and history, ensure the current remark is in history
-    if (remarks && remarksHistory && remarksHistory.length > 0) {
-      const latestEntry = remarksHistory[remarksHistory.length - 1];
-      if (latestEntry?.text !== remarks) {
-        // Current remarks don't match latest history entry, add it
-        return [...remarksHistory, {
-          id: 'current-' + crypto.randomUUID(),
-          text: remarks,
-          timestamp: new Date()
-        }];
-      }
-    }
-
-    return remarksHistory || [];
-  };
-
   const handleSave = () => {
     if (!editValue.trim()) return;
 
@@ -67,8 +41,8 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       timestamp: new Date()
     };
 
-    const normalizedHistory = getNormalizedRemarksHistory();
-    const updatedHistory = [...normalizedHistory, newEntry];
+    // Simply append the new entry to the existing history
+    const updatedHistory = [...remarksHistory, newEntry];
     onUpdate(editValue.trim(), updatedHistory);
     setEditValue('');
     setIsEditing(false);
@@ -91,11 +65,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     setIsEditing(true);
   };
 
-  // Get the most recent timestamp from normalized history
+  // Get the most recent timestamp from history
   const getMostRecentTimestamp = () => {
-    const normalizedHistory = getNormalizedRemarksHistory();
-    if (normalizedHistory.length === 0) return null;
-    const sortedHistory = [...normalizedHistory].sort((a, b) => 
+    if (remarksHistory.length === 0) return null;
+    const sortedHistory = [...remarksHistory].sort((a, b) => 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     return sortedHistory[0].timestamp;
@@ -125,8 +98,6 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       </div>
     );
   }
-
-  const normalizedHistory = getNormalizedRemarksHistory();
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -166,7 +137,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       </div>
 
       {/* History Toggle */}
-      {normalizedHistory.length > 1 && (
+      {remarksHistory.length > 1 && (
         <Button
           variant="ghost"
           size="sm"
@@ -186,7 +157,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
               <ChevronDown className="h-3 w-3 mr-1" />
               Show History
               <Badge variant="secondary" className="ml-2 text-xs h-4 px-1.5">
-                {normalizedHistory.length - 1}
+                {remarksHistory.length - 1}
               </Badge>
             </>
           )}
@@ -194,10 +165,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       )}
 
       {/* History */}
-      {showHistory && normalizedHistory.length > 1 && (
+      {showHistory && remarksHistory.length > 1 && (
         <div className="space-y-2 max-h-40 overflow-y-auto">
           <div className="text-xs font-medium text-muted-foreground px-1">Previous Remarks</div>
-          {normalizedHistory
+          {remarksHistory
             .slice(0, -1)
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .map((entry) => (

@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
@@ -7,7 +6,7 @@ import { useColumnConfiguration } from '@/hooks/useColumnConfiguration';
 import { useLeadsDashboardState } from '@/hooks/useLeadsDashboardState';
 import { useLeadsDashboardActions } from '@/hooks/useLeadsDashboardActions';
 import { useLeadsDashboardFilters } from '@/hooks/useLeadsDashboardFilters';
-import type { Lead, LeadStatus } from '@/types/lead';
+import type { Lead, LeadStatus, RemarkEntry } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
 interface UseLeadsDashboardLogicProps {
@@ -138,6 +137,11 @@ export const useLeadsDashboardLogic = ({
     clearSelection
   });
 
+  // Create a wrapper for handleRemarksUpdate to match the expected signature
+  const handleRemarksUpdateWrapper = async (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => {
+    await handleRemarksUpdate(leadId, remarks, remarksHistory);
+  };
+
   // Pagination calculations
   const totalPages = Math.ceil(sortedLeads.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -202,7 +206,7 @@ export const useLeadsDashboardLogic = ({
     handleBulkAction,
     handleExport,
     handleStatusChange,
-    handleRemarksUpdate,
+    handleRemarksUpdate: handleRemarksUpdateWrapper,
     handleSelectAll,
     handleSelectLead,
     clearSelection,
