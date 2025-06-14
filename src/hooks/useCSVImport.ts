@@ -31,11 +31,34 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       return '';
     };
 
+    // --- Enhanced phone number detection logic ---
+    const getPhoneValue = (row: any): string => {
+      // Try various likely candidates
+      const possiblePhoneKeys = [
+        'Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber',
+        'mobile', 'cell', 'Cell Phone', 'Mobile Phone', 'tel', 'telephone',
+        'Primary Phone', 'Primary Contact', 'Contact Number', 'Contact', 
+        'phone number', 'Mobile', 'Contact No.'
+      ];
+      for (const key of possiblePhoneKeys) {
+        if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+          return String(row[key]).trim();
+        }
+      }
+      // fallback: look for any key containing 'phone' or 'mobile' (case-insensitive)
+      for (const col in row) {
+        if (/phone|mobile|tel/i.test(col) && row[col] && String(row[col]).trim() !== '') {
+          return String(row[col]).trim();
+        }
+      }
+      return '';
+    };
+
     const mappedLead = {
       first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
       last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
       email: getFieldValue(['Email', 'email', 'Email Address', 'email_address', 'EmailAddress', 'e_mail']),
-      phone: getFieldValue(['Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber', 'mobile', 'tel', 'telephone']),
+      phone: getPhoneValue(csvRow),
       company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
       title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
       linkedin: getFieldValue(['LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 'linkedin_profile']),
@@ -73,13 +96,10 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       phone: mappedLead.phone,
       company: mappedLead.company,
       title: mappedLead.title,
-      linkedin: mappedLead.linkedin
+      linkedin: mappedLead.linkedin,
     });
 
-    console.log('🔄 Mapped CSV row to lead:', {
-      originalRow: csvRow,
-      mappedLead: mappedLead
-    });
+    console.log('🔄 Mapped CSV row to lead:', { originalRow: csvRow, mappedLead });
 
     return mappedLead;
   };
