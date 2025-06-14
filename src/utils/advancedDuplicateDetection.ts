@@ -219,58 +219,6 @@ export const mergeLeads = (leads: Lead[]): Lead => {
   if (leads.length === 0) throw new Error('No leads to merge');
   if (leads.length === 1) return leads[0];
   
-  // Priority rules for selecting best value for each field
-  const selectBestValue = (field: keyof Lead, values: any[]): any => {
-    const nonEmptyValues = values.filter(v => v !== null && v !== undefined && v !== '');
-    if (nonEmptyValues.length === 0) return values[0];
-    if (nonEmptyValues.length === 1) return nonEmptyValues[0];
-    
-    switch (field) {
-      case 'email':
-        // Prefer business emails over personal ones
-        return nonEmptyValues.find(email => 
-          !email.includes('gmail.com') && 
-          !email.includes('yahoo.com') && 
-          !email.includes('hotmail.com')
-        ) || nonEmptyValues[0];
-        
-      case 'phone':
-        // Prefer longer phone numbers (likely more complete)
-        return nonEmptyValues.sort((a, b) => b.length - a.length)[0];
-        
-      case 'linkedin':
-        // Prefer complete LinkedIn URLs
-        return nonEmptyValues.find(url => url.includes('linkedin.com/in/')) || nonEmptyValues[0];
-        
-      case 'status':
-        // Prefer more advanced statuses
-        const statusPriority: Record<string, number> = {
-          'Qualified': 10, 'Interested': 9, 'Replied': 8, 'Contacted': 7,
-          'Opened': 6, 'Clicked': 5, 'New': 4, 'Call Back': 3,
-          'Unresponsive': 2, 'Not Interested': 1, 'Unqualified': 0
-        };
-        return nonEmptyValues.sort((a, b) => 
-          (statusPriority[b] || 0) - (statusPriority[a] || 0)
-        )[0];
-        
-      case 'completenessScore':
-      case 'emailsSent':
-        // Prefer higher numbers
-        return Math.max(...nonEmptyValues);
-        
-      case 'createdAt':
-      case 'lastContactDate':
-        // Prefer most recent
-        return new Date(Math.max(...nonEmptyValues.map(d => new Date(d).getTime())));
-        
-      default:
-        // For other fields, prefer the most complete value
-        return nonEmptyValues.sort((a, b) => 
-          String(b).length - String(a).length
-        )[0];
-    }
-  };
-  
   // Get the lead with highest priority as base
   const baseLead = leads.sort((a, b) => {
     // Sort by completeness score, then by status priority, then by recent activity
@@ -296,22 +244,30 @@ export const mergeLeads = (leads: Lead[]): Lead => {
     return new Date(bDate).getTime() - new Date(aDate).getTime();
   })[0];
   
-  // Merge all fields intelligently
+  // Create merged lead with intelligent field selection
   const mergedLead: Lead = { ...baseLead };
   
-  // Get all field keys
-  const allFields = new Set<keyof Lead>();
-  leads.forEach(lead => {
-    Object.keys(lead).forEach(key => allFields.add(key as keyof Lead));
-  });
+  // Merge specific fields with custom logic
+  const emailValues = leads.map(l => l.email).filter(Boolean);
+  if (emailValues.length > 0) {
+    mergedLead.email = emailValues.find(email => 
+      !email.includes('gmail.com') && 
+      !email.includes('yahoo.com') && 
+      !email.includes('hotmail.com')
+    ) || emailValues[0];
+  }
   
-  // Merge each field
-  allFields.forEach(field => {
-    const values = leads.map(lead => lead[field]);
-    mergedLead[field] = selectBestValue(field, values) as any;
-  });
+  const phoneValues = leads.map(l => l.phone).filter(Boolean);
+  if (phoneValues.length > 0) {
+    mergedLead.phone = phoneValues.sort((a, b) => b.length - a.length)[0];
+  }
   
-  // Merge arrays (tags, remarks history, activity log)
+  const linkedinValues = leads.map(l => l.linkedin).filter(Boolean);
+  if (linkedinValues.length > 0) {
+    mergedLead.linkedin = linkedinValues.find(url => url.includes('linkedin.com/in/')) || linkedinValues[0];
+  }
+  
+  // Merge arrays
   mergedLead.tags = [...new Set(leads.flatMap(lead => lead.tags || []))];
   
   // Merge remarks history
