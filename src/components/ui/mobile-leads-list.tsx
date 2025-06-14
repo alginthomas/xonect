@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
@@ -102,6 +103,7 @@ interface MobileLeadsListProps {
   onBulkStatusUpdate: (leadIds: string[], status: LeadStatus) => Promise<void>;
   onBulkCategoryUpdate: (leadIds: string[], categoryId: string) => Promise<void>;
   onBulkDelete: (leadIds: string[]) => Promise<void>;
+  // Optional props for backwards compatibility
   onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
   onEmailClick?: (leadId: string) => Promise<void>;
   onViewDetails?: (lead: Lead) => void;
@@ -233,7 +235,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     if (action === 'delete') {
       await onBulkDelete(selectedIds);
     } else if (action === 'status' && value) {
-      await onBulkStatusUpdate(selectedIds, value as LeadStatus);
+      const bulkStatusFn = onBulkUpdateStatus || onBulkStatusUpdate;
+      await bulkStatusFn(selectedIds, value as LeadStatus);
     }
     clearSelection();
   };
