@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { generateFileHash } from '@/utils/duplicateDetection';
 import type { Category } from '@/types/category';
+import type { FileHashResult } from '@/utils/enhancedFileHashGenerator';
 
 export const createImportBatch = async (
   importName: string,
@@ -11,9 +11,21 @@ export const createImportBatch = async (
   userId?: string,
   totalLeads?: number,
   successfulImports?: number,
-  failedImports?: number
+  failedImports?: number,
+  fileHash?: FileHashResult
 ) => {
-  const fileHash = generateFileHash(JSON.stringify(csvData));
+  const metadata = {
+    importDate: new Date().toISOString(),
+    fileName,
+    originalRowCount: csvData.length,
+    columnNames: Object.keys(csvData[0] || {}),
+    ...(fileHash && {
+      contentHash: fileHash.contentHash,
+      structureHash: fileHash.structureHash,
+      combinedHash: fileHash.combinedHash,
+      fileMetadata: fileHash.metadata
+    })
+  };
   
   const { data: importBatch, error: batchError } = await supabase
     .from('import_batches')
@@ -25,20 +37,14 @@ export const createImportBatch = async (
       failed_imports: failedImports || 0,
       category_id: categoryId,
       user_id: userId,
-      metadata: {
-        fileHash,
-        importDate: new Date().toISOString(),
-        fileName,
-        originalRowCount: csvData.length,
-        columnNames: Object.keys(csvData[0] || {})
-      }
+      metadata
     })
     .select()
     .single();
 
   if (batchError) throw batchError;
   
-  console.log('📦 Created import batch:', importBatch);
+  console.log('📦 Created enhanced import batch:', importBatch);
   return importBatch;
 };
 
