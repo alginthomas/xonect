@@ -9,7 +9,91 @@ import { DateGroupedLeads } from './date-grouped-leads';
 import { MobilePagination } from './mobile-pagination';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
 import { useLeadsSelection } from '@/hooks/useLeadsSelection';
-import { BulkActionsBar } from '@/components/BulkActionsBar';
+
+interface BulkActionsBarProps {
+  selectedCount: number;
+  onClearSelection: () => void;
+  onBulkAction: (action: 'delete' | 'status', value?: string) => void;
+}
+
+const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
+  selectedCount,
+  onClearSelection,
+  onBulkAction
+}) => {
+  if (selectedCount === 0) return null;
+
+  return (
+    <div className="sticky top-20 z-20 bg-primary/5 backdrop-blur-sm border border-primary/20 rounded-lg p-3 mx-1">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-medium text-primary">
+          {selectedCount} selected
+        </span>
+        <button
+          onClick={onClearSelection}
+          className="h-6 w-6 p-0 text-primary hover:bg-primary/10 rounded"
+        >
+          ×
+        </button>
+      </div>
+      
+      <div className="flex gap-2">
+        <button
+          onClick={() => onBulkAction('status', 'Contacted')}
+          className="flex-1 h-8 text-xs px-3 border rounded"
+        >
+          Mark Contacted
+        </button>
+        <button
+          onClick={() => onBulkAction('delete')}
+          className="text-red-600 hover:text-red-700 h-8 text-xs px-3 border rounded"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+};
+
+interface MobilePaginationComponentProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+const MobilePaginationComponent: React.FC<MobilePaginationComponentProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+  totalItems,
+  itemsPerPage
+}) => {
+  return (
+    <div className="flex items-center justify-between p-4">
+      <span className="text-sm text-muted-foreground">
+        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+      </span>
+      <div className="flex gap-2">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+        >
+          Next
+        </button>
+      </div>
+    </div>
+  );
+};
 
 interface MobileLeadsListProps {
   leads: Lead[];
@@ -111,13 +195,21 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handleEmailClick = (lead: Lead) => {
-    // Copy email to clipboard or open email client
     navigator.clipboard.writeText(lead.email);
   };
 
   const handleViewDetails = (lead: Lead) => {
-    // Navigate to lead details page
     window.location.href = `/lead/${lead.id}`;
+  };
+
+  const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
+    const selectedIds = Array.from(selectedLeads);
+    if (action === 'delete') {
+      await onBulkDelete(selectedIds);
+    } else if (action === 'status' && value) {
+      await onBulkStatusUpdate(selectedIds, value as LeadStatus);
+    }
+    clearSelection();
   };
 
   return (
@@ -156,10 +248,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
         <BulkActionsBar
           selectedCount={selectedLeads.size}
           onClearSelection={clearSelection}
-          onBulkStatusUpdate={(status) => onBulkStatusUpdate(Array.from(selectedLeads), status)}
-          onBulkCategoryUpdate={(categoryId) => onBulkCategoryUpdate(Array.from(selectedLeads), categoryId)}
-          onBulkDelete={() => onBulkDelete(Array.from(selectedLeads))}
-          categories={categories}
+          onBulkAction={handleBulkAction}
         />
       )}
 
@@ -181,7 +270,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="p-4 border-t bg-background">
-          <MobilePagination
+          <MobilePaginationComponent
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
