@@ -31,22 +31,23 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   initialIsEditing = false,
 }) => {
   const [isEditing, setIsEditing] = useState(initialIsEditing);
-  const [editValue, setEditValue] = useState(initialRemarks);
+  const [editValue, setEditValue] = useState(''); // Always start with empty string for new remarks
   const [showHistory, setShowHistory] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (open) {
-      setEditValue(initialRemarks);
+      // Always start with empty textarea when adding new remarks
+      setEditValue('');
       setIsEditing(initialIsEditing);
       setShowHistory(false);
     }
-  }, [open, initialRemarks, initialIsEditing]);
+  }, [open, initialIsEditing]);
 
   useEffect(() => {
     if (open && isEditing && textareaRef.current) {
       textareaRef.current.focus();
-      textareaRef.current.select();
+      // Don't pre-select text since we want empty textarea
     }
   }, [open, isEditing]);
 
@@ -66,14 +67,13 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
   const handleSave = () => {
     const trimmed = editValue.trim();
-    if (!trimmed && !initialRemarks) {
-      return;
-    }
-    if (trimmed === initialRemarks) {
+    if (!trimmed) {
+      // If empty, just close without saving
       setIsEditing(false);
       onOpenChange(false);
       return;
     }
+    
     const newEntry: RemarkEntry = {
       id: crypto.randomUUID(),
       text: trimmed,
@@ -87,7 +87,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
 
   const handleCancelEditing = () => {
     setIsEditing(false);
-    setEditValue(initialRemarks);
+    setEditValue('');
   };
 
   const handleModalCloseIntent = () => {
@@ -121,13 +121,13 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
               value={editValue}
               onChange={e => setEditValue(e.target.value)}
               className="w-full min-h-[90px] max-h-[160px] text-base resize-none border-primary/30 focus:border-primary/50 whitespace-pre-wrap break-words shadow-sm"
-              placeholder="Type a remark..."
+              placeholder="Type a new remark..."
               tabIndex={0}
-              aria-label="Edit Remark"
+              aria-label="Add New Remark"
             />
           ) : (
             <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10">
-              {initialRemarks || <span className="text-muted-foreground italic">No remark. Click 'Edit' to add.</span>}
+              {initialRemarks || <span className="text-muted-foreground italic">No remark. Click 'Add New Remark' to add.</span>}
             </div>
           )}
         </div>
