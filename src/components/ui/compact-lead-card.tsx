@@ -213,7 +213,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </div>
         )}
 
-        {/* Website Button (Full Width on Mobile) */}
+        {/* Website Button (Full Width) */}
         {lead.organizationWebsite && (
           <div className="mb-5">
             <Button
@@ -223,7 +223,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               onClick={handleWebsiteAction}
             >
               <Globe className="h-5 w-5 mr-3 flex-shrink-0" />
-              <span className="text-base">Website</span>
+              <span className="text-base">Visit Website</span>
             </Button>
           </div>
         )}
