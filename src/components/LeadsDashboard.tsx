@@ -94,8 +94,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setItemsPerPage
   } = useLeadsCache();
 
-  // Add duplicate phone filter state
-  const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState('all');
+  // Add duplicate phone filter state with proper type
+  const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<'all' | 'unique-only' | 'duplicates-only'>('all');
 
   const { filteredLeads, sortedLeads } = useLeadsFiltering({
     leads,

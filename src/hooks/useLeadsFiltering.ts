@@ -4,6 +4,8 @@ import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 import { filterDuplicatePhoneNumbers, getLeadsWithDuplicatePhones } from '@/utils/phoneDeduplication';
 
+type DuplicatePhoneFilter = 'all' | 'unique-only' | 'duplicates-only';
+
 interface UseLeadsFilteringProps {
   leads: Lead[];
   importBatches: ImportBatch[];
@@ -18,7 +20,7 @@ interface UseLeadsFilteringProps {
   selectedIndustry: string;
   selectedDataFilter: string;
   countryFilter: string;
-  duplicatePhoneFilter: string;
+  duplicatePhoneFilter: DuplicatePhoneFilter;
   currentPage: number;
   itemsPerPage: number;
   sortField: string;
