@@ -233,6 +233,11 @@ export const getCountryNameFromPhoneNumber = (phoneNumber: string): string => {
  * Get all unique countries from a list of leads
  */
 export const getUniqueCountriesFromLeads = (leads: { phone?: string }[]): CountryInfo[] => {
+  // Handle undefined or null leads array
+  if (!leads || !Array.isArray(leads)) {
+    return [];
+  }
+  
   const countryMap = new Map<string, CountryInfo>();
   
   leads.forEach(lead => {

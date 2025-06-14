@@ -1,329 +1,273 @@
-
-import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AlertTriangle, Users, Trash2, MergeIcon, Eye, Phone, Mail } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { X, AlertTriangle, Users, Phone, Mail, Trash2, Check, Eye, RotateCcw } from 'lucide-react';
 import { findAllDuplicatesInDatabase, getDeduplicationPlan } from '@/utils/duplicateDetection';
+import { formatPhoneWithCountry, getCountryFromPhoneNumber } from '@/utils/phoneUtils';
+import { filterDuplicatePhoneNumbers, getLeadsWithDuplicatePhones } from '@/utils/phoneDeduplication';
 import type { Lead } from '@/types/lead';
 
 interface DuplicateManagerProps {
   leads: Lead[];
-  onLeadsUpdated: () => void;
+  onDeduplicateLeads: (leadsToKeep: Lead[], leadsToRemove: Lead[]) => Promise<void>;
+  onViewLead: (leadId: string) => void;
 }
 
 export const DuplicateManager: React.FC<DuplicateManagerProps> = ({
   leads,
-  onLeadsUpdated
+  onDeduplicateLeads,
+  onViewLead
 }) => {
-  const [processing, setProcessing] = useState(false);
-  const [selectedGroup, setSelectedGroup] = useState<Lead[] | null>(null);
-  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('email');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [duplicateResults, setDuplicateResults] = useState<{
+    emailDuplicateGroups: Lead[][];
+    phoneDuplicateGroups: Lead[][];
+    allDuplicateLeads: Lead[];
+  } | null>(null);
+  const [deduplicationPlan, setDeduplicationPlan] = useState<{
+    leadsToKeep: Lead[];
+    leadsToRemove: Lead[];
+  } | null>(null);
 
-  // Analyze duplicates in the database
-  const duplicateAnalysis = useMemo(() => {
-    return findAllDuplicatesInDatabase(leads);
-  }, [leads]);
-
-  const { emailDuplicateGroups, phoneDuplicateGroups, allDuplicateLeads } = duplicateAnalysis;
-
-  // Get deduplication plan
-  const deduplicationPlan = useMemo(() => {
-    const allGroups = [...emailDuplicateGroups, ...phoneDuplicateGroups];
-    return getDeduplicationPlan(allGroups);
-  }, [emailDuplicateGroups, phoneDuplicateGroups]);
-
-  const handleRemoveDuplicates = async () => {
-    if (deduplicationPlan.leadsToRemove.length === 0) {
-      toast({
-        title: "No duplicates to remove",
-        description: "No duplicate leads were found in your database",
-      });
-      return;
-    }
-
-    const confirmed = window.confirm(
-      `This will permanently delete ${deduplicationPlan.leadsToRemove.length} duplicate leads and keep ${deduplicationPlan.leadsToKeep.length} unique leads. This action cannot be undone. Continue?`
-    );
-
-    if (!confirmed) return;
-
-    setProcessing(true);
-    try {
-      const leadIds = deduplicationPlan.leadsToRemove.map(lead => lead.id);
+  // Find duplicates when leads change
+  useEffect(() => {
+    if (leads.length > 0) {
+      const results = findAllDuplicatesInDatabase(leads);
+      setDuplicateResults(results);
       
-      // Use the database function to delete duplicates
-      const { data, error } = await supabase.rpc('delete_duplicate_leads', {
-        lead_ids: leadIds
-      });
-
-      if (error) {
-        console.error('Error deleting duplicate leads:', error);
-        throw error;
+      // Generate deduplication plan
+      if (activeTab === 'email') {
+        const plan = getDeduplicationPlan(results.emailDuplicateGroups);
+        setDeduplicationPlan(plan);
+      } else {
+        const plan = getDeduplicationPlan(results.phoneDuplicateGroups);
+        setDeduplicationPlan(plan);
       }
+    }
+  }, [leads, activeTab]);
 
-      console.log(`Successfully deleted ${data} duplicate leads`);
-
-      toast({
-        title: "Duplicates removed successfully",
-        description: `Removed ${data} duplicate leads from your database`,
-      });
-
-      // Refresh the leads data
-      onLeadsUpdated();
-    } catch (error) {
-      console.error('Error removing duplicates:', error);
-      toast({
-        title: "Error removing duplicates",
-        description: error instanceof Error ? error.message : "Failed to remove duplicate leads",
-        variant: "destructive"
-      });
-    } finally {
-      setProcessing(false);
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    
+    if (duplicateResults) {
+      // Update deduplication plan based on selected tab
+      if (value === 'email') {
+        const plan = getDeduplicationPlan(duplicateResults.emailDuplicateGroups);
+        setDeduplicationPlan(plan);
+      } else {
+        const plan = getDeduplicationPlan(duplicateResults.phoneDuplicateGroups);
+        setDeduplicationPlan(plan);
+      }
     }
   };
 
-  const formatLeadName = (lead: Lead) => {
-    const name = `${lead.firstName} ${lead.lastName}`.trim();
-    return name || lead.email;
+  const handleDeduplicate = async () => {
+    if (!deduplicationPlan) return;
+    
+    setIsProcessing(true);
+    try {
+      await onDeduplicateLeads(deduplicationPlan.leadsToKeep, deduplicationPlan.leadsToRemove);
+      // Success notification would be handled by the parent component
+    } catch (error) {
+      console.error('Error deduplicating leads:', error);
+      // Error notification would be handled by the parent component
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const getLeadScore = (lead: Lead) => {
-    return lead.completenessScore || 0;
+  const getDuplicateGroups = () => {
+    if (!duplicateResults) return [];
+    return activeTab === 'email' ? duplicateResults.emailDuplicateGroups : duplicateResults.phoneDuplicateGroups;
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Duplicate Overview */}
-      <Card className="apple-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Duplicate Lead Management
-          </CardTitle>
-          <CardDescription>
-            Identify and manage duplicate leads in your database
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 bg-muted/20 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Email Duplicates</p>
-                  <p className="text-2xl font-bold text-orange-600">
-                    {emailDuplicateGroups.reduce((sum, group) => sum + group.length, 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    in {emailDuplicateGroups.length} groups
-                  </p>
-                </div>
-                <Mail className="h-8 w-8 text-orange-600" />
-              </div>
+  const renderDuplicateGroups = () => {
+    const groups = getDuplicateGroups();
+    
+    if (groups.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <Check className="h-12 w-12 text-green-500 mb-4" />
+          <h3 className="text-lg font-medium">No duplicates found</h3>
+          <p className="text-sm text-muted-foreground mt-2">
+            {activeTab === 'email' ? 'All email addresses are unique' : 'All phone numbers are unique'}
+          </p>
+        </div>
+      );
+    }
+    
+    return groups.map((group, groupIndex) => (
+      <Card key={groupIndex} className="mb-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-base">
+                {activeTab === 'email' ? 'Email Duplicate Group' : 'Phone Duplicate Group'} #{groupIndex + 1}
+              </CardTitle>
+              <CardDescription>
+                {group.length} leads with {activeTab === 'email' ? 'the same email address' : 'the same phone number'}
+              </CardDescription>
             </div>
-
-            <div className="p-4 bg-muted/20 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Phone Duplicates</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {phoneDuplicateGroups.reduce((sum, group) => sum + group.length, 0)}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    in {phoneDuplicateGroups.length} groups
-                  </p>
-                </div>
-                <Phone className="h-8 w-8 text-blue-600" />
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted/20 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Affected</p>
-                  <p className="text-2xl font-bold text-red-600">
-                    {allDuplicateLeads.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    leads need attention
-                  </p>
-                </div>
-                <AlertTriangle className="h-8 w-8 text-red-600" />
-              </div>
-            </div>
+            <Badge variant="outline" className="ml-2">
+              {activeTab === 'email' ? group[0].email : formatPhoneWithCountry(group[0].phone || '')}
+            </Badge>
           </div>
-
-          {/* Action Buttons */}
-          {allDuplicateLeads.length > 0 && (
-            <div className="flex flex-col sm:flex-row gap-4 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
-              <div className="flex-1">
-                <h4 className="font-semibold text-yellow-900 mb-1">
-                  Deduplication Plan Ready
-                </h4>
-                <p className="text-sm text-yellow-800">
-                  Keep {deduplicationPlan.leadsToKeep.length} leads, remove {deduplicationPlan.leadsToRemove.length} duplicates
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedGroup(allDuplicateLeads.slice(0, 10))}
-                  className="whitespace-nowrap"
-                >
-                  <Eye className="h-4 w-4 mr-2" />
-                  Preview
-                </Button>
-                <Button
-                  onClick={handleRemoveDuplicates}
-                  disabled={processing}
-                  size="sm"
-                  variant="destructive"
-                  className="whitespace-nowrap"
-                >
-                  {processing ? (
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  ) : (
-                    <Trash2 className="h-4 w-4 mr-2" />
-                  )}
-                  Remove Duplicates
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Duplicate Groups List */}
-          {allDuplicateLeads.length > 0 && (
+        </CardHeader>
+        <CardContent className="pb-3">
+          <ScrollArea className="h-[240px]">
             <div className="space-y-4">
-              <h4 className="font-semibold">Duplicate Groups</h4>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {[...emailDuplicateGroups, ...phoneDuplicateGroups]
-                  .filter(group => group.length > 1)
-                  .slice(0, 10)
-                  .map((group, index) => (
-                    <div key={index} className="p-4 border rounded-lg bg-muted/20">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary">
-                            {group.length} duplicates
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {group[0].email || group[0].phone}
-                          </span>
+              {group.map((lead, leadIndex) => {
+                const isKeeper = deduplicationPlan?.leadsToKeep.some(l => l.id === lead.id);
+                const countryInfo = lead.phone ? getCountryFromPhoneNumber(lead.phone) : null;
+                
+                return (
+                  <div key={lead.id} className={`p-3 rounded-md border ${isKeeper ? 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900' : ''}`}>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium flex items-center">
+                          {isKeeper && <Badge variant="success" className="mr-2 px-1 py-0">Keep</Badge>}
+                          {lead.firstName} {lead.lastName}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedGroup(group)}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {lead.title} {lead.company ? `at ${lead.company}` : ''}
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button variant="ghost" size="icon" onClick={() => onViewLead(lead.id)}>
+                          <Eye className="h-4 w-4" />
                         </Button>
                       </div>
-                      <div className="space-y-2">
-                        {group.slice(0, 3).map((lead, leadIndex) => (
-                          <div key={lead.id} className="flex items-center justify-between text-sm">
-                            <span className="font-medium">
-                              {formatLeadName(lead)} - {lead.company}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={leadIndex === 0 ? "default" : "outline"} className="text-xs">
-                                Score: {getLeadScore(lead)}
-                              </Badge>
-                              {leadIndex === 0 && (
-                                <Badge variant="default" className="text-xs">
-                                  Keep
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                        {group.length > 3 && (
-                          <p className="text-xs text-muted-foreground">
-                            +{group.length - 3} more...
-                          </p>
-                        )}
-                      </div>
                     </div>
-                  ))}
-              </div>
-            </div>
-          )}
-
-          {/* No Duplicates Message */}
-          {allDuplicateLeads.length === 0 && (
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-green-900 mb-2">
-                No Duplicates Found
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                Your lead database is clean and free of duplicates
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Detailed View Modal/Card */}
-      {selectedGroup && (
-        <Card className="apple-card">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Duplicate Group Details</CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedGroup(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <CardDescription>
-              Review leads that will be kept vs removed
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {selectedGroup.map((lead, index) => {
-                const isKeep = deduplicationPlan.leadsToKeep.some(l => l.id === lead.id);
-                return (
-                  <div
-                    key={lead.id}
-                    className={`p-4 rounded-lg border ${
-                      isKeep ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold">
-                        {formatLeadName(lead)}
-                      </h4>
-                      <Badge variant={isKeep ? "default" : "destructive"}>
-                        {isKeep ? "Keep" : "Remove"}
+                    
+                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="flex items-center text-sm">
+                        <Mail className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                        {lead.email}
+                      </div>
+                      {lead.phone && (
+                        <div className="flex items-center text-sm">
+                          <Phone className="h-3.5 w-3.5 mr-2 text-muted-foreground" />
+                          {countryInfo?.flag} {lead.phone}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+                      <div>
+                        Created: {new Date(lead.createdAt).toLocaleDateString()}
+                      </div>
+                      <Badge variant="outline" className="font-normal">
+                        {lead.status}
                       </Badge>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p><strong>Company:</strong> {lead.company}</p>
-                        <p><strong>Email:</strong> {lead.email}</p>
-                        <p><strong>Phone:</strong> {lead.phone || "None"}</p>
-                      </div>
-                      <div>
-                        <p><strong>Status:</strong> {lead.status}</p>
-                        <p><strong>Completeness:</strong> {getLeadScore(lead)}%</p>
-                        <p><strong>Created:</strong> {new Date(lead.createdAt).toLocaleDateString()}</p>
-                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
+          </ScrollArea>
+        </CardContent>
+        <CardFooter className="pt-3 flex justify-between items-center border-t">
+          <div className="text-sm text-muted-foreground">
+            <AlertTriangle className="h-3.5 w-3.5 inline-block mr-1 text-amber-500" />
+            System will keep the lead with the most complete data
+          </div>
+        </CardFooter>
+      </Card>
+    ));
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Duplicate Manager</h2>
+          <p className="text-muted-foreground">
+            Find and merge duplicate leads to keep your database clean
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="default" 
+            onClick={handleDeduplicate}
+            disabled={!deduplicationPlan || deduplicationPlan.leadsToRemove.length === 0 || isProcessing}
+          >
+            {isProcessing ? (
+              <>
+                <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Trash2 className="mr-2 h-4 w-4" />
+                Remove {deduplicationPlan?.leadsToRemove.length || 0} Duplicates
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+      
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Duplicate Summary</CardTitle>
+            <CardDescription>
+              Overview of duplicate leads in your database
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+                <Users className="h-8 w-8 text-primary mb-2" />
+                <div className="text-2xl font-bold">
+                  {duplicateResults?.allDuplicateLeads.length || 0}
+                </div>
+                <div className="text-sm text-muted-foreground text-center">
+                  Total Duplicate Leads
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+                <Mail className="h-8 w-8 text-primary mb-2" />
+                <div className="text-2xl font-bold">
+                  {duplicateResults?.emailDuplicateGroups.length || 0}
+                </div>
+                <div className="text-sm text-muted-foreground text-center">
+                  Email Duplicate Groups
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center p-4 bg-muted/50 rounded-lg">
+                <Phone className="h-8 w-8 text-primary mb-2" />
+                <div className="text-2xl font-bold">
+                  {duplicateResults?.phoneDuplicateGroups.length || 0}
+                </div>
+                <div className="text-sm text-muted-foreground text-center">
+                  Phone Duplicate Groups
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
+        
+        <Tabs value={activeTab} onValueChange={handleTabChange}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="email">Email Duplicates</TabsTrigger>
+            <TabsTrigger value="phone">Phone Duplicates</TabsTrigger>
+          </TabsList>
+          <TabsContent value="email" className="mt-6 space-y-4">
+            {renderDuplicateGroups()}
+          </TabsContent>
+          <TabsContent value="phone" className="mt-6 space-y-4">
+            {renderDuplicateGroups()}
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
