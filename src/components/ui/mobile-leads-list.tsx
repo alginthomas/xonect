@@ -10,6 +10,8 @@ import { MobilePagination } from './mobile-pagination';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
 import { useLeadsSelection } from '@/hooks/useLeadsSelection';
 
+type DuplicatePhoneFilter = 'all' | 'unique-only' | 'duplicates-only';
+
 interface BulkActionsBarProps {
   selectedCount: number;
   onClearSelection: () => void;
@@ -98,21 +100,12 @@ const MobilePaginationComponent: React.FC<MobilePaginationComponentProps> = ({
 interface MobileLeadsListProps {
   leads: Lead[];
   categories: Category[];
-  // Primary props - these are the main interface
   onUpdateLead: (leadId: string, updates: Partial<Lead>) => Promise<void>;
   onDeleteLead: (leadId: string) => Promise<void>;
   onBulkUpdateStatus: (leadIds: string[], status: LeadStatus) => Promise<void>;
   onBulkDelete: (leadIds: string[]) => Promise<void>;
-  
-  // Optional props for additional functionality
-  onBulkCategoryUpdate?: (leadIds: string[], categoryId: string) => Promise<void>;
   onEmailClick?: (leadId: string) => Promise<void>;
   onViewDetails?: (lead: Lead) => void;
-  
-  // Backwards compatibility aliases - these are optional
-  onLeadUpdate?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
-  onLeadDelete?: (leadId: string) => Promise<void>;
-  onBulkStatusUpdate?: (leadIds: string[], status: LeadStatus) => Promise<void>;
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
@@ -121,13 +114,9 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onUpdateLead,
   onDeleteLead,
   onBulkUpdateStatus,
-  onBulkCategoryUpdate,
   onBulkDelete,
-  onLeadUpdate,
   onEmailClick,
-  onViewDetails,
-  onLeadDelete,
-  onBulkStatusUpdate
+  onViewDetails
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
@@ -138,7 +127,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [selectedDataFilter, setSelectedDataFilter] = useState('all');
   const [countryFilter, setCountryFilter] = useState('all');
-  const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState('all');
+  const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<DuplicatePhoneFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
@@ -204,13 +193,11 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handleStatusChange = async (leadId: string, status: LeadStatus) => {
-    const updateFn = onLeadUpdate || onUpdateLead;
-    await updateFn(leadId, { status });
+    await onUpdateLead(leadId, { status });
   };
 
   const handleRemarksUpdate = async (leadId: string, remarks: string) => {
-    const updateFn = onLeadUpdate || onUpdateLead;
-    await updateFn(leadId, { remarks });
+    await onUpdateLead(leadId, { remarks });
   };
 
   const handleEmailClick = (lead: Lead) => {
@@ -230,8 +217,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   };
 
   const handleDeleteLead = async (leadId: string) => {
-    const deleteFn = onLeadDelete || onDeleteLead;
-    await deleteFn(leadId);
+    await onDeleteLead(leadId);
   };
 
   const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
@@ -239,9 +225,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     if (action === 'delete') {
       await onBulkDelete(selectedIds);
     } else if (action === 'status' && value) {
-      // Use any available bulk status update function
-      const bulkStatusFn = onBulkStatusUpdate || onBulkUpdateStatus;
-      await bulkStatusFn(selectedIds, value as LeadStatus);
+      await onBulkUpdateStatus(selectedIds, value as LeadStatus);
     }
     clearSelection();
   };

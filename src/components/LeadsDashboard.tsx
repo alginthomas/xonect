@@ -102,11 +102,17 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     importBatches,
     selectedBatchId,
     searchTerm,
-    statusFilter,
-    categoryFilter,
-    dataAvailabilityFilter,
+    selectedStatus: statusFilter,
+    selectedCategory: categoryFilter,
+    selectedSeniority: 'all',
+    selectedCompanySize: 'all',
+    selectedLocation: '',
+    selectedIndustry: '',
+    selectedDataFilter: dataAvailabilityFilter,
     countryFilter,
     duplicatePhoneFilter,
+    currentPage,
+    itemsPerPage,
     sortField,
     sortDirection,
     setCurrentPage
@@ -461,7 +467,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           countryFilter={countryFilter}
           onCountryChange={setCountryFilter}
           duplicatePhoneFilter={duplicatePhoneFilter}
-          onDuplicatePhoneChange={setDuplicatePhoneFilter}
+          onDuplicatePhoneChange={(value: string) => setDuplicatePhoneFilter(value as 'all' | 'unique-only' | 'duplicates-only')}
           categories={categories}
           leads={leads}
           onExport={handleExport}
