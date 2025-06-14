@@ -162,8 +162,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   };
 
   // Create a wrapper for handleSelectLead that matches the expected signature  
-  const handleSelectLeadWrapper = (leadId: string) => {
-    handleSelectLead(leadId);
+  const handleSelectLeadWrapper = (leadId: string, selected?: boolean) => {
+    handleSelectLead(leadId, selected);
   };
 
   // Create a wrapper for handleRemarksUpdate that matches the expected signature
