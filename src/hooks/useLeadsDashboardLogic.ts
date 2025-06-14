@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
@@ -206,18 +205,17 @@ export const useLeadsDashboardLogic = ({
         return;
       }
 
-      // Create new remark entry with timestamp
+      // Create new remark entry with precise timestamp
       const newRemarkEntry: import('@/types/lead').RemarkEntry = {
         id: crypto.randomUUID(),
         text: remarks,
-        timestamp: new Date()
+        timestamp: new Date() // This will capture the exact moment of creation
       };
 
       // Update remarks history with new entry
       const updatedRemarksHistory = [...(currentLead.remarksHistory || []), newRemarkEntry];
 
       console.log('Updating remarks for lead:', leadId);
-      console.log('Current remarks history:', currentLead.remarksHistory);
       console.log('New remark entry:', newRemarkEntry);
       console.log('Updated remarks history:', updatedRemarksHistory);
 
@@ -229,7 +227,7 @@ export const useLeadsDashboardLogic = ({
       
       toast({
         title: 'Remarks updated',
-        description: 'Lead remarks have been updated with timestamp.'
+        description: `Remark added at ${format(newRemarkEntry.timestamp, 'MMM dd, yyyy • HH:mm')}`
       });
     } catch (error) {
       console.error('Error updating remarks:', error);

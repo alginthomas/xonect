@@ -28,6 +28,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
+      textareaRef.current.select();
     }
   }, [isEditing]);
 
@@ -63,6 +64,15 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     setIsEditing(true);
   };
 
+  // Get the most recent timestamp
+  const getMostRecentTimestamp = () => {
+    if (remarksHistory.length === 0) return null;
+    const sortedHistory = [...remarksHistory].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    return sortedHistory[0].timestamp;
+  };
+
   if (isEditing) {
     return (
       <div className={`space-y-2 ${className}`} onClick={(e) => e.stopPropagation()}>
@@ -70,15 +80,15 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
           ref={textareaRef}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="min-h-[60px] text-sm resize-none"
+          className="min-h-[60px] text-sm resize-none border-primary/20 focus:border-primary/40"
           placeholder="Add your remarks..."
         />
-        <div className="flex gap-1">
-          <Button size="sm" onClick={handleSave} className="h-7 px-2 text-xs">
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave} className="h-8 px-3 text-xs">
             <Save className="h-3 w-3 mr-1" />
             Save
           </Button>
-          <Button size="sm" variant="outline" onClick={handleCancel} className="h-7 px-2 text-xs">
+          <Button size="sm" variant="outline" onClick={handleCancel} className="h-8 px-3 text-xs">
             <X className="h-3 w-3 mr-1" />
             Cancel
           </Button>
@@ -92,17 +102,18 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       {/* Current Remark */}
       <div className="relative group">
         {remarks ? (
-          <div className="bg-muted/20 rounded-md p-2 border border-border/20 hover:bg-muted/30 transition-colors">
-            <p className="text-sm mb-1">{remarks}</p>
+          <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors">
+            <p className="text-sm mb-2 leading-relaxed">{remarks}</p>
             <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {remarksHistory.length > 0 && format(remarksHistory[remarksHistory.length - 1].timestamp, 'MMM dd')}
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {getMostRecentTimestamp() && format(new Date(getMostRecentTimestamp()!), 'MMM dd, yyyy • HH:mm')}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleEditClick}
-                className="h-5 px-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <Edit3 className="h-3 w-3" />
               </Button>
@@ -111,10 +122,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
         ) : (
           <button
             onClick={handleAddClick}
-            className="w-full bg-muted/10 border border-dashed border-border/30 rounded-md p-2 text-left hover:bg-muted/20 transition-colors"
+            className="w-full bg-muted/5 border border-dashed border-border/30 rounded-lg p-3 text-left hover:bg-muted/10 transition-colors"
           >
             <div className="flex items-center gap-2 text-muted-foreground">
-              <MessageSquare className="h-3 w-3" />
+              <MessageSquare className="h-4 w-4" />
               <span className="text-sm">Add remarks...</span>
             </div>
           </button>
@@ -130,18 +141,18 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
             e.stopPropagation();
             setShowHistory(!showHistory);
           }}
-          className="h-5 px-1 text-xs text-muted-foreground hover:text-foreground"
+          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           {showHistory ? (
             <>
               <ChevronUp className="h-3 w-3 mr-1" />
-              Hide
+              Hide History
             </>
           ) : (
             <>
               <ChevronDown className="h-3 w-3 mr-1" />
-              History
-              <Badge variant="secondary" className="ml-1 text-xs h-3 px-1">
+              Show History
+              <Badge variant="secondary" className="ml-2 text-xs h-4 px-1.5">
                 {remarksHistory.length - 1}
               </Badge>
             </>
@@ -151,15 +162,20 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
       {/* History */}
       {showHistory && remarksHistory.length > 1 && (
-        <div className="space-y-1 max-h-32 overflow-y-auto">
-          {remarksHistory.slice(0, -1).reverse().map((entry) => (
-            <div key={entry.id} className="bg-muted/10 rounded-md p-2 border border-border/10">
-              <p className="text-xs mb-1">{entry.text}</p>
-              <div className="text-xs text-muted-foreground">
-                {format(entry.timestamp, 'MMM dd, HH:mm')}
+        <div className="space-y-2 max-h-40 overflow-y-auto">
+          <div className="text-xs font-medium text-muted-foreground px-1">Previous Remarks</div>
+          {remarksHistory
+            .slice(0, -1)
+            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+            .map((entry) => (
+              <div key={entry.id} className="bg-muted/5 rounded-md p-2 border border-border/10">
+                <p className="text-xs mb-1 leading-relaxed">{entry.text}</p>
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Clock className="h-2.5 w-2.5" />
+                  {format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
     </div>
