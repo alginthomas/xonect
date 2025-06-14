@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Users, Send, Settings } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Mail, Users, Send, Settings, ExternalLink, CheckCircle } from 'lucide-react';
+import { useMailchimpIntegration } from '@/hooks/useMailchimpIntegration';
 import type { Lead } from '@/types/lead';
 
 interface MailchimpIntegrationProps {
@@ -20,170 +21,44 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
   selectedLeads,
   onClearSelection
 }) => {
-  const [apiKey, setApiKey] = useState('');
   const [audienceId, setAudienceId] = useState('');
   const [campaignName, setCampaignName] = useState('');
   const [subject, setSubject] = useState('');
   const [emailContent, setEmailContent] = useState('');
-  const [isConnected, setIsConnected] = useState(false);
-  const [audiences, setAudiences] = useState<Array<{id: string, name: string}>>([]);
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
 
-  const connectToMailchimp = async () => {
-    if (!apiKey) {
-      toast({
-        title: 'API Key Required',
-        description: 'Please enter your Mailchimp API key',
-        variant: 'destructive'
-      });
-      return;
-    }
+  const {
+    integration,
+    audiences,
+    loading,
+    startOAuthFlow,
+    addLeadsToAudience,
+    createCampaign,
+    disconnectIntegration,
+  } = useMailchimpIntegration();
 
-    setLoading(true);
+  const handleAddLeads = async () => {
+    if (!audienceId || selectedLeads.length === 0) return;
+
     try {
-      // Mock API call - replace with actual Mailchimp API integration
-      const response = await fetch('https://us1.api.mailchimp.com/3.0/lists', {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setAudiences(data.lists || []);
-        setIsConnected(true);
-        toast({
-          title: 'Connected to Mailchimp',
-          description: 'Successfully connected to your Mailchimp account'
-        });
-      } else {
-        throw new Error('Invalid API key');
-      }
+      await addLeadsToAudience(audienceId, selectedLeads);
+      onClearSelection();
     } catch (error) {
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect to Mailchimp. Please check your API key.',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
+      // Error is handled in the hook
     }
   };
 
-  const addLeadsToAudience = async () => {
-    if (!audienceId || selectedLeads.length === 0) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please select an audience and leads to add',
-        variant: 'destructive'
-      });
-      return;
-    }
+  const handleCreateCampaign = async () => {
+    if (!campaignName || !subject || !audienceId) return;
 
-    setLoading(true);
     try {
-      // Mock API call to add leads to Mailchimp audience
-      const members = selectedLeads.map(lead => ({
-        email_address: lead.email,
-        status: 'subscribed',
-        merge_fields: {
-          FNAME: lead.firstName,
-          LNAME: lead.lastName,
-          COMPANY: lead.company,
-          TITLE: lead.title
-        }
-      }));
-
-      // This would be the actual Mailchimp API call
-      const response = await fetch(`https://us1.api.mailchimp.com/3.0/lists/${audienceId}/members`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          members,
-          update_existing: true
-        })
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Leads Added',
-          description: `Successfully added ${selectedLeads.length} leads to your Mailchimp audience`
-        });
-        onClearSelection();
-      } else {
-        throw new Error('Failed to add leads');
-      }
+      await createCampaign(campaignName, subject, audienceId, emailContent);
+      
+      // Clear form
+      setCampaignName('');
+      setSubject('');
+      setEmailContent('');
     } catch (error) {
-      toast({
-        title: 'Failed to Add Leads',
-        description: 'There was an error adding leads to your Mailchimp audience',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createCampaign = async () => {
-    if (!campaignName || !subject || !emailContent || !audienceId) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please fill in all campaign details',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // Mock API call to create Mailchimp campaign
-      const response = await fetch('https://us1.api.mailchimp.com/3.0/campaigns', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          type: 'regular',
-          recipients: {
-            list_id: audienceId
-          },
-          settings: {
-            subject_line: subject,
-            title: campaignName,
-            from_name: 'Your Company',
-            reply_to: 'your-email@company.com'
-          }
-        })
-      });
-
-      if (response.ok) {
-        const campaign = await response.json();
-        toast({
-          title: 'Campaign Created',
-          description: `Campaign "${campaignName}" created successfully`
-        });
-        
-        // Clear form
-        setCampaignName('');
-        setSubject('');
-        setEmailContent('');
-      } else {
-        throw new Error('Failed to create campaign');
-      }
-    } catch (error) {
-      toast({
-        title: 'Campaign Creation Failed',
-        description: 'There was an error creating your campaign',
-        variant: 'destructive'
-      });
-    } finally {
-      setLoading(false);
+      // Error is handled in the hook
     }
   };
 
@@ -201,45 +76,51 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {!isConnected ? (
-            <>
-              <div>
-                <Label htmlFor="mailchimp-api-key">Mailchimp API Key</Label>
-                <Input
-                  id="mailchimp-api-key"
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="Enter your Mailchimp API key"
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Get your API key from{' '}
-                  <a href="https://mailchimp.com/help/about-api-keys/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                    Mailchimp Account Settings
-                  </a>
-                </p>
+          {!integration ? (
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 p-4 border rounded-lg bg-blue-50">
+                <ExternalLink className="h-5 w-5 text-blue-600" />
+                <div className="flex-1">
+                  <h4 className="font-medium text-blue-900">Secure OAuth Connection</h4>
+                  <p className="text-sm text-blue-700">
+                    Connect securely using Mailchimp's OAuth. Your credentials are never stored locally.
+                  </p>
+                </div>
               </div>
-              <Button onClick={connectToMailchimp} disabled={loading}>
+              
+              <Button 
+                onClick={startOAuthFlow} 
+                disabled={loading}
+                className="w-full"
+              >
                 {loading ? 'Connecting...' : 'Connect to Mailchimp'}
               </Button>
-            </>
+            </div>
           ) : (
-            <div className="flex items-center gap-2">
-              <Badge variant="default">Connected</Badge>
-              <span className="text-sm text-muted-foreground">
-                Connected to Mailchimp with {audiences.length} audiences
-              </span>
-              <Button variant="outline" size="sm" onClick={() => setIsConnected(false)}>
-                <Settings className="h-4 w-4 mr-1" />
-                Reconnect
-              </Button>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 p-3 border rounded-lg bg-green-50">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="default" className="bg-green-600">Connected</Badge>
+                    <span className="text-sm font-medium">{integration.accountName}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {audiences.length} audience{audiences.length !== 1 ? 's' : ''} available
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" onClick={disconnectIntegration}>
+                  <Settings className="h-4 w-4 mr-1" />
+                  Disconnect
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Lead Management */}
-      {isConnected && (
+      {integration && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -271,7 +152,14 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
                 <SelectContent>
                   {audiences.map(audience => (
                     <SelectItem key={audience.id} value={audience.id}>
-                      {audience.name}
+                      <div className="flex items-center justify-between w-full">
+                        <span>{audience.name}</span>
+                        {audience.member_count && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {audience.member_count} members
+                          </span>
+                        )}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -279,7 +167,7 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
             </div>
 
             <Button 
-              onClick={addLeadsToAudience} 
+              onClick={handleAddLeads} 
               disabled={loading || selectedLeads.length === 0 || !audienceId}
               className="w-full"
             >
@@ -290,7 +178,7 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
       )}
 
       {/* Campaign Creation */}
-      {isConnected && (
+      {integration && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -323,7 +211,7 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="email-content">Email Content</Label>
+              <Label htmlFor="email-content">Email Content (Optional)</Label>
               <Textarea
                 id="email-content"
                 value={emailContent}
@@ -331,6 +219,9 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
                 placeholder="Enter your email content..."
                 className="min-h-[120px]"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                You can add content now or design it later in Mailchimp
+              </p>
             </div>
 
             <div>
@@ -342,14 +233,25 @@ export const MailchimpIntegration: React.FC<MailchimpIntegrationProps> = ({
                 <SelectContent>
                   {audiences.map(audience => (
                     <SelectItem key={audience.id} value={audience.id}>
-                      {audience.name}
+                      <div className="flex items-center justify-between w-full">
+                        <span>{audience.name}</span>
+                        {audience.member_count && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            {audience.member_count} members
+                          </span>
+                        )}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <Button onClick={createCampaign} disabled={loading} className="w-full">
+            <Button 
+              onClick={handleCreateCampaign} 
+              disabled={loading || !campaignName || !subject || !audienceId} 
+              className="w-full"
+            >
               {loading ? 'Creating Campaign...' : 'Create Campaign'}
             </Button>
           </CardContent>
