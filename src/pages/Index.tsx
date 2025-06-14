@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,7 @@ import { ImportHistory } from '@/components/ImportHistory';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -24,6 +24,7 @@ const Index = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { deleteBatch } = useImportBatchOperations();
+  const { user } = useAuth();
 
   // Set active tab from URL on mount
   useEffect(() => {
@@ -105,6 +106,7 @@ const Index = () => {
       console.log('🔄 Mapped leads:', mappedLeads);
       return mappedLeads;
     },
+    enabled: !!user
   });
 
   // Fetch categories with proper type mapping
@@ -138,6 +140,7 @@ const Index = () => {
       console.log('🔄 Mapped categories:', mappedCategories);
       return mappedCategories;
     },
+    enabled: !!user
   });
 
   // Fetch import batches with proper type mapping and link checking
@@ -188,10 +191,11 @@ const Index = () => {
       console.log('🔄 Mapped import batches:', mappedBatches);
       return mappedBatches;
     },
+    enabled: !!user
   });
 
   // Fetch email templates with proper type mapping
-  const { data: templates = [] } = useQuery({
+  const { data: templates = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['email_templates'],
     queryFn: async () => {
       console.log('📧 Fetching email templates...');
@@ -222,6 +226,7 @@ const Index = () => {
       console.log('🔄 Mapped email templates:', mappedTemplates);
       return mappedTemplates;
     },
+    enabled: !!user
   });
 
   // Mock branding data for now
@@ -235,10 +240,70 @@ const Index = () => {
   };
 
   const handleUpdateLead = async (leadId: string, updates: Partial<Lead>) => {
+    if (!user) return;
+
+    // Convert camelCase to snake_case for database
+    const dbUpdates: any = {};
+    Object.entries(updates).forEach(([key, value]) => {
+      switch (key) {
+        case 'firstName':
+          dbUpdates.first_name = value;
+          break;
+        case 'lastName':
+          dbUpdates.last_name = value;
+          break;
+        case 'categoryId':
+          dbUpdates.category_id = value;
+          break;
+        case 'importBatchId':
+          dbUpdates.import_batch_id = value;
+          break;
+        case 'emailsSent':
+          dbUpdates.emails_sent = value;
+          break;
+        case 'lastContactDate':
+          dbUpdates.last_contact_date = value;
+          break;
+        case 'completenessScore':
+          dbUpdates.completeness_score = value;
+          break;
+        case 'organizationWebsite':
+          dbUpdates.organization_website = value;
+          break;
+        case 'personalEmail':
+          dbUpdates.personal_email = value;
+          break;
+        case 'photoUrl':
+          dbUpdates.photo_url = value;
+          break;
+        case 'twitterUrl':
+          dbUpdates.twitter_url = value;
+          break;
+        case 'facebookUrl':
+          dbUpdates.facebook_url = value;
+          break;
+        case 'organizationFounded':
+          dbUpdates.organization_founded = value;
+          break;
+        case 'remarksHistory':
+          dbUpdates.remarks_history = value;
+          break;
+        case 'activityLog':
+          dbUpdates.activity_log = value;
+          break;
+        case 'companySize':
+          dbUpdates.company_size = value;
+          break;
+        default:
+          dbUpdates[key] = value;
+      }
+    });
+
     const { error } = await supabase
       .from('leads')
-      .update(updates)
-      .eq('id', leadId);
+      .update(dbUpdates)
+      .eq('id', leadId)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error updating lead:', error);
@@ -258,10 +323,13 @@ const Index = () => {
   };
 
   const handleDeleteLead = async (leadId: string) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('leads')
       .delete()
-      .eq('id', leadId);
+      .eq('id', leadId)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error deleting lead:', error);
@@ -281,10 +349,13 @@ const Index = () => {
   };
 
   const handleBulkUpdateStatus = async (leadIds: string[], status: any) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('leads')
       .update({ status })
-      .in('id', leadIds);
+      .in('id', leadIds)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error bulk updating leads:', error);
@@ -300,10 +371,13 @@ const Index = () => {
   };
 
   const handleBulkDelete = async (leadIds: string[]) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('leads')
       .delete()
-      .in('id', leadIds);
+      .in('id', leadIds)
+      .eq('user_id', user.id);
 
     if (error) {
       console.error('Error bulk deleting leads:', error);
@@ -327,6 +401,8 @@ const Index = () => {
   };
 
   const handleCreateCategory = async (categoryData: Omit<Category, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!user) return;
+
     const { error } = await supabase
       .from('categories')
       .insert([{
@@ -334,7 +410,7 @@ const Index = () => {
         description: categoryData.description,
         color: categoryData.color,
         criteria: categoryData.criteria,
-        user_id: (await supabase.auth.getUser()).data.user?.id!
+        user_id: user.id
       }]);
 
     if (error) {
@@ -369,6 +445,10 @@ const Index = () => {
     // Merge functionality would be implemented here
   };
 
+  const handleSaveTemplate = (template: EmailTemplate) => {
+    refetchTemplates();
+  };
+
   // Debug output
   console.log('📊 Current data state:', {
     leads: leads.length,
@@ -377,8 +457,13 @@ const Index = () => {
     templates: templates.length,
     leadsLoading,
     leadsError,
-    selectedBatchId
+    selectedBatchId,
+    user: user?.id
   });
+
+  if (!user) {
+    return null; // Let AuthProvider handle the redirect to auth page
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -413,7 +498,6 @@ const Index = () => {
             importBatches={importBatches}
             onNavigateToLeads={(filter) => {
               setActiveTab('leads');
-              // Handle navigation filter if needed
             }}
           />
         )}
@@ -451,10 +535,7 @@ const Index = () => {
         {activeTab === 'templates' && (
           <EmailTemplateBuilder 
             templates={templates}
-            onSaveTemplate={() => {
-              // Refresh templates after saving
-              window.location.reload();
-            }}
+            onSaveTemplate={handleSaveTemplate}
           />
         )}
 

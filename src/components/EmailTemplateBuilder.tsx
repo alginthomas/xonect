@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Save, Eye } from 'lucide-react';
+import { Mail, Save, Eye, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import type { EmailTemplate } from '@/types/lead';
 
 interface EmailTemplateBuilderProps {
@@ -23,7 +25,9 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const availableVariables = [
     '{{first_name}}',
@@ -39,7 +43,7 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
     setContent(prev => prev + variable);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!name || !subject || !content) {
       toast({
         title: "Missing fields",
@@ -49,30 +53,97 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
       return;
     }
 
-    const usedVariables = availableVariables.filter(v => 
-      subject.includes(v) || content.includes(v)
-    );
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to save templates",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const template: EmailTemplate = {
-      id: `template_${Date.now()}`,
-      name,
-      subject,
-      content,
-      variables: usedVariables,
-      createdAt: new Date(),
-    };
+    setSaving(true);
+    try {
+      const usedVariables = availableVariables.filter(v => 
+        subject.includes(v) || content.includes(v)
+      );
 
-    onSaveTemplate(template);
-    
-    toast({
-      title: "Template saved",
-      description: `Email template "${name}" has been saved successfully`,
-    });
+      const { data, error } = await supabase
+        .from('email_templates')
+        .insert([{
+          name,
+          subject,
+          content,
+          variables: usedVariables,
+          user_id: user.id
+        }])
+        .select()
+        .single();
 
-    // Reset form
-    setName('');
-    setSubject('');
-    setContent('');
+      if (error) throw error;
+
+      const template: EmailTemplate = {
+        id: data.id,
+        name: data.name,
+        subject: data.subject,
+        content: data.content,
+        variables: data.variables || [],
+        createdAt: new Date(data.created_at),
+        updatedAt: new Date(data.updated_at),
+        lastUsed: data.last_used ? new Date(data.last_used) : undefined
+      };
+
+      onSaveTemplate(template);
+      
+      toast({
+        title: "Template saved",
+        description: `Email template "${name}" has been saved successfully`,
+      });
+
+      // Reset form
+      setName('');
+      setSubject('');
+      setContent('');
+    } catch (error) {
+      console.error('Error saving template:', error);
+      toast({
+        title: "Error saving template",
+        description: "Failed to save the email template",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (templateId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('email_templates')
+        .delete()
+        .eq('id', templateId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Template deleted",
+        description: "Email template has been deleted successfully",
+      });
+
+      // Trigger a refresh by calling the parent's onSaveTemplate with null
+      // This is a simple way to trigger a refresh without adding more props
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting template:', error);
+      toast({
+        title: "Error deleting template",
+        description: "Failed to delete the email template",
+        variant: "destructive",
+      });
+    }
   };
 
   const previewContent = content
@@ -147,9 +218,9 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={handleSave} className="flex-1">
+            <Button onClick={handleSave} className="flex-1" disabled={saving}>
               <Save className="h-4 w-4 mr-2" />
-              Save Template
+              {saving ? 'Saving...' : 'Save Template'}
             </Button>
             <Button 
               variant="outline" 
@@ -189,7 +260,7 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
             <div className="grid gap-3">
               {templates.map(template => (
                 <div key={template.id} className="flex items-center justify-between p-3 border rounded">
-                  <div>
+                  <div className="flex-1">
                     <h4 className="font-medium">{template.name}</h4>
                     <p className="text-sm text-muted-foreground">{template.subject}</p>
                     <div className="flex gap-1 mt-1">
@@ -200,9 +271,19 @@ export const EmailTemplateBuilder: React.FC<EmailTemplateBuilderProps> = ({
                       ))}
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">
-                    Use Template
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      Use Template
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleDelete(template.id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

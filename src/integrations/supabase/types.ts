@@ -42,30 +42,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_rate_limits: {
-        Row: {
-          created_at: string | null
-          email_count: number | null
-          id: string
-          user_id: string
-          window_start: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email_count?: number | null
-          id?: string
-          user_id: string
-          window_start?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email_count?: number | null
-          id?: string
-          user_id?: string
-          window_start?: string | null
-        }
-        Relationships: []
-      }
       email_templates: {
         Row: {
           content: string
@@ -148,39 +124,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      lead_lists: {
-        Row: {
-          created_at: string
-          criteria: Json
-          description: string | null
-          id: string
-          is_smart: boolean | null
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          criteria?: Json
-          description?: string | null
-          id?: string
-          is_smart?: boolean | null
-          name: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          criteria?: Json
-          description?: string | null
-          id?: string
-          is_smart?: boolean | null
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       leads: {
         Row: {
