@@ -15,6 +15,8 @@ import type { Lead, EmailTemplate } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 import { useBatchSelection } from '@/hooks/useBatchSelection';
 import { BulkBatchActions } from './BulkBatchActions';
+import { useEnhancedBatchOperations } from '@/hooks/useEnhancedBatchOperations';
+import { CleanupSuggestions } from './CleanupSuggestions';
 
 interface ImportHistoryProps {
   leads: Lead[];
@@ -33,8 +35,12 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'leads'>('date');
+  const [showCleanupSuggestions, setShowCleanupSuggestions] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Enhanced batch operations
+  const { smartDeleteBatches, applyCleanupSuggestion, loading: enhancedLoading } = useEnhancedBatchOperations();
 
   // ========== BATCH SELECTION HOOK ===========
   const { 
@@ -144,6 +150,32 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   const totalFailedImports = filteredBatches.reduce((sum, batch) => sum + (batch.failedImports || 0), 0);
 
   // ============= BULK DELETE ACTION ============
+  const handleSmartBulkDelete = async (batchIds: string[], deletionType: 'cascade' | 'preserve' | 'soft') => {
+    const success = await smartDeleteBatches(batchIds, deletionType);
+    if (success) {
+      // Refresh the data by calling onDeleteBatch for each batch
+      batchIds.forEach(id => {
+        const batch = filteredBatches.find(b => b.id === id);
+        if (batch) onDeleteBatch(batch.id);
+      });
+      clearSelection();
+    }
+  };
+
+  const handleApplyCleanupSuggestion = async (suggestion: any) => {
+    const success = await applyCleanupSuggestion(suggestion);
+    if (success) {
+      // Refresh data
+      suggestion.batchIds.forEach((id: string) => {
+        const batch = filteredBatches.find(b => b.id === id);
+        if (batch) onDeleteBatch(batch.id);
+      });
+    }
+  };
+
+  const selectedBatches = filteredBatches.filter(batch => selectedBatchIds.has(batch.id));
+
+  // ============= BULK DELETE ACTION ============
   const handleBulkDelete = () => {
     if (selectedBatchIds.size === 0) return;
     // Get batch list
@@ -202,10 +234,20 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
         </Card>
       </div>
 
+      {/* Cleanup Suggestions */}
+      {showCleanupSuggestions && (
+        <CleanupSuggestions
+          importBatches={importBatches}
+          leads={leads}
+          onApplySuggestion={handleApplyCleanupSuggestion}
+        />
+      )}
+
       {/* Bulk Batch Actions Bar */}
       <BulkBatchActions
         selectedCount={selectedBatchIds.size}
-        onBulkDelete={handleBulkDelete}
+        selectedBatches={selectedBatches}
+        onSmartDelete={handleSmartBulkDelete}
         onClearSelection={clearSelection}
       />
 
@@ -229,6 +271,14 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowCleanupSuggestions(!showCleanupSuggestions)}
+                className="px-3"
+              >
+                {showCleanupSuggestions ? "Hide" : "Show"} Suggestions
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => (isAllSelected ? clearSelection() : selectAll())}
                 className="px-3"
               >
@@ -237,7 +287,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
             </div>
           </div>
           <CardDescription>
-            Search, sort, and manage your imported lead batches
+            Search, sort, and manage your imported lead batches with smart deletion options
           </CardDescription>
         </CardHeader>
         <CardContent>
