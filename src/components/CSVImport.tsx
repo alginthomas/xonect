@@ -17,18 +17,8 @@ import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import { DuplicateValidationReport } from '@/components/DuplicateValidationReport';
 import type { Category, ImportBatch } from '@/types/category';
 import type { Lead } from '@/types/lead';
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction } from '@/components/ui/alert-dialog';
 import { useNavigate } from 'react-router-dom';
-
 interface CSVImportProps {
   categories: Category[];
   onImportComplete: () => void;
@@ -36,7 +26,6 @@ interface CSVImportProps {
   existingLeads: Lead[];
   importBatches: ImportBatch[];
 }
-
 export const CSVImport: React.FC<CSVImportProps> = ({
   categories,
   onImportComplete,
@@ -54,23 +43,24 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [deletingBatchName, setDeletingBatchName] = useState<string | null>(null);
   const [showValidationReport, setShowValidationReport] = useState(false);
   const [strictMode, setStrictMode] = useState(false);
-  
   const navigate = useNavigate();
-  const { 
-    importCSVData, 
-    validateCSVFile, 
+  const {
+    importCSVData,
+    validateCSVFile,
     clearValidation,
-    isImporting, 
+    isImporting,
     isValidating,
-    validationResult 
-  } = useEnhancedCSVImport({ 
-    onImportComplete, 
-    categories, 
-    existingLeads, 
-    importBatches 
+    validationResult
+  } = useEnhancedCSVImport({
+    onImportComplete,
+    categories,
+    existingLeads,
+    importBatches
   });
-  const { handleDeleteBatch: deleteBatch, isDeleting } = useImportBatchOperations();
-
+  const {
+    handleDeleteBatch: deleteBatch,
+    isDeleting
+  } = useImportBatchOperations();
   const clearFile = useCallback(() => {
     setCsvData([]);
     setFileName('');
@@ -80,65 +70,60 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     setShowValidationReport(false);
     clearValidation();
   }, [clearValidation]);
-
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     setFileName(file.name);
     setFileError(null);
     setShowValidationReport(false);
     clearValidation();
-    
+
     // Auto-generate import name from file name
     const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
     setImportName(nameWithoutExtension);
-
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = async e => {
       const fileContent = e.target?.result as string;
-
       Papa.parse(fileContent, {
         header: true,
         skipEmptyLines: true,
-        complete: (results) => {
+        complete: results => {
           if (results.errors.length > 0) {
             setFileError(`CSV parsing error: ${results.errors.map(e => e.message).join(', ')}`);
             return;
           }
-
           if (results.data.length === 0) {
             setFileError('No data found in CSV file.');
             return;
           }
-
           setCsvData(results.data);
         },
-        error: (error) => {
+        error: error => {
           setFileError(`CSV parsing error: ${error.message}`);
         }
       });
     };
     reader.readAsText(file);
   }, [clearValidation]);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const {
+    getRootProps,
+    getInputProps,
+    isDragActive
+  } = useDropzone({
     onDrop,
     accept: {
       'text/csv': ['.csv']
     },
     maxFiles: 1
   });
-
   const handleValidate = async () => {
     if (csvData.length === 0) {
       setFileError('No data to validate. Please upload a CSV file.');
       return;
     }
-
     if (!importName.trim()) {
       setFileError('Please provide a name for this import.');
       return;
     }
-
     try {
       await validateCSVFile(csvData, fileName, strictMode);
       setShowValidationReport(true);
@@ -146,42 +131,34 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       console.error('Validation failed:', error);
     }
   };
-
   const handleImport = async () => {
     const success = await importCSVData(csvData, fileName, importName, selectedCategory, true);
-    
     if (success) {
       clearFile();
     }
   };
-
   const getStatusIcon = () => {
     if (fileError) return <XCircle className="h-5 w-5 text-destructive" />;
     if (fileName && csvData.length > 0) return <CheckCircle2 className="h-5 w-5 text-green-500" />;
     return <Upload className="h-8 w-8 text-muted-foreground" />;
   };
-
   const getStatusBadgeVariant = (batch: ImportBatch): "default" | "secondary" | "destructive" => {
-    const successRate = batch.totalLeads > 0 ? (batch.successfulImports / batch.totalLeads) * 100 : 0;
+    const successRate = batch.totalLeads > 0 ? batch.successfulImports / batch.totalLeads * 100 : 0;
     if (successRate === 100) return "default";
     if (successRate >= 80) return "secondary";
     return "destructive";
   };
-
   const getBatchLeadCount = (batchId: string) => {
     return existingLeads.filter(lead => lead.importBatchId === batchId).length;
   };
-
   const handleViewBatchLeads = (batchId: string) => {
     navigate('/?tab=leads&batch=' + batchId);
   };
-
   const handleDeleteBatch = (batchId: string, batchName?: string) => {
     setDeletingBatchId(batchId);
     setDeletingBatchName(batchName || '');
     setDeleteDialogOpen(true);
   };
-
   const handleConfirmDelete = async () => {
     if (deletingBatchId) {
       await deleteBatch(deletingBatchId, deletingBatchName || undefined);
@@ -190,17 +167,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     setDeletingBatchId(null);
     setDeletingBatchName(null);
   };
-
-  const isReadyToValidate = csvData.length > 0 && 
-                           !fileError && 
-                           importName.trim() !== '';
-
-  const isReadyToImport = showValidationReport && 
-                         validationResult?.canProceed && 
-                         !isImporting;
-
-  return (
-    <div className="h-full flex flex-col">
+  const isReadyToValidate = csvData.length > 0 && !fileError && importName.trim() !== '';
+  const isReadyToImport = showValidationReport && validationResult?.canProceed && !isImporting;
+  return <div className="h-full flex flex-col">
       <Tabs defaultValue="upload" className="flex-1 flex flex-col">
         <div className="px-4 sm:px-6 py-4 border-b">
           <TabsList className="grid w-full grid-cols-2 max-w-md">
@@ -217,8 +186,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
 
         <div className="flex-1 overflow-auto">
           <TabsContent value="upload" className="p-4 sm:p-6 space-y-6 mt-0">
-            {!showValidationReport ? (
-              <>
+            {!showValidationReport ? <>
                 {/* Header Section */}
                 <div className="text-center space-y-2">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
@@ -243,60 +211,37 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   </CardHeader>
                   <CardContent className="space-y-6">
                     {/* Drop Zone */}
-                    <div
-                      {...getRootProps()}
-                      className={`
+                    <div {...getRootProps()} className={`
                         relative border-2 border-dashed rounded-xl p-6 sm:p-8 cursor-pointer transition-all duration-200 min-h-[160px] sm:min-h-[180px] flex flex-col items-center justify-center gap-3 sm:gap-4
-                        ${isDragActive 
-                          ? 'border-primary bg-primary/5 scale-[1.02]' 
-                          : 'border-border hover:border-primary/50 hover:bg-muted/30'
-                        }
-                        ${fileError 
-                          ? 'border-destructive/50 bg-destructive/5' 
-                          : ''
-                        }
-                        ${fileName && !fileError 
-                          ? 'border-green-500/50 bg-green-50/50' 
-                          : ''
-                        }
-                      `}
-                    >
+                        ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border hover:border-primary/50 hover:bg-muted/30'}
+                        ${fileError ? 'border-destructive/50 bg-destructive/5' : ''}
+                        ${fileName && !fileError ? 'border-green-500/50 bg-green-50/50' : ''}
+                      `}>
                       <input {...getInputProps()} />
                       
                       {getStatusIcon()}
                       
                       <div className="text-center space-y-2">
-                        {isDragActive ? (
-                          <p className="text-primary font-medium">Drop the file here...</p>
-                        ) : fileName ? (
-                          <div className="space-y-1">
+                        {isDragActive ? <p className="text-primary font-medium">Drop the file here...</p> : fileName ? <div className="space-y-1">
                             <p className="font-medium text-foreground text-sm sm:text-base">{fileName}</p>
-                            {csvData.length > 0 && (
-                              <p className="text-sm text-muted-foreground">
+                            {csvData.length > 0 && <p className="text-sm text-muted-foreground">
                                 {csvData.length} rows detected
-                              </p>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
+                              </p>}
+                          </div> : <div className="space-y-1">
                             <p className="text-foreground font-medium text-sm sm:text-base">Choose a CSV file or drag it here</p>
                             <p className="text-xs sm:text-sm text-muted-foreground">
                               Enhanced duplicate detection included
                             </p>
-                          </div>
-                        )}
+                          </div>}
                       </div>
                       
-                      {!fileName && (
-                        <Button variant="outline" size="sm" className="mt-2">
+                      {!fileName && <Button variant="outline" size="sm" className="mt-2">
                           Browse Files
-                        </Button>
-                      )}
+                        </Button>}
                     </div>
 
                     {/* Data Preview */}
-                    {csvData.length > 0 && !fileError && (
-                      <Card className="border-blue-200 bg-blue-50/50">
+                    {csvData.length > 0 && !fileError && <Card className="border-blue-200 bg-blue-50/50">
                         <CardHeader className="pb-4">
                           <CardTitle className="flex items-center gap-2 text-lg text-blue-800">
                             <Eye className="h-5 w-5" />
@@ -311,44 +256,30 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  {Object.keys(csvData[0] || {}).slice(0, 6).map((header, index) => (
-                                    <TableHead key={index} className="text-xs font-medium">
+                                  {Object.keys(csvData[0] || {}).slice(0, 6).map((header, index) => <TableHead key={index} className="text-xs font-medium">
                                       {header}
-                                    </TableHead>
-                                  ))}
-                                  {Object.keys(csvData[0] || {}).length > 6 && (
-                                    <TableHead className="text-xs font-medium">...</TableHead>
-                                  )}
+                                    </TableHead>)}
+                                  {Object.keys(csvData[0] || {}).length > 6 && <TableHead className="text-xs font-medium">...</TableHead>}
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {csvData.slice(0, 5).map((row, rowIndex) => (
-                                  <TableRow key={rowIndex}>
-                                    {Object.values(row).slice(0, 6).map((value: any, cellIndex) => (
-                                      <TableCell key={cellIndex} className="text-xs max-w-[120px] truncate">
+                                {csvData.slice(0, 5).map((row, rowIndex) => <TableRow key={rowIndex}>
+                                    {Object.values(row).slice(0, 6).map((value: any, cellIndex) => <TableCell key={cellIndex} className="text-xs max-w-[120px] truncate">
                                         {String(value || '')}
-                                      </TableCell>
-                                    ))}
-                                    {Object.values(row).length > 6 && (
-                                      <TableCell className="text-xs">...</TableCell>
-                                    )}
-                                  </TableRow>
-                                ))}
+                                      </TableCell>)}
+                                    {Object.values(row).length > 6 && <TableCell className="text-xs">...</TableCell>}
+                                  </TableRow>)}
                               </TableBody>
                             </Table>
                           </div>
-                          {csvData.length > 5 && (
-                            <p className="text-xs text-muted-foreground mt-2">
+                          {csvData.length > 5 && <p className="text-xs text-muted-foreground mt-2">
                               Showing 5 of {csvData.length} rows
-                            </p>
-                          )}
+                            </p>}
                         </CardContent>
-                      </Card>
-                    )}
+                      </Card>}
 
                     {/* Import Configuration */}
-                    {fileName && csvData.length > 0 && !fileError && (
-                      <Card className="border-green-200 bg-green-50/50">
+                    {fileName && csvData.length > 0 && !fileError && <Card className="border-green-200 bg-green-50/50">
                         <CardHeader className="pb-4">
                           <CardTitle className="flex items-center gap-2 text-lg text-green-800">
                             <Tag className="h-5 w-5" />
@@ -360,36 +291,18 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                             <Label htmlFor="import-name" className="text-sm font-medium">
                               Import Name
                             </Label>
-                            <Input
-                              id="import-name"
-                              placeholder="Enter a name for this import..."
-                              value={importName}
-                              onChange={(e) => setImportName(e.target.value)}
-                              className="w-full"
-                            />
+                            <Input id="import-name" placeholder="Enter a name for this import..." value={importName} onChange={e => setImportName(e.target.value)} className="w-full" />
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="category" className="text-sm font-medium">
                               Category (Optional)
                             </Label>
-                            <CategoryCombobox
-                              categories={categories}
-                              value={selectedCategory}
-                              onChange={setSelectedCategory}
-                              placeholder="Select or create a category..."
-                              className="w-full"
-                            />
+                            <CategoryCombobox categories={categories} value={selectedCategory} onChange={setSelectedCategory} placeholder="Select or create a category..." className="w-full" />
                           </div>
 
                           <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="strict-mode"
-                              checked={strictMode}
-                              onChange={(e) => setStrictMode(e.target.checked)}
-                              className="rounded border-gray-300"
-                            />
+                            <input type="checkbox" id="strict-mode" checked={strictMode} onChange={e => setStrictMode(e.target.checked)} className="rounded border-gray-300" />
                             <Label htmlFor="strict-mode" className="text-sm font-medium flex items-center gap-2">
                               <Shield className="h-4 w-4" />
                               Strict Duplicate Detection
@@ -399,48 +312,30 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                             Enable stricter validation including fuzzy name matching
                           </p>
                         </CardContent>
-                      </Card>
-                    )}
+                      </Card>}
 
                     {/* Error Messages */}
-                    {fileError && (
-                      <Alert variant="destructive">
+                    {fileError && <Alert variant="destructive">
                         <XCircle className="h-4 w-4" />
                         <AlertTitle>Upload Error</AlertTitle>
                         <AlertDescription className="text-sm">{fileError}</AlertDescription>
-                      </Alert>
-                    )}
+                      </Alert>}
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                      {fileName && (
-                        <Button
-                          variant="outline"
-                          onClick={clearFile}
-                          disabled={isValidating || isImporting}
-                          className="w-full sm:w-auto min-w-[140px] order-2 sm:order-1"
-                          size="lg"
-                        >
+                      {fileName && <Button variant="outline" onClick={clearFile} disabled={isValidating || isImporting} className="w-full sm:w-auto min-w-[140px] order-2 sm:order-1" size="lg">
                           <XCircle className="h-4 w-4 mr-2" />
                           Clear File
-                        </Button>
-                      )}
-                      <Button
-                        onClick={handleValidate}
-                        disabled={!isReadyToValidate || isValidating || isImporting}
-                        className={`w-full min-w-[140px] order-1 sm:order-2 ${fileName ? 'sm:w-auto' : ''}`}
-                        size="lg"
-                      >
+                        </Button>}
+                      <Button onClick={handleValidate} disabled={!isReadyToValidate || isValidating || isImporting} className={`w-full min-w-[140px] order-1 sm:order-2 ${fileName ? 'sm:w-auto' : ''}`} size="lg">
                         <Shield className="h-4 w-4 mr-2" />
                         {isValidating ? 'Validating...' : 'Validate & Preview'}
                       </Button>
                     </div>
                   </CardContent>
                 </Card>
-              </>
-            ) : (
-              /* Validation Report */
-              <div className="mx-auto max-w-4xl">
+              </> : (/* Validation Report */
+          <div className="mx-auto max-w-4xl">
                 <div className="text-center space-y-2 mb-6">
                   <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                     <Shield className="h-8 w-8 text-primary" />
@@ -451,21 +346,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   </p>
                 </div>
 
-                {validationResult && (
-                  <DuplicateValidationReport
-                    validationResult={validationResult}
-                    totalRows={csvData.length}
-                    onProceed={handleImport}
-                    onCancel={() => setShowValidationReport(false)}
-                    isLoading={isImporting}
-                  />
-                )}
-              </div>
-            )}
+                {validationResult && <DuplicateValidationReport validationResult={validationResult} totalRows={csvData.length} onProceed={handleImport} onCancel={() => setShowValidationReport(false)} isLoading={isImporting} />}
+              </div>)}
 
             {/* Help Section */}
-            {!showValidationReport && (
-              <Card className="mx-auto max-w-2xl">
+            {!showValidationReport && <Card className="mx-auto max-w-2xl">
                 <CardHeader className="pb-4">
                   <CardTitle className="text-lg">Import Guidelines</CardTitle>
                 </CardHeader>
@@ -491,8 +376,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                     </div>
                   </div>
                 </CardContent>
-              </Card>
-            )}
+              </Card>}
           </TabsContent>
 
           <TabsContent value="history" className="p-4 sm:p-6 space-y-6 mt-0">
@@ -508,8 +392,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
             </div>
 
             <div className="space-y-4 max-w-4xl mx-auto">
-              {importBatches.length === 0 ? (
-                <Card>
+              {importBatches.length === 0 ? <Card>
                   <CardContent className="text-center py-12">
                     <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-lg font-medium mb-2">No imports yet</h3>
@@ -517,13 +400,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                       When you import CSV files, they'll appear here.
                     </p>
                   </CardContent>
-                </Card>
-              ) : (
-                importBatches.map((batch) => {
-                  const leadCount = getBatchLeadCount(batch.id);
-                  
-                  return (
-                    <Card key={batch.id} className="border-l-4 border-l-blue-500">
+                </Card> : importBatches.map(batch => {
+              const leadCount = getBatchLeadCount(batch.id);
+              return <Card key={batch.id} className="border-l-4 border-l-blue-500">
                       <CardContent className="p-4 sm:p-6">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div className="space-y-2 min-w-0 flex-1">
@@ -532,11 +411,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                               <Badge variant={getStatusBadgeVariant(batch)} className="text-xs">
                                 {batch.failedImports === 0 ? 'Complete' : 'Partial'}
                               </Badge>
-                              {batch.categoryId && (
-                                <Badge variant="outline" className="text-xs">
+                              {batch.categoryId && <Badge variant="outline" className="text-xs">
                                   {categories.find(cat => cat.id === batch.categoryId)?.name || 'Unknown Category'}
-                                </Badge>
-                              )}
+                                </Badge>}
                             </div>
                             <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                               <div className="flex items-center gap-1">
@@ -552,30 +429,14 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                                 <span>{leadCount} current leads</span>
                               </div>
                             </div>
-                            {batch.sourceFile && (
-                              <div className="text-sm text-muted-foreground">
+                            {batch.sourceFile && <div className="text-sm text-muted-foreground">
                                 Source: {batch.sourceFile}
-                              </div>
-                            )}
+                              </div>}
                           </div>
                           <div className="flex flex-col sm:flex-row gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleViewBatchLeads(batch.id)}
-                              className="flex items-center gap-2"
-                            >
-                              <Eye className="h-4 w-4" />
-                              View Leads
-                            </Button>
                             
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex items-center gap-2 text-destructive hover:text-destructive"
-                              onClick={() => handleDeleteBatch(batch.id, batch.name)}
-                              disabled={isDeleting}
-                            >
+                            
+                            <Button variant="outline" size="sm" className="flex items-center gap-2 text-destructive hover:text-destructive" onClick={() => handleDeleteBatch(batch.id, batch.name)} disabled={isDeleting}>
                               <Trash2 className="h-4 w-4" />
                               Delete
                             </Button>
@@ -594,17 +455,15 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                             </div>
                             <div className="col-span-2 sm:col-span-1">
                               <div className="text-lg font-semibold text-blue-600">
-                                {batch.totalLeads > 0 ? Math.round((batch.successfulImports / batch.totalLeads) * 100) : 0}%
+                                {batch.totalLeads > 0 ? Math.round(batch.successfulImports / batch.totalLeads * 100) : 0}%
                               </div>
                               <div className="text-xs text-muted-foreground">Success Rate</div>
                             </div>
                           </div>
                         </div>
                       </CardContent>
-                    </Card>
-                  );
-                })
-              )}
+                    </Card>;
+            })}
             </div>
 
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -618,10 +477,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleConfirmDelete}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
+                  <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                     Delete Batch
                   </AlertDialogAction>
                 </AlertDialogFooter>
@@ -630,6 +486,5 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           </TabsContent>
         </div>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
