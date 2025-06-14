@@ -102,6 +102,23 @@ export const useLeadsDashboardActions = ({
         return;
       }
 
+      // Helper function to normalize remarks history for legacy data
+      const normalizeRemarksHistory = (lead: Lead): import('@/types/lead').RemarkEntry[] => {
+        // If we have current remarks but no history, create a legacy entry
+        if (lead.remarks && (!lead.remarksHistory || lead.remarksHistory.length === 0)) {
+          return [{
+            id: 'legacy-' + crypto.randomUUID(),
+            text: lead.remarks,
+            timestamp: new Date() // Use current date as fallback for legacy remarks
+          }];
+        }
+
+        return lead.remarksHistory || [];
+      };
+
+      // Get normalized history
+      const normalizedHistory = normalizeRemarksHistory(currentLead);
+
       // Create new remark entry with precise timestamp
       const newRemarkEntry: import('@/types/lead').RemarkEntry = {
         id: crypto.randomUUID(),
@@ -110,7 +127,7 @@ export const useLeadsDashboardActions = ({
       };
 
       // Update remarks history with new entry
-      const updatedRemarksHistory = [...(currentLead.remarksHistory || []), newRemarkEntry];
+      const updatedRemarksHistory = [...normalizedHistory, newRemarkEntry];
 
       console.log('Updating remarks for lead:', leadId);
       console.log('New remark entry:', newRemarkEntry);
