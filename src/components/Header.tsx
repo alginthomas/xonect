@@ -22,11 +22,23 @@ const Header: React.FC<HeaderProps> = ({
     id: 'leads',
     label: 'Leads'
   }, {
+    id: 'analytics',
+    label: 'Analytics'
+  }, {
     id: 'import',
     label: 'Import'
   }, {
     id: 'categories',
     label: 'Categories'
+  }, {
+    id: 'duplicates',
+    label: 'Duplicates'
+  }, {
+    id: 'templates',
+    label: 'Templates'
+  }, {
+    id: 'history',
+    label: 'History'
   }];
 
   return (
@@ -44,13 +56,13 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Center Section - Desktop Navigation */}
         {!isMobile && (
-          <nav className="hidden md:flex items-center space-x-1">
-            {tabs.map(tab => (
+          <nav className="hidden md:flex items-center space-x-1 overflow-x-auto">
+            {tabs.slice(0, 6).map(tab => (
               <Button
                 key={tab.id}
                 variant={activeTab === tab.id ? "default" : "ghost"}
                 onClick={() => onTabChange(tab.id)}
-                className={`px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                className={`px-3 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap ${
                   activeTab === tab.id 
                     ? 'bg-primary text-primary-foreground shadow-sm' 
                     : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'

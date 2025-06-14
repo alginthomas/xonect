@@ -6,7 +6,8 @@ import {
   Home, 
   Users, 
   Upload, 
-  FolderOpen
+  FolderOpen,
+  BarChart3
 } from 'lucide-react';
 
 interface MobileBottomNavProps {
@@ -21,14 +22,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   unreadCount = 0
 }) => {
   const navItems = [
-    { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'leads', label: 'Leads', icon: Users },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'import', label: 'Import', icon: Upload },
     { id: 'categories', label: 'Categories', icon: FolderOpen },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/40 px-4 py-3 safe-area-pb md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border/40 px-2 py-3 safe-area-pb md:hidden">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -40,13 +42,13 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => onTabChange(item.id)}
-              className={`flex flex-col items-center gap-1 h-14 px-4 min-w-0 relative transition-all duration-200 ${
+              className={`flex flex-col items-center gap-1 h-14 px-2 min-w-0 relative transition-all duration-200 ${
                 isActive 
                   ? 'bg-primary/10 text-primary border-2 border-primary/20 rounded-lg' 
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
               }`}
             >
-              <Icon className="h-5 w-5 flex-shrink-0" />
+              <Icon className="h-4 w-4 flex-shrink-0" />
               <span className="text-xs font-medium truncate leading-none">
                 {item.label}
               </span>

@@ -18,7 +18,7 @@ import type { Lead, EmailTemplate, RemarkEntry, ActivityEntry } from '@/types/le
 import type { Category, ImportBatch } from '@/types/category';
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState('leads'); // Default to 'leads' instead of 'dashboard'
+  const [activeTab, setActiveTab] = useState('dashboard'); // Default to 'dashboard'
   const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
   const { toast } = useToast();
   const { deleteBatch } = useImportBatchOperations();
@@ -466,6 +466,18 @@ const Index = () => {
 
   return (
     <AppleLayout activeTab={activeTab} onTabChange={setActiveTab}>
+      {activeTab === 'dashboard' && (
+        <AnalyticsDashboard 
+          leads={leads} 
+          templates={templates}
+          categories={categories}
+          importBatches={importBatches}
+          onNavigateToLeads={(filter) => {
+            setActiveTab('leads');
+          }}
+        />
+      )}
+
       {activeTab === 'leads' && (
         <LeadsDashboard
           leads={leads}
