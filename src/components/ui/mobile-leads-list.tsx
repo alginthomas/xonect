@@ -1,5 +1,7 @@
+
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { LeadStatus, Seniority, CompanySize, Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
@@ -62,6 +64,7 @@ interface MobilePaginationComponentProps {
   onPageChange: (page: number) => void;
   totalItems: number;
   itemsPerPage: number;
+  onItemsPerPageChange: (itemsPerPage: number) => void;
 }
 
 const MobilePaginationComponent: React.FC<MobilePaginationComponentProps> = ({
@@ -69,14 +72,34 @@ const MobilePaginationComponent: React.FC<MobilePaginationComponentProps> = ({
   totalPages,
   onPageChange,
   totalItems,
-  itemsPerPage
+  itemsPerPage,
+  onItemsPerPageChange
 }) => {
   return (
-    <div className="flex items-center justify-between p-4">
-      <span className="text-sm text-muted-foreground">
-        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
-      </span>
-      <div className="flex gap-2">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-muted-foreground">
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems}
+        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Show:</span>
+          <Select
+            value={itemsPerPage.toString()}
+            onValueChange={(value) => onItemsPerPageChange(Number(value))}
+          >
+            <SelectTrigger className="h-8 w-16">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="10">10</SelectItem>
+              <SelectItem value="20">20</SelectItem>
+              <SelectItem value="50">50</SelectItem>
+              <SelectItem value="100">100</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <div className="flex items-center justify-center gap-2">
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -84,6 +107,9 @@ const MobilePaginationComponent: React.FC<MobilePaginationComponentProps> = ({
         >
           Previous
         </button>
+        <span className="text-sm font-medium">
+          {currentPage} of {totalPages}
+        </span>
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
@@ -128,7 +154,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   const [countryFilter, setCountryFilter] = useState('all');
   const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<DuplicatePhoneFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 20;
+  const [itemsPerPage, setItemsPerPage] = useState(20);
 
   const {
     selectedLeads,
@@ -233,6 +259,11 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     setDuplicatePhoneFilter(filter as DuplicatePhoneFilter);
   };
 
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page when changing items per page
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       <MobileSearchFilters
@@ -297,6 +328,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
             onPageChange={setCurrentPage}
             totalItems={totalLeads}
             itemsPerPage={itemsPerPage}
+            onItemsPerPageChange={handleItemsPerPageChange}
           />
         </div>
       )}
