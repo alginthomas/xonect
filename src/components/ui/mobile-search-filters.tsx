@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users, Phone, Mail } from 'lucide-react';
-import type { LeadStatus, Seniority, CompanySize } from '@/types/lead';
+import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users, Phone, Mail, Globe } from 'lucide-react';
+import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
+import type { LeadStatus, Seniority, CompanySize, Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
 
 interface MobileSearchFiltersProps {
@@ -18,9 +19,10 @@ interface MobileSearchFiltersProps {
   selectedCategory: string;
   onCategoryChange: (categoryId: string) => void;
   categories: Category[];
+  leads: Lead[];
   activeFiltersCount: number;
   onClearFilters: () => void;
-  // New filter props
+  // New filter props to match desktop
   selectedSeniority?: Seniority | 'all';
   onSeniorityChange?: (seniority: Seniority | 'all') => void;
   selectedCompanySize?: CompanySize | 'all';
@@ -34,6 +36,12 @@ interface MobileSearchFiltersProps {
   // Data availability filters
   selectedDataFilter?: string;
   onDataFilterChange?: (filter: string) => void;
+  // Country filter
+  countryFilter?: string;
+  onCountryChange?: (country: string) => void;
+  // Duplicate phone filter
+  duplicatePhoneFilter?: string;
+  onDuplicatePhoneChange?: (filter: string) => void;
 }
 
 // All available lead statuses
@@ -51,6 +59,7 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   selectedCategory,
   onCategoryChange,
   categories,
+  leads,
   activeFiltersCount,
   onClearFilters,
   selectedSeniority = 'all',
@@ -64,9 +73,16 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
   availableLocations = [],
   availableIndustries = [],
   selectedDataFilter = 'all',
-  onDataFilterChange
+  onDataFilterChange,
+  countryFilter = 'all',
+  onCountryChange,
+  duplicatePhoneFilter = 'all',
+  onDuplicatePhoneChange
 }) => {
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+
+  // Get unique countries from leads
+  const availableCountries = getUniqueCountriesFromLeads(leads);
 
   const handleClearAllFilters = () => {
     onClearFilters();
@@ -75,6 +91,8 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     if (onLocationChange) onLocationChange('');
     if (onIndustryChange) onIndustryChange('');
     if (onDataFilterChange) onDataFilterChange('all');
+    if (onCountryChange) onCountryChange('all');
+    if (onDuplicatePhoneChange) onDuplicatePhoneChange('all');
     setIsFilterSheetOpen(false);
   };
 
@@ -95,7 +113,9 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
     (selectedCompanySize !== 'all' ? 1 : 0) + 
     (selectedLocation ? 1 : 0) + 
     (selectedIndustry ? 1 : 0) + 
-    (selectedDataFilter !== 'all' ? 1 : 0);
+    (selectedDataFilter !== 'all' ? 1 : 0) +
+    (countryFilter !== 'all' ? 1 : 0) +
+    (duplicatePhoneFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="sticky top-0 z-40 bg-background border-b border-border/30 px-4 py-3 space-y-4">
@@ -144,11 +164,35 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
-                    {category.name}
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                      {category.name}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Country Filter */}
+            {onCountryChange && availableCountries.length > 0 && (
+              <Select value={countryFilter} onValueChange={onCountryChange}>
+                <SelectTrigger className="w-36 h-10 text-sm flex-shrink-0">
+                  <Globe className="h-3 w-3 mr-2" />
+                  <SelectValue placeholder="Country" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Countries</SelectItem>
+                  {availableCountries.map(country => (
+                    <SelectItem key={country.code} value={country.name}>
+                      <div className="flex items-center gap-2">
+                        <span>{country.flag}</span>
+                        <span>{country.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
             {/* Data Filter */}
             {onDataFilterChange && (
@@ -157,13 +201,25 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                   <SelectValue placeholder="Data" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Leads</SelectItem>
-                  <SelectItem value="has-phone">Has Phone</SelectItem>
+                  <SelectItem value="all">All Data</SelectItem>
                   <SelectItem value="has-email">Has Email</SelectItem>
+                  <SelectItem value="has-phone">Has Phone</SelectItem>
                   <SelectItem value="has-both">Has Both</SelectItem>
-                  <SelectItem value="missing-phone">Missing Phone</SelectItem>
-                  <SelectItem value="missing-email">Missing Email</SelectItem>
-                  <SelectItem value="incomplete">Incomplete Data</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* Duplicate Phone Filter */}
+            {onDuplicatePhoneChange && (
+              <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
+                <SelectTrigger className="w-40 h-10 text-sm flex-shrink-0">
+                  <Phone className="h-3 w-3 mr-2" />
+                  <SelectValue placeholder="Phone Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Phone Numbers</SelectItem>
+                  <SelectItem value="unique-only">Unique Phone Only</SelectItem>
+                  <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
                 </SelectContent>
               </Select>
             )}
@@ -224,7 +280,10 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                                   <SelectItem value="all">All Categories</SelectItem>
                                   {categories.map((category) => (
                                     <SelectItem key={category.id} value={category.id}>
-                                      {category.name}
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                                        {category.name}
+                                      </div>
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -233,45 +292,94 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                           </div>
                         </div>
 
-                        {/* Data Availability Filters */}
+                        {/* Location & Country Filters */}
                         <div className="space-y-4">
                           <h4 className="font-medium text-sm flex items-center gap-2">
-                            <Mail className="h-4 w-4" />
-                            Data Availability
+                            <MapPin className="h-4 w-4" />
+                            Location & Geography
                           </h4>
-                          <div className="space-y-2">
-                            <label className="text-xs text-muted-foreground">Contact Information</label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {onCountryChange && availableCountries.length > 0 && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Country</label>
+                                <Select value={countryFilter} onValueChange={onCountryChange}>
+                                  <SelectTrigger className="h-11 w-full">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All Countries</SelectItem>
+                                    {availableCountries.map(country => (
+                                      <SelectItem key={country.code} value={country.name}>
+                                        <div className="flex items-center gap-2">
+                                          <span>{country.flag}</span>
+                                          <span>{country.name}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {onLocationChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Location</label>
+                                <Select value={selectedLocation || 'all-locations'} onValueChange={handleLocationChange}>
+                                  <SelectTrigger className="h-11 w-full">
+                                    <SelectValue placeholder="All Locations" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all-locations">All Locations</SelectItem>
+                                    {availableLocations.map((location) => (
+                                      <SelectItem key={location} value={location}>
+                                        {location}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Data Availability & Phone Filters */}
+                        <div className="space-y-4">
+                          <h4 className="font-medium text-sm flex items-center gap-2">
+                            <Phone className="h-4 w-4" />
+                            Contact Information
+                          </h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {onDataFilterChange && (
-                              <Select value={selectedDataFilter} onValueChange={onDataFilterChange}>
-                                <SelectTrigger className="h-11 w-full">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">All Leads</SelectItem>
-                                  <SelectItem value="has-phone">
-                                    <div className="flex items-center gap-2">
-                                      <Phone className="h-3 w-3" />
-                                      Has Phone Number
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="has-email">
-                                    <div className="flex items-center gap-2">
-                                      <Mail className="h-3 w-3" />
-                                      Has Email Address
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="has-both">
-                                    <div className="flex items-center gap-2">
-                                      <Phone className="h-3 w-3" />
-                                      <Mail className="h-3 w-3" />
-                                      Has Both Phone & Email
-                                    </div>
-                                  </SelectItem>
-                                  <SelectItem value="missing-phone">Missing Phone Number</SelectItem>
-                                  <SelectItem value="missing-email">Missing Email Address</SelectItem>
-                                  <SelectItem value="incomplete">Incomplete Contact Data</SelectItem>
-                                </SelectContent>
-                              </Select>
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Data Availability</label>
+                                <Select value={selectedDataFilter} onValueChange={onDataFilterChange}>
+                                  <SelectTrigger className="h-11 w-full">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All Data</SelectItem>
+                                    <SelectItem value="has-phone">Has Phone</SelectItem>
+                                    <SelectItem value="has-email">Has Email</SelectItem>
+                                    <SelectItem value="has-both">Has Both</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {onDuplicatePhoneChange && (
+                              <div className="space-y-2">
+                                <label className="text-xs text-muted-foreground">Phone Duplicates</label>
+                                <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
+                                  <SelectTrigger className="h-11 w-full">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="all">All Phone Numbers</SelectItem>
+                                    <SelectItem value="unique-only">Unique Phone Only</SelectItem>
+                                    <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -322,32 +430,13 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                           </div>
                         </div>
 
-                        {/* Location & Industry Filters */}
+                        {/* Company Details */}
                         <div className="space-y-4">
                           <h4 className="font-medium text-sm flex items-center gap-2">
                             <Building2 className="h-4 w-4" />
                             Company Details
                           </h4>
                           <div className="space-y-4">
-                            {onLocationChange && (
-                              <div className="space-y-2">
-                                <label className="text-xs text-muted-foreground">Location</label>
-                                <Select value={selectedLocation || 'all-locations'} onValueChange={handleLocationChange}>
-                                  <SelectTrigger className="h-11 w-full">
-                                    <SelectValue placeholder="All Locations" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="all-locations">All Locations</SelectItem>
-                                    {availableLocations.map((location) => (
-                                      <SelectItem key={location} value={location}>
-                                        {location}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-                            
                             {onIndustryChange && (
                               <div className="space-y-2">
                                 <label className="text-xs text-muted-foreground">Industry</label>
@@ -421,6 +510,11 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
                 Category: {categories.find((c) => c.id === selectedCategory)?.name}
               </Badge>
             )}
+            {countryFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Country: {countryFilter}
+              </Badge>
+            )}
             {selectedSeniority !== 'all' && (
               <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Seniority: {selectedSeniority}
@@ -444,6 +538,11 @@ export const MobileSearchFilters: React.FC<MobileSearchFiltersProps> = ({
             {selectedDataFilter !== 'all' && (
               <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
                 Data: {selectedDataFilter.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+              </Badge>
+            )}
+            {duplicatePhoneFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Phone: {duplicatePhoneFilter === 'unique-only' ? 'Unique Only' : 'Duplicates Only'}
               </Badge>
             )}
           </div>

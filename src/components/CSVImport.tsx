@@ -3,13 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Upload, CheckCircle, AlertCircle, FileText, X, Database, AlertTriangle } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, X, Database, AlertTriangle, Shield, TrendingUp } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CategoryCombobox } from './CategoryCombobox';
 import { getCountryFromPhoneNumber } from '@/utils/phoneUtils';
-import { filterDuplicatesFromImport, checkFileAlreadyImported, generateFileHash, getDuplicateStats } from '@/utils/duplicateDetection';
+import { 
+  preventDuplicateImport, 
+  checkFileAlreadyImported, 
+  generateFileHash, 
+  getDuplicateStats,
+  findAllDuplicatesInDatabase 
+} from '@/utils/duplicateDetection';
 import type { Lead } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
 
@@ -34,9 +40,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [categoryName, setCategoryName] = useState<string>('');
   const [batchName, setBatchName] = useState<string>('');
   const [isDragOver, setIsDragOver] = useState(false);
-  const [duplicateWarning, setDuplicateWarning] = useState<{
+  const [strictMode, setStrictMode] = useState(true);
+  const [duplicateAnalysis, setDuplicateAnalysis] = useState<{
     fileAlreadyImported: boolean;
-    duplicateCount: number;
+    allowedCount: number;
+    blockedCount: number;
+    warnings: string[];
     duplicateStats: any;
   } | null>(null);
   const { toast } = useToast();
@@ -137,7 +146,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           return row;
         });
 
-        // Process all rows to check for duplicates
+        // Process all rows to check for duplicates with enhanced detection
         const allRows = lines.slice(1).map(line => {
           const values = parseCSVLine(line);
           const row: any = {};
@@ -152,26 +161,37 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           return { email, phone, ...row };
         }).filter(row => row.email); // Only include rows with email
 
-        // Check for duplicates
-        const { uniqueLeads, duplicates } = filterDuplicatesFromImport(allRows, existingLeads);
-        const duplicateStats = getDuplicateStats(duplicates);
+        // Enhanced duplicate prevention
+        const { allowedLeads, blockedLeads, warnings } = preventDuplicateImport(
+          allRows, 
+          existingLeads, 
+          strictMode
+        );
 
-        if (fileAlreadyImported || duplicates.length > 0) {
-          setDuplicateWarning({
-            fileAlreadyImported,
-            duplicateCount: duplicates.length,
-            duplicateStats
-          });
-        } else {
-          setDuplicateWarning(null);
-        }
+        const duplicateStats = getDuplicateStats(
+          blockedLeads
+            .filter(b => b.existingLead)
+            .map(b => ({
+              lead: b.lead,
+              duplicateField: 'email' as const, // Simplified for stats
+              existingLead: b.existingLead!
+            }))
+        );
 
-        console.log('Sample rows:', sampleRows);
-        console.log('Duplicate check:', { 
-          total: allRows.length, 
-          unique: uniqueLeads.length, 
-          duplicates: duplicates.length,
-          fileAlreadyImported 
+        setDuplicateAnalysis({
+          fileAlreadyImported,
+          allowedCount: allowedLeads.length,
+          blockedCount: blockedLeads.length,
+          warnings,
+          duplicateStats
+        });
+
+        console.log('Enhanced duplicate analysis:', {
+          total: allRows.length,
+          allowed: allowedLeads.length,
+          blocked: blockedLeads.length,
+          fileAlreadyImported,
+          warnings
         });
         
         setPreview(sampleRows);
@@ -184,7 +204,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
         variant: "destructive"
       });
     }
-  }, [toast, categoryName, existingLeads, importBatches]);
+  }, [toast, categoryName, existingLeads, importBatches, strictMode]);
 
   const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -222,7 +242,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const removeFile = useCallback(() => {
     setFile(null);
     setPreview([]);
-    setDuplicateWarning(null);
+    setDuplicateAnalysis(null);
   }, []);
 
   const categorizeCompanySize = (employeeCount: string): Lead['companySize'] => {
@@ -302,12 +322,25 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       return;
     }
 
-    // Show warning if duplicates detected
-    if (duplicateWarning && (duplicateWarning.fileAlreadyImported || duplicateWarning.duplicateCount > 0)) {
-      const proceed = window.confirm(
-        `Warning: ${duplicateWarning.fileAlreadyImported ? 'This file appears to have been imported before. ' : ''}${duplicateWarning.duplicateCount > 0 ? `${duplicateWarning.duplicateCount} duplicate leads detected and will be skipped. ` : ''}Do you want to proceed with the import?`
-      );
+    // Enhanced warning for duplicates
+    if (duplicateAnalysis && (duplicateAnalysis.fileAlreadyImported || duplicateAnalysis.blockedCount > 0)) {
+      let warningMessage = '';
       
+      if (duplicateAnalysis.fileAlreadyImported) {
+        warningMessage += 'This file appears to have been imported before. ';
+      }
+      
+      if (duplicateAnalysis.blockedCount > 0) {
+        warningMessage += `${duplicateAnalysis.blockedCount} duplicate leads will be skipped. `;
+        
+        if (duplicateAnalysis.duplicateStats.recentDuplicates > 0) {
+          warningMessage += `${duplicateAnalysis.duplicateStats.recentDuplicates} of these are recent duplicates (added within 7 days). `;
+        }
+      }
+      
+      warningMessage += 'Do you want to proceed with the import?';
+      
+      const proceed = window.confirm(warningMessage);
       if (!proceed) {
         return;
       }
@@ -388,7 +421,9 @@ export const CSVImport: React.FC<CSVImportProps> = ({
               headers,
               processingTime: new Date().toISOString(),
               categoryName: categoryName.trim() || undefined,
-              fileHash // Store file hash for duplicate detection
+              fileHash,
+              strictMode,
+              duplicateAnalysis: duplicateAnalysis || undefined
             }
           }])
           .select()
@@ -401,7 +436,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
 
         console.log('Created import batch:', importBatch);
 
-        // Process all rows and filter duplicates
+        // Process all rows with enhanced duplicate prevention
         const allRows = lines.slice(1).map(line => {
           const values = parseCSVLine(line);
           const rawLead: any = {};
@@ -418,13 +453,13 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           return { email, phone, rawLead };
         }).filter(row => row.email); // Only include rows with email
 
-        // Filter out duplicates
-        const { uniqueLeads } = filterDuplicatesFromImport(allRows, existingLeads);
+        // Apply enhanced duplicate filtering
+        const { allowedLeads } = preventDuplicateImport(allRows, existingLeads, strictMode);
 
         const leadsToInsert = [];
         let failedImports = 0;
 
-        uniqueLeads.forEach((row, index) => {
+        allowedLeads.forEach((row, index) => {
           const { rawLead } = row;
 
           // Personal Details
@@ -534,6 +569,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({
             }
           }
           
+          if (strictMode) {
+            tags.push('Strict Import');
+          }
+          
           leadData.tags = tags;
 
           leadsToInsert.push(leadData);
@@ -543,7 +582,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
         if (leadsToInsert.length === 0) {
           toast({
             title: "No new leads to import",
-            description: "All leads in this file already exist in your database",
+            description: "All leads in this file already exist in your database or were filtered out as duplicates",
             variant: "destructive"
           });
           setImporting(false);
@@ -582,9 +621,12 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           ? `Imported ${successfulImports} leads and created category "${categoryName}"`
           : `Imported ${successfulImports} leads successfully`;
 
+        const blockedCount = duplicateAnalysis?.blockedCount || 0;
+        const finalMessage = successMessage + (blockedCount ? ` (${blockedCount} duplicates prevented)` : '');
+
         toast({
           title: "Import successful",
-          description: successMessage + (duplicateWarning?.duplicateCount ? ` (${duplicateWarning.duplicateCount} duplicates skipped)` : '')
+          description: finalMessage
         });
 
         // Reset form
@@ -592,7 +634,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
         setPreview([]);
         setBatchName('');
         setCategoryName('');
-        setDuplicateWarning(null);
+        setDuplicateAnalysis(null);
 
         // Notify parent component to refresh data
         onImportComplete();
@@ -620,7 +662,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
             Upload Your Lead Data
           </CardTitle>
           <CardDescription className="text-base">
-            Configure your import settings and upload your CSV file
+            Configure your import settings and upload your CSV file with enhanced duplicate protection
           </CardDescription>
         </CardHeader>
         
@@ -653,6 +695,34 @@ export const CSVImport: React.FC<CSVImportProps> = ({
             </div>
           </div>
 
+          {/* Duplicate Protection Settings */}
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" />
+              Duplicate Protection Settings
+            </Label>
+            <div className="flex items-center space-x-2 p-4 bg-muted/20 rounded-lg border">
+              <input
+                type="checkbox"
+                id="strict-mode"
+                checked={strictMode}
+                onChange={(e) => setStrictMode(e.target.checked)}
+                className="rounded border-gray-300"
+              />
+              <label htmlFor="strict-mode" className="text-sm font-medium">
+                Strict duplicate prevention mode
+              </label>
+              <div className="ml-auto">
+                <Badge variant={strictMode ? "default" : "secondary"} className="text-xs">
+                  {strictMode ? "Enhanced Protection" : "Standard Protection"}
+                </Badge>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Strict mode provides enhanced duplicate detection and prevention, including recent duplicate analysis
+            </p>
+          </div>
+
           {/* File Upload Section */}
           <div className="space-y-4">
             <Label className="text-sm font-semibold">CSV File Upload</Label>
@@ -677,7 +747,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                     <h3 className="text-xl font-semibold">Drop your CSV file here</h3>
                     <p className="text-muted-foreground">or click to browse files from your computer</p>
                     <div className="text-sm text-muted-foreground">
-                      <p>Supports CSV files up to 10MB</p>
+                      <p>Supports CSV files up to 10MB with automatic duplicate detection</p>
                     </div>
                   </div>
                   
@@ -706,7 +776,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                     <div>
                       <p className="font-semibold text-green-900">{file.name}</p>
                       <p className="text-sm text-green-700">
-                        {(file.size / 1024).toFixed(1)} KB • Ready to import
+                        {(file.size / 1024).toFixed(1)} KB • Ready to import with duplicate protection
                       </p>
                     </div>
                   </div>
@@ -723,39 +793,57 @@ export const CSVImport: React.FC<CSVImportProps> = ({
             )}
           </div>
 
-          {/* Duplicate Warning */}
-          {duplicateWarning && (duplicateWarning.fileAlreadyImported || duplicateWarning.duplicateCount > 0) && (
-            <div className="border rounded-xl p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
-              <div className="flex items-start gap-4">
-                <div className="p-3 rounded-lg bg-yellow-100 border border-yellow-200">
-                  <AlertTriangle className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-yellow-900 mb-2">Duplicate Detection Warning</h4>
-                  <div className="space-y-2 text-sm text-yellow-800">
-                    {duplicateWarning.fileAlreadyImported && (
-                      <p>• This file appears to have been imported before</p>
-                    )}
-                    {duplicateWarning.duplicateCount > 0 && (
-                      <>
-                        <p>• {duplicateWarning.duplicateCount} duplicate leads detected:</p>
-                        <ul className="ml-4 space-y-1">
-                          {duplicateWarning.duplicateStats.emailDuplicates > 0 && (
-                            <li>- {duplicateWarning.duplicateStats.emailDuplicates} email duplicates</li>
-                          )}
-                          {duplicateWarning.duplicateStats.phoneDuplicates > 0 && (
-                            <li>- {duplicateWarning.duplicateStats.phoneDuplicates} phone duplicates</li>
-                          )}
-                          {duplicateWarning.duplicateStats.bothDuplicates > 0 && (
-                            <li>- {duplicateWarning.duplicateStats.bothDuplicates} both email & phone duplicates</li>
-                          )}
-                        </ul>
-                      </>
-                    )}
-                    <p className="font-medium">Duplicates will be automatically skipped during import.</p>
+          {/* Enhanced Duplicate Analysis */}
+          {duplicateAnalysis && (
+            <div className="space-y-4">
+              {(duplicateAnalysis.fileAlreadyImported || duplicateAnalysis.blockedCount > 0) ? (
+                <div className="border rounded-xl p-6 bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-lg bg-yellow-100 border border-yellow-200">
+                      <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-yellow-900 mb-2">Duplicate Detection Results</h4>
+                      <div className="space-y-2 text-sm text-yellow-800">
+                        {duplicateAnalysis.fileAlreadyImported && (
+                          <p>• This file appears to have been imported before</p>
+                        )}
+                        {duplicateAnalysis.blockedCount > 0 && (
+                          <div>
+                            <p>• {duplicateAnalysis.blockedCount} duplicate leads detected and will be skipped</p>
+                            {duplicateAnalysis.duplicateStats.recentDuplicates > 0 && (
+                              <p className="ml-4 text-orange-700">
+                                - {duplicateAnalysis.duplicateStats.recentDuplicates} are recent duplicates (added within 7 days)
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {duplicateAnalysis.warnings.map((warning, index) => (
+                          <p key={index}>• {warning}</p>
+                        ))}
+                        <p className="font-medium text-green-800 mt-2">
+                          ✓ {duplicateAnalysis.allowedCount} unique leads ready for import
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="border rounded-xl p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                  <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-lg bg-green-100 border border-green-200">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-green-900 mb-2">No Duplicates Detected</h4>
+                      <div className="space-y-2 text-sm text-green-800">
+                        <p>✓ All {duplicateAnalysis.allowedCount} leads are unique and ready for import</p>
+                        <p>✓ Enhanced duplicate protection is active</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -763,8 +851,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({
           {preview.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <h4 className="font-semibold text-green-900">File Preview</h4>
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <h4 className="font-semibold text-primary">File Preview</h4>
                 <span className="text-sm text-muted-foreground">(first 3 rows)</span>
               </div>
               
@@ -814,12 +902,17 @@ export const CSVImport: React.FC<CSVImportProps> = ({
               {importing ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                  Processing Import...
+                  Processing Import with Duplicate Protection...
                 </>
               ) : (
                 <>
                   <Database className="h-5 w-5 mr-3" />
                   Import Lead Database
+                  {duplicateAnalysis && duplicateAnalysis.allowedCount > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      {duplicateAnalysis.allowedCount} leads
+                    </Badge>
+                  )}
                 </>
               )}
             </Button>
