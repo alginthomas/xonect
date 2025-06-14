@@ -27,7 +27,10 @@ const saveToCache = (key: string, value: any) => {
 const loadFromCache = (key: string, defaultValue: any) => {
   try {
     const cached = localStorage.getItem(key);
-    return cached ? JSON.parse(cached) : defaultValue;
+    if (cached === null || cached === 'undefined') {
+      return defaultValue;
+    }
+    return JSON.parse(cached);
   } catch (error) {
     console.warn('Failed to load from cache:', error);
     return defaultValue;
