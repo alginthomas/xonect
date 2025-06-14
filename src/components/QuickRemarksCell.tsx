@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Eye, Edit3 } from 'lucide-react';
+import { MessageSquare, Eye, Plus } from 'lucide-react';
 import type { RemarkEntry } from '@/types/lead';
 import { QuickRemarksModal } from './remarks/QuickRemarksModal';
 
@@ -35,7 +35,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
     setShowModal(true);
   };
 
-  const handleEditClick = (e: React.MouseEvent) => {
+  const handleAddRemarkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setModalInitialEditMode(true);
     setShowModal(true);
@@ -48,7 +48,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
         <>
           <div
             className="flex-1 min-w-0 cursor-pointer group"
-            onClick={isLong ? handleViewFull : handleEditClick}
+            onClick={isLong ? handleViewFull : handleAddRemarkClick}
             style={{ maxWidth: 240 }}
             title={remarks}
           >
@@ -69,16 +69,16 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
               <Eye className="h-4 w-4" />
             </Button>
           )}
-          {/* Always show edit icon at end */}
+          {/* Always show add new remark icon at end */}
           <Button
             variant="ghost"
             size="icon"
             className="h-7 w-7 p-0 opacity-80 hover:opacity-100 transition-opacity"
-            onClick={handleEditClick}
-            aria-label="Edit remarks"
+            onClick={handleAddRemarkClick}
+            aria-label="Add new remark"
             tabIndex={0}
           >
-            <Edit3 className="h-4 w-4" />
+            <Plus className="h-4 w-4" />
           </Button>
         </>
       ) : (
@@ -86,10 +86,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
           variant="ghost"
           size="sm"
           className="w-full text-left opacity-90 hover:opacity-100"
-          onClick={handleEditClick}
+          onClick={handleAddRemarkClick}
         >
           <span className="text-muted-foreground text-sm flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" /> Add remarks...
+            <MessageSquare className="h-4 w-4" /> Add remark...
           </span>
         </Button>
       )}

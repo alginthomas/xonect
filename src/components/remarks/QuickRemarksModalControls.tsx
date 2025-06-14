@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit3, History, Save, X } from 'lucide-react';
+import { Plus, History, Save, X } from 'lucide-react';
 
 interface QuickRemarksModalControlsProps {
   isEditing: boolean;
@@ -39,8 +40,8 @@ export const QuickRemarksModalControls: React.FC<QuickRemarksModalControlsProps>
   return (
     <div className="flex w-full gap-3 justify-end">
       <Button size="lg" className="px-5 py-2 text-base" onClick={() => onSetIsEditing(true)}>
-        <Edit3 className="h-4 w-4 mr-2" />
-        Edit
+        <Plus className="h-4 w-4 mr-2" />
+        Add New Remark
       </Button>
       {remarksHistoryCount > 0 && (
         <Button

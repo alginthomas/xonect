@@ -80,32 +80,46 @@ export const useLeadsFiltering = ({
       ])
     );
     
-    // If only remarks or status changed (same IDs, same order structure), maintain the previous order
-    // but update the lead data
+    // If we have the same leads as before, try to preserve order for minor updates
     if (previousSortedLeadsRef.current.length === newSortedIds.length) {
       const sameLeads = previousSortedLeadsRef.current.every(id => newSortedIds.includes(id));
       
       if (sameLeads) {
-        // Check if this is likely just a remarks/status update by seeing if only those fields changed
-        const onlyRemarksOrStatusChanged = previousSortedLeadsRef.current.every(id => {
+        // Check if only remarks or status changed (not other sortable fields)
+        let onlyMinorChanges = true;
+        
+        for (const id of previousSortedLeadsRef.current) {
           const prevData = previousLeadsDataRef.current.get(id);
           const currentData = currentLeadsData.get(id);
           
-          if (!prevData || !currentData) return false;
+          if (!prevData || !currentData) {
+            onlyMinorChanges = false;
+            break;
+          }
           
-          // Check if only remarks or status changed
+          // Only preserve order if ONLY remarks or status changed
           const remarksChanged = prevData.remarks !== currentData.remarks;
           const statusChanged = prevData.status !== currentData.status;
           
-          return remarksChanged || statusChanged;
-        });
+          // If neither remarks nor status changed, but lead is in different position,
+          // it means other fields changed that affect sorting
+          if (!remarksChanged && !statusChanged) {
+            const prevIndex = previousSortedLeadsRef.current.indexOf(id);
+            const newIndex = newSortedIds.indexOf(id);
+            if (prevIndex !== newIndex) {
+              onlyMinorChanges = false;
+              break;
+            }
+          }
+        }
         
-        if (onlyRemarksOrStatusChanged) {
+        if (onlyMinorChanges) {
           const preservedOrder = previousSortedLeadsRef.current.map(id => 
             newSorted.find(lead => lead.id === id)
           ).filter(Boolean);
           
           if (preservedOrder.length === newSorted.length) {
+            console.log('Preserving lead order for minor updates');
             previousSortedLeadsRef.current = newSortedIds;
             previousLeadsDataRef.current = currentLeadsData;
             return preservedOrder;
@@ -115,6 +129,7 @@ export const useLeadsFiltering = ({
     }
     
     // Update the references for next comparison
+    console.log('Applying new sort order');
     previousSortedLeadsRef.current = newSortedIds;
     previousLeadsDataRef.current = currentLeadsData;
     return newSorted;
