@@ -172,7 +172,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       
       toast({
         title: "Import Successful",
-        description: `"${importName}" has been imported successfully."
+        description: `"${importName}" has been imported successfully.`
       });
     } catch (error) {
       toast({
@@ -219,7 +219,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       await onDeleteBatch(deletingBatchId, deletingBatchName || undefined);
       toast({
         title: "Batch deleted",
-        description: `Import batch "${deletingBatchName}" and its leads have been deleted.`,
+        description: `Import batch "${deletingBatchName}" and its leads have been deleted.`
       });
     }
     setDeleteDialogOpen(false);
