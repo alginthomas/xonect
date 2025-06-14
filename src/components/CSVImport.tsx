@@ -9,10 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { XCircle, Upload, FileText, CheckCircle2, AlertTriangle, History, Calendar, Users, Tag, Trash2, Eye } from 'lucide-react';
-import { generateFileHash, checkFileAlreadyImported } from '@/utils/duplicateDetection';
-import { useToast } from '@/hooks/use-toast';
+import { checkFileAlreadyImported } from '@/utils/duplicateDetection';
 import { format } from 'date-fns';
 import { CategoryCombobox } from '@/components/CategoryCombobox';
+import { useCSVImport } from '@/hooks/useCSVImport';
+import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import type { Category, ImportBatch } from '@/types/category';
 import type { Lead } from '@/types/lead';
 import {
@@ -33,7 +34,6 @@ interface CSVImportProps {
   onCreateCategory: (categoryData: Partial<Category>) => Promise<void>;
   existingLeads: Lead[];
   importBatches: ImportBatch[];
-  onDeleteBatch?: (batchId: string, batchName?: string) => void;
 }
 
 export const CSVImport: React.FC<CSVImportProps> = ({
@@ -41,8 +41,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   onImportComplete,
   onCreateCategory,
   existingLeads,
-  importBatches,
-  onDeleteBatch
+  importBatches
 }) => {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
@@ -50,12 +49,13 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [isDuplicateFile, setIsDuplicateFile] = useState(false);
   const [importName, setImportName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [isImporting, setIsImporting] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingBatchId, setDeletingBatchId] = useState<string | null>(null);
   const [deletingBatchName, setDeletingBatchName] = useState<string | null>(null);
-  const { toast } = useToast();
+  
   const navigate = useNavigate();
+  const { importCSVData, isImporting } = useCSVImport({ onImportComplete, categories });
+  const { handleDeleteBatch: deleteBatch, isDeleting } = useImportBatchOperations();
 
   const clearFile = useCallback(() => {
     setCsvData([]);
@@ -131,57 +131,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       return;
     }
 
-    setIsImporting(true);
-
-    try {
-      // Create category if it doesn't exist
-      if (selectedCategory && selectedCategory.trim()) {
-        const existingCategory = categories.find(cat => 
-          cat.name.toLowerCase() === selectedCategory.toLowerCase()
-        );
-        
-        if (!existingCategory) {
-          await onCreateCategory({
-            name: selectedCategory,
-            description: `Auto-created from import: ${importName}`,
-            color: '#3B82F6'
-          });
-        }
-      }
-
-      // Generate file hash for duplicate detection
-      const fileHash = generateFileHash(JSON.stringify(csvData));
-      
-      // Metadata for import batch
-      const metadata = {
-        fileHash: fileHash,
-        importDate: new Date().toISOString(),
-        fileName: fileName,
-        importName: importName,
-        category: selectedCategory
-      };
-
-      // Here you would typically call your import function with the metadata
-      // For now, just simulate success
-      onImportComplete();
-      
-      setCsvData([]);
-      setFileName('');
-      setImportName('');
-      setSelectedCategory('');
-      
-      toast({
-        title: "Import Successful",
-        description: `"${importName}" has been imported successfully.`
-      });
-    } catch (error) {
-      toast({
-        title: "Import Failed",
-        description: "There was an error importing your data. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsImporting(false);
+    const success = await importCSVData(csvData, fileName, importName, selectedCategory);
+    
+    if (success) {
+      clearFile();
     }
   };
 
@@ -205,7 +158,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
 
   const handleViewBatchLeads = (batchId: string) => {
     // Navigate to leads page with the specific batch selected
-    navigate(`/?tab=leads&batch=${batchId}`);
+    navigate('/?tab=leads&batch=' + batchId);
   };
 
   const handleDeleteBatch = (batchId: string, batchName?: string) => {
@@ -215,12 +168,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   };
 
   const handleConfirmDelete = async () => {
-    if (deletingBatchId && onDeleteBatch) {
-      await onDeleteBatch(deletingBatchId, deletingBatchName || undefined);
-      toast({
-        title: "Batch deleted",
-        description: `Import batch "${deletingBatchName}" and its leads have been deleted.`
-      });
+    if (deletingBatchId) {
+      await deleteBatch(deletingBatchId, deletingBatchName || undefined);
     }
     setDeleteDialogOpen(false);
     setDeletingBatchId(null);
@@ -463,7 +412,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                 <History className="h-8 w-8 text-primary" />
               </div>
               <h1 className="text-2xl font-semibold">Import History</h1>
-              <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base">
+              <p className="text-muted-foreground max-w-md mx-auto text-sm:text-base">
                 Review your previous CSV imports and manage your batches.
               </p>
             </div>
@@ -531,17 +480,16 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                               View Leads
                             </Button>
                             
-                            {onDeleteBatch && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="flex items-center gap-2 text-destructive hover:text-destructive"
-                                onClick={() => handleDeleteBatch(batch.id, batch.name)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                              </Button>
-                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex items-center gap-2 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteBatch(batch.id, batch.name)}
+                              disabled={isDeleting}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              Delete
+                            </Button>
                           </div>
                         </div>
                         
