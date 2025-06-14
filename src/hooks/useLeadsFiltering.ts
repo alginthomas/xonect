@@ -23,7 +23,7 @@ interface UseLeadsFilteringProps {
   itemsPerPage: number;
   sortField: string;
   sortDirection: 'asc' | 'desc';
-  // Add missing filter properties
+  // Add missing filter properties with proper types
   statusFilter?: LeadStatus | 'all';
   categoryFilter?: string;
   dataAvailabilityFilter?: string;

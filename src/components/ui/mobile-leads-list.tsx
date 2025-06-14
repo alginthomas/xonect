@@ -105,7 +105,8 @@ interface MobileLeadsListProps {
   onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
   onEmailClick?: (leadId: string) => Promise<void>;
   onViewDetails?: (lead: Lead) => void;
-  onDeleteLead?: (leadId: string) => Promise<void>; // Add missing prop
+  onDeleteLead?: (leadId: string) => Promise<void>;
+  onBulkUpdateStatus?: (leadIds: string[], status: LeadStatus) => Promise<void>;
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
@@ -119,7 +120,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onUpdateLead,
   onEmailClick,
   onViewDetails,
-  onDeleteLead // Accept the new prop
+  onDeleteLead,
+  onBulkUpdateStatus
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
