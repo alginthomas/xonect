@@ -212,7 +212,7 @@ export const LinkedInAutomation: React.FC<LinkedInAutomationProps> = ({
                 className="min-h-[100px]"
               />
               <p className="text-sm text-muted-foreground mt-1">
-                Available variables: {{firstName}}, {{lastName}}, {{company}}, {{title}}
+                Available variables: {`{{firstName}}, {{lastName}}, {{company}}, {{title}}`}
               </p>
             </div>
 
