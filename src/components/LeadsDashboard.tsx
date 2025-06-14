@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -10,11 +9,10 @@ import { LeadsPagination } from '@/components/LeadsPagination';
 import { NavigationFilterIndicator } from '@/components/NavigationFilterIndicator';
 import { LeadSidebar } from '@/components/LeadSidebar';
 import { EmailDialog } from '@/components/EmailDialog';
-import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { DateGroupedLeads } from '@/components/ui/date-grouped-leads';
 import { useLeadsDashboardLogic } from '@/hooks/useLeadsDashboardLogic';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Plus, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Lead, EmailTemplate, LeadStatus } from '@/types/lead';
 import type { Category, ImportBatch } from '@/types/category';
@@ -58,7 +56,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
   onCreateCategory
 }) => {
   const isMobile = useIsMobile();
-  const { toast } = useToast();
 
   const {
     // State
@@ -182,7 +179,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               onCategoryChange={setCategoryFilter}
               dataAvailabilityFilter={dataAvailabilityFilter}
               onDataAvailabilityChange={setDataAvailabilityFilter}
+              countryFilter={countryFilter}
+              onCountryChange={setCountryFilter}
+              duplicatePhoneFilter={duplicatePhoneFilter}
+              onDuplicatePhoneChange={handleDuplicatePhoneChange}
               categories={categories}
+              leads={leads}
               onExport={handleExport}
               onClearFilters={clearAllFilters}
               activeFiltersCount={activeFiltersCount}
@@ -270,19 +272,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               </CardContent>
             </Card>
           </div>
-
-          {/* Floating Action Button */}
-          <FloatingActionButton
-            onClick={() => {
-              toast({
-                title: 'Add Lead',
-                description: 'Lead creation feature coming soon!'
-              });
-            }}
-            icon={<Plus className="h-5 w-5" />}
-            label="Add Lead"
-            className="bottom-24 right-4 h-14 w-14 shadow-xl"
-          />
         </div>
       ) : (
         /* Desktop Layout */
