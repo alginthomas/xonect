@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +23,13 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, [isEditing]);
 
   const handleSave = () => {
     if (!editValue.trim()) return;
@@ -58,20 +65,20 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
   if (isEditing) {
     return (
-      <div className={`space-y-3 ${className}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`space-y-2 ${className}`} onClick={(e) => e.stopPropagation()}>
         <Textarea
+          ref={textareaRef}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="min-h-[80px] text-sm resize-none"
-          placeholder="Enter remarks..."
-          autoFocus
+          className="min-h-[60px] text-sm resize-none"
+          placeholder="Add your remarks..."
         />
-        <div className="flex gap-2">
-          <Button size="sm" onClick={handleSave} className="h-7 px-3 text-xs">
+        <div className="flex gap-1">
+          <Button size="sm" onClick={handleSave} className="h-7 px-2 text-xs">
             <Save className="h-3 w-3 mr-1" />
             Save
           </Button>
-          <Button size="sm" variant="outline" onClick={handleCancel} className="h-7 px-3 text-xs">
+          <Button size="sm" variant="outline" onClick={handleCancel} className="h-7 px-2 text-xs">
             <X className="h-3 w-3 mr-1" />
             Cancel
           </Button>
@@ -85,18 +92,17 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       {/* Current Remark */}
       <div className="relative group">
         {remarks ? (
-          <div className="bg-muted/30 rounded-md p-3 border border-border/30">
-            <p className="text-sm leading-relaxed mb-2">{remarks}</p>
+          <div className="bg-muted/20 rounded-md p-2 border border-border/20 hover:bg-muted/30 transition-colors">
+            <p className="text-sm mb-1">{remarks}</p>
             <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {remarksHistory.length > 0 && format(remarksHistory[remarksHistory.length - 1].timestamp, 'MMM dd, HH:mm')}
+              <div className="text-xs text-muted-foreground">
+                {remarksHistory.length > 0 && format(remarksHistory[remarksHistory.length - 1].timestamp, 'MMM dd')}
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleEditClick}
-                className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                className="h-5 px-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
               >
                 <Edit3 className="h-3 w-3" />
               </Button>
@@ -105,10 +111,10 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
         ) : (
           <button
             onClick={handleAddClick}
-            className="w-full bg-muted/20 border border-dashed border-border/40 rounded-md p-3 text-left hover:bg-muted/30 transition-colors"
+            className="w-full bg-muted/10 border border-dashed border-border/30 rounded-md p-2 text-left hover:bg-muted/20 transition-colors"
           >
             <div className="flex items-center gap-2 text-muted-foreground">
-              <MessageSquare className="h-4 w-4" />
+              <MessageSquare className="h-3 w-3" />
               <span className="text-sm">Add remarks...</span>
             </div>
           </button>
@@ -124,18 +130,18 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
             e.stopPropagation();
             setShowHistory(!showHistory);
           }}
-          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
+          className="h-5 px-1 text-xs text-muted-foreground hover:text-foreground"
         >
           {showHistory ? (
             <>
               <ChevronUp className="h-3 w-3 mr-1" />
-              Hide history
+              Hide
             </>
           ) : (
             <>
               <ChevronDown className="h-3 w-3 mr-1" />
-              Show history
-              <Badge variant="secondary" className="ml-2 text-xs h-4">
+              History
+              <Badge variant="secondary" className="ml-1 text-xs h-3 px-1">
                 {remarksHistory.length - 1}
               </Badge>
             </>
@@ -145,12 +151,12 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
       {/* History */}
       {showHistory && remarksHistory.length > 1 && (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {remarksHistory.slice(0, -1).reverse().map((entry, index) => (
-            <div key={entry.id} className="bg-muted/10 rounded-md p-2 border border-border/20">
-              <p className="text-xs text-foreground mb-1">{entry.text}</p>
+        <div className="space-y-1 max-h-32 overflow-y-auto">
+          {remarksHistory.slice(0, -1).reverse().map((entry) => (
+            <div key={entry.id} className="bg-muted/10 rounded-md p-2 border border-border/10">
+              <p className="text-xs mb-1">{entry.text}</p>
               <div className="text-xs text-muted-foreground">
-                {format(entry.timestamp, 'MMM dd, yyyy • HH:mm')}
+                {format(entry.timestamp, 'MMM dd, HH:mm')}
               </div>
             </div>
           ))}
