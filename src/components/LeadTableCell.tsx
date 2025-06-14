@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -210,9 +209,9 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
       return (
         <QuickActionsCell
           lead={lead}
-          onEmailClick={onEmailClick}
-          onViewDetails={onViewDetails}
-          onDeleteLead={onDeleteLead}
+          onEmailClick={() => onEmailClick(lead)}
+          onViewDetails={() => onViewDetails(lead)}
+          onDeleteLead={() => onDeleteLead(lead.id)}
         />
       );
 
