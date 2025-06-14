@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Header } from '@/components/Header';
 
 interface AppleLayoutProps {
@@ -12,7 +12,7 @@ export const AppleLayout: React.FC<AppleLayoutProps> = ({
   children, 
   showHeader = true 
 }) => {
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
 
   return (
     <div className="min-h-screen bg-background w-full">
