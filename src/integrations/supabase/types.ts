@@ -17,6 +17,7 @@ export type Database = {
           lead_ids: string[] | null
           name: string
           open_rate: number
+          organization_id: string | null
           reply_rate: number
           sent_count: number
           status: Database["public"]["Enums"]["campaign_status"]
@@ -31,6 +32,7 @@ export type Database = {
           lead_ids?: string[] | null
           name: string
           open_rate?: number
+          organization_id?: string | null
           reply_rate?: number
           sent_count?: number
           status?: Database["public"]["Enums"]["campaign_status"]
@@ -45,6 +47,7 @@ export type Database = {
           lead_ids?: string[] | null
           name?: string
           open_rate?: number
+          organization_id?: string | null
           reply_rate?: number
           sent_count?: number
           status?: Database["public"]["Enums"]["campaign_status"]
@@ -53,6 +56,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "campaigns_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "campaigns_template_id_fkey"
             columns: ["template_id"]
@@ -70,6 +80,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          organization_id: string | null
           updated_at: string
           user_id: string | null
         }
@@ -80,6 +91,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          organization_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -90,10 +102,19 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          organization_id?: string | null
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_rate_limits: {
         Row: {
@@ -126,6 +147,7 @@ export type Database = {
           id: string
           last_used: string | null
           name: string
+          organization_id: string | null
           subject: string
           updated_at: string
           user_id: string | null
@@ -137,6 +159,7 @@ export type Database = {
           id?: string
           last_used?: string | null
           name: string
+          organization_id?: string | null
           subject: string
           updated_at?: string
           user_id?: string | null
@@ -148,12 +171,21 @@ export type Database = {
           id?: string
           last_used?: string | null
           name?: string
+          organization_id?: string | null
           subject?: string
           updated_at?: string
           user_id?: string | null
           variables?: string[] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       import_batches: {
         Row: {
@@ -163,6 +195,7 @@ export type Database = {
           id: string
           metadata: Json | null
           name: string
+          organization_id: string | null
           source_file: string | null
           successful_imports: number | null
           total_leads: number | null
@@ -175,6 +208,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           name: string
+          organization_id?: string | null
           source_file?: string | null
           successful_imports?: number | null
           total_leads?: number | null
@@ -187,6 +221,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           name?: string
+          organization_id?: string | null
           source_file?: string | null
           successful_imports?: number | null
           total_leads?: number | null
@@ -198,6 +233,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_batches_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -238,6 +280,7 @@ export type Database = {
       leads: {
         Row: {
           activity_log: Json | null
+          assigned_to: string | null
           category_id: string | null
           company: string
           company_size: Database["public"]["Enums"]["company_size_category"]
@@ -256,6 +299,7 @@ export type Database = {
           linkedin: string | null
           location: string | null
           organization_founded: number | null
+          organization_id: string | null
           organization_website: string | null
           personal_email: string | null
           phone: string | null
@@ -265,6 +309,7 @@ export type Database = {
           seniority: Database["public"]["Enums"]["seniority_level"]
           status: Database["public"]["Enums"]["lead_status"]
           tags: string[] | null
+          team_id: string | null
           title: string
           twitter_url: string | null
           updated_at: string
@@ -272,6 +317,7 @@ export type Database = {
         }
         Insert: {
           activity_log?: Json | null
+          assigned_to?: string | null
           category_id?: string | null
           company: string
           company_size?: Database["public"]["Enums"]["company_size_category"]
@@ -290,6 +336,7 @@ export type Database = {
           linkedin?: string | null
           location?: string | null
           organization_founded?: number | null
+          organization_id?: string | null
           organization_website?: string | null
           personal_email?: string | null
           phone?: string | null
@@ -299,6 +346,7 @@ export type Database = {
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
+          team_id?: string | null
           title: string
           twitter_url?: string | null
           updated_at?: string
@@ -306,6 +354,7 @@ export type Database = {
         }
         Update: {
           activity_log?: Json | null
+          assigned_to?: string | null
           category_id?: string | null
           company?: string
           company_size?: Database["public"]["Enums"]["company_size_category"]
@@ -324,6 +373,7 @@ export type Database = {
           linkedin?: string | null
           location?: string | null
           organization_founded?: number | null
+          organization_id?: string | null
           organization_website?: string | null
           personal_email?: string | null
           phone?: string | null
@@ -333,6 +383,7 @@ export type Database = {
           seniority?: Database["public"]["Enums"]["seniority_level"]
           status?: Database["public"]["Enums"]["lead_status"]
           tags?: string[] | null
+          team_id?: string | null
           title?: string
           twitter_url?: string | null
           updated_at?: string
@@ -353,12 +404,197 @@ export type Database = {
             referencedRelation: "import_batches"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "leads_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      mailchimp_campaigns: {
+        Row: {
+          audience_id: string
+          audience_name: string | null
+          campaign_name: string
+          created_at: string
+          id: string
+          leads_count: number | null
+          mailchimp_campaign_id: string
+          sent_at: string | null
+          status: string
+          subject_line: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          audience_id: string
+          audience_name?: string | null
+          campaign_name: string
+          created_at?: string
+          id?: string
+          leads_count?: number | null
+          mailchimp_campaign_id: string
+          sent_at?: string | null
+          status?: string
+          subject_line: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          audience_id?: string
+          audience_name?: string | null
+          campaign_name?: string
+          created_at?: string
+          id?: string
+          leads_count?: number | null
+          mailchimp_campaign_id?: string
+          sent_at?: string | null
+          status?: string
+          subject_line?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mailchimp_integrations: {
+        Row: {
+          access_token: string
+          account_id: string | null
+          account_name: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          refresh_token: string | null
+          server_prefix: string
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          refresh_token?: string | null
+          server_prefix: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string | null
+          account_name?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          refresh_token?: string | null
+          server_prefix?: string
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mailchimp_lead_syncs: {
+        Row: {
+          audience_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          lead_id: string | null
+          mailchimp_member_id: string | null
+          sync_status: string
+          synced_at: string | null
+          user_id: string
+        }
+        Insert: {
+          audience_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          mailchimp_member_id?: string | null
+          sync_status?: string
+          synced_at?: string | null
+          user_id: string
+        }
+        Update: {
+          audience_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string | null
+          mailchimp_member_id?: string | null
+          sync_status?: string
+          synced_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mailchimp_lead_syncs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          domain: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          settings: Json | null
+          slug: string
+          subscription_plan: string | null
+          subscription_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          settings?: Json | null
+          slug: string
+          subscription_plan?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          domain?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          settings?: Json | null
+          slug?: string
+          subscription_plan?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_organization_id: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -367,6 +603,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_organization_id?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -375,12 +612,116 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_organization_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_organization_id_fkey"
+            columns: ["current_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          organization_id: string
+          territory: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          organization_id: string
+          territory?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          organization_id?: string
+          territory?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_organizations: {
+        Row: {
+          created_at: string
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          is_active: boolean | null
+          joined_at: string | null
+          organization_id: string
+          role: Database["public"]["Enums"]["organization_role"]
+          team_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          organization_id: string
+          role?: Database["public"]["Enums"]["organization_role"]
+          team_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          is_active?: boolean | null
+          joined_at?: string | null
+          organization_id?: string
+          role?: Database["public"]["Enums"]["organization_role"]
+          team_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_organizations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_organizations_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -390,6 +731,24 @@ export type Database = {
       delete_duplicate_leads: {
         Args: { lead_ids: string[] }
         Returns: number
+      }
+      get_current_organization_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      has_minimum_role: {
+        Args: {
+          _organization_id: string
+          _min_role: Database["public"]["Enums"]["organization_role"]
+        }
+        Returns: boolean
+      }
+      has_organization_role: {
+        Args: {
+          _organization_id: string
+          _role: Database["public"]["Enums"]["organization_role"]
+        }
+        Returns: boolean
       }
     }
     Enums: {
@@ -412,6 +771,12 @@ export type Database = {
         | "Not Interested"
         | "Interested"
         | "Send Email"
+      organization_role:
+        | "owner"
+        | "admin"
+        | "team_manager"
+        | "sales_rep"
+        | "viewer"
       seniority_level:
         | "Junior"
         | "Mid-level"
@@ -553,6 +918,13 @@ export const Constants = {
         "Not Interested",
         "Interested",
         "Send Email",
+      ],
+      organization_role: [
+        "owner",
+        "admin",
+        "team_manager",
+        "sales_rep",
+        "viewer",
       ],
       seniority_level: [
         "Junior",
