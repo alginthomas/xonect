@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -109,8 +108,9 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
           ref={textareaRef}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="min-h-[60px] text-sm resize-none border-primary/20 focus:border-primary/40"
+          className="min-h-[60px] text-sm resize-none border-primary/20 focus:border-primary/40 whitespace-pre-wrap break-words overflow-wrap-anywhere"
           placeholder="Add your remarks..."
+          style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}
         />
         <div className="flex gap-2">
           <Button size="sm" onClick={handleSave} className="h-8 px-3 text-xs">
@@ -134,7 +134,9 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
       <div className="relative group">
         {remarks ? (
           <div className="bg-muted/10 rounded-lg p-3 border border-border/20 hover:bg-muted/20 transition-colors">
-            <p className="text-sm mb-2 leading-relaxed break-words">{remarks}</p>
+            <p className="text-sm mb-2 leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
+              {remarks}
+            </p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Clock className="h-3 w-3" />
@@ -200,7 +202,9 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .map((entry) => (
               <div key={entry.id} className="bg-muted/5 rounded-md p-2 border border-border/10">
-                <p className="text-xs mb-1 leading-relaxed break-words">{entry.text}</p>
+                <p className="text-xs mb-1 leading-relaxed break-words whitespace-pre-wrap overflow-wrap-anywhere" style={{ wordWrap: 'break-word', overflowWrap: 'anywhere' }}>
+                  {entry.text}
+                </p>
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-2.5 w-2.5" />
                   {format(new Date(entry.timestamp), 'MMM dd, yyyy • HH:mm')}
