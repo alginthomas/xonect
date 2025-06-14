@@ -1,8 +1,8 @@
-
 import { useMemo, useEffect } from 'react';
 import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 import { filterDuplicatePhoneNumbers, getLeadsWithDuplicatePhones } from '@/utils/phoneDeduplication';
+import { findAdvancedDuplicates } from '@/utils/advancedDuplicateDetection';
 
 type DuplicatePhoneFilter = 'all' | 'unique-only' | 'duplicates-only';
 
@@ -78,7 +78,8 @@ export const useLeadsFiltering = ({
         lead.lastName?.toLowerCase().includes(term) ||
         lead.email?.toLowerCase().includes(term) ||
         lead.company?.toLowerCase().includes(term) ||
-        lead.title?.toLowerCase().includes(term)
+        lead.title?.toLowerCase().includes(term) ||
+        lead.phone?.includes(term)
       );
       console.log('After search filter:', filtered.length);
     }
@@ -133,13 +134,42 @@ export const useLeadsFiltering = ({
       );
     }
 
-    // Filter by duplicate phone numbers
+    // Enhanced duplicate filtering using advanced detection
     if (duplicatePhoneFilter === 'unique-only') {
-      filtered = filterDuplicatePhoneNumbers(filtered);
-      console.log('After duplicate phone filter (unique only):', filtered.length);
+      // Remove leads that have any kind of duplicate (not just phone)
+      const duplicateIds = new Set<string>();
+      
+      filtered.forEach(lead => {
+        const matches = findAdvancedDuplicates(lead, filtered.filter(l => l.id !== lead.id));
+        if (matches.length > 0) {
+          // Keep the lead with highest completeness score
+          const allLeadsInGroup = [lead, ...matches.map(m => m.existingLead)];
+          const bestLead = allLeadsInGroup.sort((a, b) => b.completenessScore - a.completenessScore)[0];
+          
+          allLeadsInGroup.forEach(l => {
+            if (l.id !== bestLead.id) {
+              duplicateIds.add(l.id);
+            }
+          });
+        }
+      });
+      
+      filtered = filtered.filter(lead => !duplicateIds.has(lead.id));
+      console.log('After enhanced unique filter:', filtered.length);
     } else if (duplicatePhoneFilter === 'duplicates-only') {
-      filtered = getLeadsWithDuplicatePhones(filtered);
-      console.log('After duplicate phone filter (duplicates only):', filtered.length);
+      // Show only leads that have duplicates
+      const duplicateIds = new Set<string>();
+      
+      filtered.forEach(lead => {
+        const matches = findAdvancedDuplicates(lead, filtered.filter(l => l.id !== lead.id));
+        if (matches.length > 0) {
+          duplicateIds.add(lead.id);
+          matches.forEach(m => duplicateIds.add(m.existingLead.id));
+        }
+      });
+      
+      filtered = filtered.filter(lead => duplicateIds.has(lead.id));
+      console.log('After enhanced duplicates filter:', filtered.length);
     }
 
     console.log('Final filtered count:', filtered.length);
