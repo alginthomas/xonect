@@ -102,15 +102,15 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
       {/* Mobile-optimized Tabs */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <Tabs defaultValue="groups" className="flex-1 flex flex-col">
-          <div className="flex-shrink-0 px-4 py-2 border-b bg-background/95 backdrop-blur-sm">
-            <TabsList className="grid w-full grid-cols-3 h-8 text-xs">
-              <TabsTrigger value="groups" className="text-xs px-2">
+          <div className="flex-shrink-0 px-4 py-3 border-b bg-background">
+            <TabsList className="grid w-full grid-cols-3 h-9">
+              <TabsTrigger value="groups" className="text-sm px-3">
                 Groups
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="text-xs px-2">
+              <TabsTrigger value="analytics" className="text-sm px-3">
                 Analytics
               </TabsTrigger>
-              <TabsTrigger value="bulk" className="text-xs px-2">
+              <TabsTrigger value="bulk" className="text-sm px-3">
                 Actions
               </TabsTrigger>
             </TabsList>
