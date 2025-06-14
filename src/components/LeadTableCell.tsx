@@ -65,7 +65,7 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
         <div onClick={stopPropagation}>
           <QuickStatusEditor
             status={lead.status}
-            onStatusChange={(status) => onStatusChange(lead.id, status)}
+            onChange={(status) => onStatusChange(lead.id, status)}
           />
         </div>
       );
@@ -167,7 +167,7 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
     case 'lastContact':
       return (
         <div>
-          {lead.lastContact ? format(new Date(lead.lastContact), 'MMM dd, yyyy') : '-'}
+          {lead.lastContactDate ? format(new Date(lead.lastContactDate), 'MMM dd, yyyy') : '-'}
         </div>
       );
 
@@ -181,14 +181,14 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
     case 'website':
       return (
         <div>
-          {lead.website && (
+          {lead.organizationWebsite && (
             <Button
               variant="ghost"
               size="sm"
               className="h-6 w-6 p-0"
               onClick={(e) => {
                 stopPropagation(e);
-                window.open(lead.website, '_blank');
+                window.open(lead.organizationWebsite, '_blank');
               }}
             >
               <ExternalLink className="h-3 w-3" />
