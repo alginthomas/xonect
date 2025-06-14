@@ -21,16 +21,26 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
   };
 
   const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
+    // Enhanced CSV field mapping with more flexible column name matching
+    const getFieldValue = (possibleNames: string[]): string => {
+      for (const name of possibleNames) {
+        if (csvRow[name] !== undefined && csvRow[name] !== null && csvRow[name] !== '') {
+          return String(csvRow[name]).trim();
+        }
+      }
+      return '';
+    };
+
     const mappedLead = {
-      first_name: csvRow['First Name'] || csvRow['firstName'] || '',
-      last_name: csvRow['Last Name'] || csvRow['lastName'] || '',
-      email: csvRow['Email'] || csvRow['email'] || '',
-      phone: csvRow['Phone'] || csvRow['phone'] || '',
-      company: csvRow['Company'] || csvRow['company'] || '',
-      title: csvRow['Title'] || csvRow['title'] || csvRow['Job Title'] || '',
-      linkedin: csvRow['LinkedIn'] || csvRow['linkedin'] || csvRow['LinkedIn URL'] || '',
-      industry: csvRow['Industry'] || csvRow['industry'] || '',
-      location: csvRow['Location'] || csvRow['location'] || '',
+      first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
+      last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
+      email: getFieldValue(['Email', 'email', 'Email Address', 'email_address', 'EmailAddress', 'e_mail']),
+      phone: getFieldValue(['Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber', 'mobile', 'tel', 'telephone']),
+      company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
+      title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
+      linkedin: getFieldValue(['LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 'linkedin_profile']),
+      industry: getFieldValue(['Industry', 'industry', 'sector']),
+      location: getFieldValue(['Location', 'location', 'city', 'address', 'country']),
       seniority: 'Mid-level' as const,
       company_size: 'Small (1-50)' as const,
       status: 'New' as const,
@@ -42,13 +52,16 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       tags: [],
       remarks_history: [],
       activity_log: [],
-      department: csvRow['Department'] || csvRow['department'] || '',
-      personal_email: csvRow['Personal Email'] || csvRow['personalEmail'] || '',
-      photo_url: csvRow['Photo URL'] || csvRow['photoUrl'] || '',
-      twitter_url: csvRow['Twitter'] || csvRow['twitter'] || '',
-      facebook_url: csvRow['Facebook'] || csvRow['facebook'] || '',
-      organization_website: csvRow['Website'] || csvRow['website'] || '',
-      organization_founded: csvRow['Founded'] ? parseInt(csvRow['Founded']) : null,
+      department: getFieldValue(['Department', 'department', 'dept']),
+      personal_email: getFieldValue(['Personal Email', 'personal_email', 'personalEmail', 'private_email']),
+      photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
+      twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
+      facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
+      organization_website: getFieldValue(['Website', 'website', 'company_website', 'url', 'web']),
+      organization_founded: (() => {
+        const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
+        return founded ? parseInt(founded) : null;
+      })(),
       remarks: ''
     };
 
@@ -63,6 +76,11 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       linkedin: mappedLead.linkedin
     });
 
+    console.log('🔄 Mapped CSV row to lead:', {
+      originalRow: csvRow,
+      mappedLead: mappedLead
+    });
+
     return mappedLead;
   };
 
@@ -75,6 +93,14 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
     setIsImporting(true);
     
     try {
+      console.log('🚀 Starting CSV import:', {
+        fileName,
+        importName,
+        selectedCategory,
+        rowCount: csvData.length,
+        sampleRow: csvData[0]
+      });
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -91,6 +117,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
         
         if (existingCategory) {
           categoryId = existingCategory.id;
+          console.log('📂 Using existing category:', existingCategory);
         } else {
           // Create new category
           const { data: newCategory, error: categoryError } = await supabase
@@ -106,6 +133,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
 
           if (categoryError) throw categoryError;
           categoryId = newCategory.id;
+          console.log('📂 Created new category:', newCategory);
         }
       }
 
@@ -125,16 +153,20 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
             fileHash,
             importDate: new Date().toISOString(),
             fileName,
-            originalRowCount: csvData.length
+            originalRowCount: csvData.length,
+            columnNames: Object.keys(csvData[0] || {})
           }
         })
         .select()
         .single();
 
       if (batchError) throw batchError;
+      console.log('📦 Created import batch:', importBatch);
 
       // Process and insert leads
       const leads = csvData.map(row => mapCSVToLead(row, categoryId, importBatch.id, user.id));
+
+      console.log('📊 Sample mapped lead for debugging:', leads[0]);
 
       // Insert leads in batches to avoid overwhelming the database
       const batchSize = 100;
@@ -144,16 +176,23 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       for (let i = 0; i < leads.length; i += batchSize) {
         const batch = leads.slice(i, i + batchSize);
         
+        console.log(`📥 Inserting batch ${Math.floor(i/batchSize) + 1}:`, {
+          batchStart: i,
+          batchSize: batch.length,
+          sampleLead: batch[0]
+        });
+
         const { data: insertedLeads, error: leadsError } = await supabase
           .from('leads')
           .insert(batch)
           .select();
 
         if (leadsError) {
-          console.error('Error inserting batch:', leadsError);
+          console.error('❌ Error inserting batch:', leadsError);
           failedImports += batch.length;
         } else {
           successfulImports += insertedLeads?.length || 0;
+          console.log(`✅ Successfully inserted ${insertedLeads?.length} leads`);
         }
       }
 
@@ -166,6 +205,12 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
         })
         .eq('id', importBatch.id);
 
+      console.log('🎉 Import completed:', {
+        successfulImports,
+        failedImports,
+        totalProcessed: successfulImports + failedImports
+      });
+
       toast({
         title: "Import Successful",
         description: `"${importName}" has been imported successfully. ${successfulImports} leads imported${failedImports > 0 ? `, ${failedImports} failed` : ''}.`
@@ -175,7 +220,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       return true;
 
     } catch (error) {
-      console.error('Import error:', error);
+      console.error('💥 Import error:', error);
       toast({
         title: "Import Failed",
         description: error instanceof Error ? error.message : "There was an error importing your data. Please try again.",
