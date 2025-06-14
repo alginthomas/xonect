@@ -22,9 +22,6 @@ const Header: React.FC<HeaderProps> = ({
     id: 'leads',
     label: 'Leads'
   }, {
-    id: 'analytics',
-    label: 'Analytics'
-  }, {
     id: 'import',
     label: 'Import'
   }, {
