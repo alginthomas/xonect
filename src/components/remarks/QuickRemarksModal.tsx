@@ -12,6 +12,7 @@ import { QuickRemarksModalHeader } from './QuickRemarksModalHeader';
 import { RemarkHistoryView } from './RemarkHistoryView';
 import { QuickRemarksModalControls } from './QuickRemarksModalControls';
 
+// Improved modal layout to ensure controls never overflow
 interface QuickRemarksModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -38,7 +39,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
     if (open) {
       setEditValue(initialRemarks);
       setIsEditing(initialIsEditing);
-      setShowHistory(false); // Reset history visibility when modal opens/re-opens
+      setShowHistory(false);
     }
   }, [open, initialRemarks, initialIsEditing]);
 
@@ -49,7 +50,6 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
     }
   }, [open, isEditing]);
 
-  // Keyboard shortcuts for save/cancel
   useEffect(() => {
     if (!open || !isEditing) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -62,7 +62,6 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-    // eslint-disable-next-line
   }, [isEditing, editValue, open]);
 
   const handleSave = () => {
@@ -106,6 +105,7 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleModalCloseIntent(); }}>
       <DialogContent className="max-w-screen-sm w-full px-3 py-5 sm:p-6 rounded-2xl space-y-3 flex flex-col animate-fade-in">
+
         <DialogHeader>
           <QuickRemarksModalHeader
             isEditing={isEditing}
@@ -113,8 +113,8 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
             latestHistoryEntry={latestHistoryEntry}
           />
         </DialogHeader>
-        
-        <div className="w-full min-h-20">
+
+        <div className="w-full flex-1 min-h-20">
           {isEditing ? (
             <Textarea
               ref={textareaRef}
@@ -126,13 +126,14 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
               aria-label="Edit Remark"
             />
           ) : (
-            <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-x-auto overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10">
+            <div className="w-full text-base whitespace-pre-wrap break-words font-normal py-2 min-h-[52px] max-h-44 overflow-y-auto border border-muted/10 rounded-lg px-2 bg-muted/10">
               {initialRemarks || <span className="text-muted-foreground italic">No remark. Click 'Edit' to add.</span>}
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col gap-3 mt-0">
+        {/* Controls are always at the bottom, never floating outside modal */}
+        <DialogFooter className="gap-2 mt-2 w-full">
           <QuickRemarksModalControls
             isEditing={isEditing}
             remarksHistoryCount={initialRemarksHistory.length}
@@ -142,16 +143,18 @@ export const QuickRemarksModal: React.FC<QuickRemarksModalProps> = ({
             onSave={handleSave}
             onCancelEditing={handleCancelEditing}
           />
-          {!isEditing && showHistory && (
-            <div className="w-full">
-              <RemarkHistoryView
-                remarksHistory={initialRemarksHistory}
-                currentRemarkText={initialRemarks}
-              />
-            </div>
-          )}
         </DialogFooter>
-        {/* Mobile bar hint */}
+
+        {/* History always within modal boundaries and scrollable if needed */}
+        {!isEditing && showHistory && (
+          <div className="w-full mt-2 max-h-40 overflow-y-auto">
+            <RemarkHistoryView
+              remarksHistory={initialRemarksHistory}
+              currentRemarkText={initialRemarks}
+            />
+          </div>
+        )}
+
         <div className="block sm:hidden text-xs text-center text-muted-foreground mt-2">
           Tap outside or swipe down to close
         </div>

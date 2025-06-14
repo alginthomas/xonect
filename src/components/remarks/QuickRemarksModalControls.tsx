@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,9 +22,10 @@ export const QuickRemarksModalControls: React.FC<QuickRemarksModalControlsProps>
   onSave,
   onCancelEditing,
 }) => {
+  // Layout update: always stack buttons horizontally, inline with Apple/HIG and keep within modal at all sizes
   if (isEditing) {
     return (
-      <div className="flex gap-3">
+      <div className="flex gap-3 w-full justify-end">
         <Button size="lg" className="px-5 py-2 text-base" onClick={onSave}>
           <Save className="h-4 w-4 mr-2" /> Save
         </Button>
@@ -37,27 +37,25 @@ export const QuickRemarksModalControls: React.FC<QuickRemarksModalControlsProps>
   }
 
   return (
-    <div className="flex w-full flex-col gap-2">
-      <div className="flex w-full justify-between items-center">
-        <Button size="lg" className="px-5 py-2 text-base" onClick={() => onSetIsEditing(true)}>
-          <Edit3 className="h-4 w-4 mr-2" />
-          Edit
+    <div className="flex w-full gap-3 justify-end">
+      <Button size="lg" className="px-5 py-2 text-base" onClick={() => onSetIsEditing(true)}>
+        <Edit3 className="h-4 w-4 mr-2" />
+        Edit
+      </Button>
+      {remarksHistoryCount > 0 && (
+        <Button
+          size="lg"
+          variant={showHistory ? "default" : "outline"}
+          onClick={onToggleHistory}
+          className="px-4 py-2 text-base flex items-center"
+        >
+          <History className="h-4 w-4 mr-2" />
+          {showHistory ? 'Hide History' : 'Show History'}
+          <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs">
+            {remarksHistoryCount}
+          </Badge>
         </Button>
-        {remarksHistoryCount > 0 && (
-          <Button
-            size="lg"
-            variant={showHistory ? "default" : "outline"}
-            onClick={onToggleHistory}
-            className="px-4 py-2 text-base flex items-center"
-          >
-            <History className="h-4 w-4 mr-2" />
-            {showHistory ? 'Hide History' : 'Remarks History'}
-            <Badge variant="secondary" className="ml-2 h-5 px-2 text-xs">
-              {remarksHistoryCount}
-            </Badge>
-          </Button>
-        )}
-      </div>
+      )}
     </div>
   );
 };
