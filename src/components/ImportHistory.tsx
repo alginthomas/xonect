@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,7 @@ interface ImportHistoryProps {
   leads: Lead[];
   importBatches: ImportBatch[];
   categories: Category[];
-  onDeleteBatch: (batchId: string) => void;
+  onDeleteBatch: (batchId: string, batchName?: string) => void;
   onViewBatchLeads?: (batchId: string) => void;
 }
 
@@ -130,7 +131,7 @@ export const ImportHistory: React.FC<ImportHistoryProps> = ({
   };
 
   const handleDeleteBatch = (batchId: string, batchName: string) => {
-    onDeleteBatch(batchId);
+    onDeleteBatch(batchId, batchName);
     toast({
       title: "Batch deleted",
       description: `Import batch "${batchName}" has been deleted`
