@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,9 +17,9 @@ interface LeadTableCellProps {
   lead: Lead;
   categories: Category[];
   selectedLeads: Set<string>;
-  onSelectLead: (leadId: string, selected?: boolean) => void;
+  onSelectLead: (leadId: string, selected: boolean) => void;
   onStatusChange: (leadId: string, status: LeadStatus) => void;
-  onRemarksUpdate: (leadId: string, remarks: string) => void;
+  onRemarksUpdate: (leadId: string, remarks: string, remarksHistory: RemarkEntry[]) => void;
   onEmailClick: () => void;
   onViewDetails: () => void;
   onDeleteLead: () => void;
@@ -39,7 +38,7 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
   onDeleteLead
 }) => {
   const handleRemarksUpdateWrapper = (remarks: string, remarksHistory: import('@/types/lead').RemarkEntry[]) => {
-    onRemarksUpdate(lead.id, remarks);
+    onRemarksUpdate(lead.id, remarks, remarksHistory);
   };
 
   switch (columnId) {
@@ -215,13 +214,12 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
 
     case 'remarks':
       return (
-        <div className="max-w-xs">
-          <QuickRemarksCell
-            remarks={lead.remarks || ''}
-            remarksHistory={lead.remarksHistory || []}
-            onUpdate={handleRemarksUpdateWrapper}
-          />
-        </div>
+        <QuickRemarksCell
+          remarks={lead.remarks || ''}
+          remarksHistory={lead.remarksHistory || []}
+          onUpdate={(remarks, remarksHistory) => onRemarksUpdate(lead.id, remarks, remarksHistory)}
+          className="w-full"
+        />
       );
 
     case 'actions':
