@@ -23,6 +23,11 @@ interface UseLeadsFilteringProps {
   itemsPerPage: number;
   sortField: string;
   sortDirection: 'asc' | 'desc';
+  // Add missing filter properties
+  statusFilter?: LeadStatus | 'all';
+  categoryFilter?: string;
+  dataAvailabilityFilter?: string;
+  setCurrentPage?: (page: number) => void;
 }
 
 export const useLeadsFiltering = ({
@@ -43,7 +48,12 @@ export const useLeadsFiltering = ({
   currentPage,
   itemsPerPage,
   sortField,
-  sortDirection
+  sortDirection,
+  // Accept the additional filter properties
+  statusFilter,
+  categoryFilter,
+  dataAvailabilityFilter,
+  setCurrentPage
 }: UseLeadsFilteringProps) => {
   // Filter leads based on various criteria
   const filteredLeads = useMemo(() => {
@@ -79,15 +89,17 @@ export const useLeadsFiltering = ({
       console.log('After search filter:', filtered.length);
     }
 
-    // Filter by status
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter(lead => lead.status === selectedStatus);
+    // Filter by status - use statusFilter or selectedStatus
+    const statusToFilter = statusFilter || selectedStatus;
+    if (statusToFilter !== 'all') {
+      filtered = filtered.filter(lead => lead.status === statusToFilter);
       console.log('After status filter:', filtered.length);
     }
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(lead => lead.categoryId === selectedCategory);
+    // Filter by category - use categoryFilter or selectedCategory
+    const categoryToFilter = categoryFilter || selectedCategory;
+    if (categoryToFilter !== 'all') {
+      filtered = filtered.filter(lead => lead.categoryId === categoryToFilter);
       console.log('After category filter:', filtered.length);
     }
 
@@ -117,12 +129,13 @@ export const useLeadsFiltering = ({
       console.log('After country filter:', filtered.length);
     }
 
-    // Filter by data availability
-    if (selectedDataFilter === 'has-phone') {
+    // Filter by data availability - use dataAvailabilityFilter or selectedDataFilter
+    const dataFilterToUse = dataAvailabilityFilter || selectedDataFilter;
+    if (dataFilterToUse === 'has-phone') {
       filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '');
-    } else if (selectedDataFilter === 'has-email') {
+    } else if (dataFilterToUse === 'has-email') {
       filtered = filtered.filter(lead => lead.email && lead.email.trim() !== '');
-    } else if (selectedDataFilter === 'has-both') {
+    } else if (dataFilterToUse === 'has-both') {
       filtered = filtered.filter(lead => 
         lead.phone && lead.phone.trim() !== '' && 
         lead.email && lead.email.trim() !== ''
@@ -140,7 +153,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
+  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter, statusFilter, categoryFilter, dataAvailabilityFilter]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {

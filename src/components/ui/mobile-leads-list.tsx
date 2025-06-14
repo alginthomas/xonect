@@ -105,6 +105,7 @@ interface MobileLeadsListProps {
   onUpdateLead?: (leadId: string, updates: Partial<Lead>) => Promise<void>;
   onEmailClick?: (leadId: string) => Promise<void>;
   onViewDetails?: (lead: Lead) => void;
+  onDeleteLead?: (leadId: string) => Promise<void>; // Add missing prop
 }
 
 export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
@@ -117,7 +118,8 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
   onBulkDelete,
   onUpdateLead,
   onEmailClick,
-  onViewDetails
+  onViewDetails,
+  onDeleteLead // Accept the new prop
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<LeadStatus | 'all'>('all');
@@ -219,6 +221,11 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     }
   };
 
+  const handleDeleteLead = async (leadId: string) => {
+    const deleteFn = onDeleteLead || onLeadDelete;
+    await deleteFn(leadId);
+  };
+
   const handleBulkAction = async (action: 'delete' | 'status', value?: string) => {
     const selectedIds = Array.from(selectedLeads);
     if (action === 'delete') {
@@ -280,7 +287,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
           onRemarksUpdate={handleRemarksUpdate}
           onEmailClick={handleEmailClick}
           onViewDetails={handleViewDetails}
-          onDeleteLead={onLeadDelete}
+          onDeleteLead={handleDeleteLead}
         />
       </div>
 
