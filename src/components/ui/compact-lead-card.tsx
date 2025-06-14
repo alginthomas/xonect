@@ -101,7 +101,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 
   return (
     <Card 
-      className={`mb-4 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-xl overflow-hidden cursor-pointer ${
+      className={`w-full max-w-full mb-3 sm:mb-4 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden cursor-pointer ${
         isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
       }`}
       onClick={handleCardClick}
@@ -109,40 +109,40 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
     >
-      <div className="p-6">
+      <div className="p-4 sm:p-5">
         {/* Header with Avatar and Info */}
-        <div className="flex items-start gap-4 mb-6">
+        <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-5">
           {/* Selection indicator */}
           {selectionMode && (
             <div className="pt-1 flex-shrink-0">
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                 isSelected 
                   ? 'bg-primary border-primary text-primary-foreground' 
                   : 'border-border bg-background'
               }`}>
-                {isSelected && <Check className="h-3 w-3" />}
+                {isSelected && <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
               </div>
             </div>
           )}
           
           {/* Avatar */}
-          <Avatar className="h-16 w-16 flex-shrink-0">
+          <Avatar className="h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 flex-shrink-0">
             <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-            <AvatarFallback className="text-lg font-medium bg-primary/10 text-primary">
+            <AvatarFallback className="text-sm sm:text-base lg:text-lg font-semibold bg-primary/10 text-primary">
               {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
             </AvatarFallback>
           </Avatar>
           
           {/* Lead info */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-xl leading-tight mb-1 text-left">
+            <h3 className="font-bold text-lg sm:text-xl lg:text-2xl leading-tight mb-1 text-left truncate">
               {lead.firstName} {lead.lastName}
             </h3>
             <div className="space-y-1 text-left">
-              <p className="text-base text-muted-foreground font-medium">
+              <p className="text-sm sm:text-base text-muted-foreground font-medium truncate">
                 {lead.company} • {lead.title}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {lead.email}
               </p>
             </div>
@@ -150,40 +150,42 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
         </div>
 
         {/* Status and Website Row */}
-        <div className="flex items-center justify-between mb-6" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center gap-2">
-            <span className="text-base font-medium text-muted-foreground">Status:</span>
-            <QuickStatusEditor
-              status={lead.status}
-              onChange={onStatusChange}
-            />
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm sm:text-base font-medium text-muted-foreground flex-shrink-0">Status:</span>
+            <div className="min-w-0">
+              <QuickStatusEditor
+                status={lead.status}
+                onChange={onStatusChange}
+              />
+            </div>
           </div>
           
           {lead.organizationWebsite && (
             <Button
               variant="ghost"
               size="sm"
-              className="h-10 px-4 text-primary hover:bg-primary/10"
+              className="h-8 sm:h-9 px-3 sm:px-4 text-primary hover:bg-primary/10 border border-primary/20 rounded-lg flex-shrink-0 w-full sm:w-auto justify-center"
               onClick={handleWebsiteAction}
             >
-              <Globe className="h-4 w-4 mr-2" />
-              <span className="text-sm font-medium">View Website</span>
+              <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              <span className="text-xs sm:text-sm font-medium">View Website</span>
             </Button>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
           {/* Call Button */}
           {lead.phone && (
             <Button
               variant="ghost"
               size="lg"
-              className="flex-1 h-14 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl"
+              className="flex-1 h-11 sm:h-12 lg:h-14 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0"
               onClick={handleCallAction}
             >
-              <Phone className="h-5 w-5 mr-3 text-primary" />
-              <span className="text-base font-medium text-primary">Call</span>
+              <Phone className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-primary flex-shrink-0" />
+              <span className="text-sm sm:text-base font-medium text-primary">Call</span>
             </Button>
           )}
 
@@ -191,11 +193,11 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           <Button
             variant="ghost"
             size="lg"
-            className="flex-1 h-14 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl"
+            className="flex-1 h-11 sm:h-12 lg:h-14 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0"
             onClick={handleEmailAction}
           >
-            <Mail className="h-5 w-5 mr-3 text-primary" />
-            <span className="text-base font-medium text-primary">Copy Email</span>
+            <Mail className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3 text-primary flex-shrink-0" />
+            <span className="text-sm sm:text-base font-medium text-primary">Copy Email</span>
           </Button>
         </div>
       </div>
