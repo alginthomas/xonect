@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
-import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableRow } from '@/components/ui/apple-table';
+import { AppleTable, AppleTableHeader, AppleTableBody, AppleTableRow, AppleTableCell } from '@/components/ui/apple-table';
 import { DraggableTableHeader } from '@/components/DraggableTableHeader';
 import { LeadTableCell } from '@/components/LeadTableCell';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -92,19 +92,20 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({
           {leads.map((lead) => (
             <AppleTableRow key={lead.id}>
               {visibleColumns.map((column) => (
-                <LeadTableCell
-                  key={`${lead.id}-${column.id}`}
-                  columnId={column.id}
-                  lead={lead}
-                  categories={categories}
-                  selectedLeads={selectedLeads}
-                  onSelectLead={(leadId, selected) => onSelectLead(leadId)}
-                  onStatusChange={onStatusChange}
-                  onRemarksUpdate={onRemarksUpdate}
-                  onEmailClick={() => onEmailClick(lead)}
-                  onViewDetails={() => onViewDetails(lead)}
-                  onDeleteLead={() => onDeleteLead(lead.id)}
-                />
+                <AppleTableCell key={`${lead.id}-${column.id}`} className={column.width || ''}>
+                  <LeadTableCell
+                    columnId={column.id}
+                    lead={lead}
+                    categories={categories}
+                    selectedLeads={selectedLeads}
+                    onSelectLead={(leadId, selected) => onSelectLead(leadId)}
+                    onStatusChange={onStatusChange}
+                    onRemarksUpdate={onRemarksUpdate}
+                    onEmailClick={() => onEmailClick(lead)}
+                    onViewDetails={() => onViewDetails(lead)}
+                    onDeleteLead={() => onDeleteLead(lead.id)}
+                  />
+                </AppleTableCell>
               ))}
             </AppleTableRow>
           ))}
