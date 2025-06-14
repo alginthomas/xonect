@@ -1,3 +1,4 @@
+
 import { useMemo, useEffect } from 'react';
 import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
@@ -26,6 +27,7 @@ interface UseLeadsFilteringProps {
   sortField: string;
   sortDirection: 'asc' | 'desc';
   setCurrentPage?: (page: number) => void;
+  navigationFilter?: { status?: string; [key: string]: any }; // Add navigation filter
 }
 
 export const useLeadsFiltering = ({
@@ -47,21 +49,29 @@ export const useLeadsFiltering = ({
   itemsPerPage,
   sortField,
   sortDirection,
-  setCurrentPage
+  setCurrentPage,
+  navigationFilter
 }: UseLeadsFilteringProps) => {
   // Filter leads based on various criteria
   const filteredLeads = useMemo(() => {
     console.log('Filtering leads:', {
       totalLeads: leads.length,
-      searchQuery: searchQuery || searchTerm || '', // Use either searchQuery or searchTerm
+      searchQuery: searchQuery || searchTerm || '',
       selectedStatus,
       selectedCategory,
       selectedDataFilter: selectedDataFilter,
       countryFilter,
-      duplicatePhoneFilter
+      duplicatePhoneFilter,
+      navigationFilter
     });
     
     let filtered = leads;
+
+    // Apply navigation filter first (from dashboard clicks)
+    if (navigationFilter?.status) {
+      filtered = filtered.filter(lead => lead.status === navigationFilter.status);
+      console.log('After navigation filter:', filtered.length);
+    }
 
     // Filter by import batch if selected
     if (selectedBatchId) {
@@ -84,8 +94,8 @@ export const useLeadsFiltering = ({
       console.log('After search filter:', filtered.length);
     }
 
-    // Filter by status
-    if (selectedStatus !== 'all') {
+    // Filter by status (only if no navigation filter is applied)
+    if (!navigationFilter?.status && selectedStatus !== 'all') {
       filtered = filtered.filter(lead => lead.status === selectedStatus);
       console.log('After status filter:', filtered.length);
     }
@@ -174,7 +184,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
+  }, [leads, importBatches, selectedBatchId, searchQuery, searchTerm, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter, navigationFilter]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {

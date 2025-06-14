@@ -598,23 +598,14 @@ export default function Index() {
     });
   };
 
-  const handleNavigateToLeads = (filter?: any) => {
-    console.log('Navigate to leads with filter:', filter);
-
-    // Build search params with filter if provided
-    const searchParams = new URLSearchParams();
-    searchParams.set('tab', 'leads');
-    if (filter) {
-      Object.entries(filter).forEach(([key, value]) => {
-        if (value && value !== 'all' && value !== '') {
-          searchParams.set(key, String(value));
-        }
-      });
+  // Add navigation handler for dashboard
+  const handleNavigateToLeads = (filter?: { status?: string; [key: string]: any }) => {
+    if (filter?.status) {
+      // Update URL with status parameter
+      const url = new URL(window.location.href);
+      url.searchParams.set('status', filter.status);
+      window.history.pushState({}, '', url.toString());
     }
-
-    const newUrl = `/?${searchParams.toString()}`;
-    console.log('Navigating to leads:', newUrl);
-    navigate(newUrl, { replace: true });
     setActiveTab('leads');
   };
 

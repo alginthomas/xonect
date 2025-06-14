@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { Card, CardContent } from '@/components/ui/card';
@@ -96,13 +96,27 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
   // Add duplicate phone filter state with proper type
   const [duplicatePhoneFilter, setDuplicatePhoneFilter] = useState<'all' | 'unique-only' | 'duplicates-only'>('all');
+  
+  // Add navigation filter state to handle dashboard clicks
+  const [navigationFilter, setNavigationFilter] = useState<{ status?: string; [key: string]: any } | undefined>(undefined);
+
+  // Check URL parameters for navigation filter on component mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const statusParam = urlParams.get('status');
+    if (statusParam) {
+      setNavigationFilter({ status: statusParam });
+      // Also update the status filter to show the filter is active
+      setStatusFilter(statusParam as any);
+    }
+  }, [setStatusFilter]);
 
   const { filteredLeads, sortedLeads } = useLeadsFiltering({
     leads,
     importBatches,
     selectedBatchId,
     searchTerm,
-    selectedStatus: statusFilter as 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested' | 'Send Email' | 'all',
+    selectedStatus: navigationFilter?.status ? navigationFilter.status as any : statusFilter as 'New' | 'Contacted' | 'Opened' | 'Clicked' | 'Replied' | 'Qualified' | 'Unqualified' | 'Call Back' | 'Unresponsive' | 'Not Interested' | 'Interested' | 'Send Email' | 'all',
     selectedCategory: categoryFilter,
     selectedSeniority: 'all',
     selectedCompanySize: 'all',
@@ -115,7 +129,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     itemsPerPage,
     sortField,
     sortDirection,
-    setCurrentPage
+    setCurrentPage,
+    navigationFilter
   });
 
   const { selectedLeads, handleSelectAll, handleSelectLead, clearSelection } = useLeadsSelection();
@@ -280,6 +295,12 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setCountryFilter('all');
     setDuplicatePhoneFilter('all');
     setSearchTerm('');
+    setNavigationFilter(undefined); // Clear navigation filter
+    
+    // Clear URL parameters
+    const url = new URL(window.location.href);
+    url.searchParams.delete('status');
+    window.history.replaceState({}, '', url.toString());
   };
 
   const getCategoryInfo = (categoryId: string | undefined) => {
@@ -445,7 +466,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
+          onStatusChange={(status) => {
+            setStatusFilter(status);
+            setNavigationFilter(undefined); // Clear navigation filter when manually changing status
+          }}
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
           dataAvailabilityFilter={dataAvailabilityFilter}
@@ -463,7 +487,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           statusFilter={statusFilter}
-          onStatusChange={setStatusFilter}
+          onStatusChange={(status) => {
+            setStatusFilter(status);
+            setNavigationFilter(undefined); // Clear navigation filter when manually changing status
+          }}
           categoryFilter={categoryFilter}
           onCategoryChange={setCategoryFilter}
           dataAvailabilityFilter={dataAvailabilityFilter}
@@ -481,6 +508,30 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           onToggleColumnVisibility={toggleColumnVisibility}
           onResetColumns={resetToDefault}
         />
+      )}
+
+      {/* Show navigation filter indicator */}
+      {navigationFilter?.status && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <span className="text-sm text-blue-700">
+            Showing leads with status: <strong>{navigationFilter.status}</strong>
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setNavigationFilter(undefined);
+              setStatusFilter('all');
+              // Clear URL parameters
+              const url = new URL(window.location.href);
+              url.searchParams.delete('status');
+              window.history.replaceState({}, '', url.toString());
+            }}
+            className="text-blue-700 hover:text-blue-900 h-6 px-2"
+          >
+            Clear filter
+          </Button>
+        </div>
       )}
 
       {/* Bulk Actions - Mobile Optimized */}
