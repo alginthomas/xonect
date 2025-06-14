@@ -2,6 +2,7 @@ import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 import type { DuplicatePhoneFilter } from '@/types/filtering';
 import { findAdvancedDuplicates } from '@/utils/advancedDuplicateDetection';
+import { getCountryFromPhoneNumber } from '@/utils/phoneUtils'; // import country utility
 
 interface FilterLeadsParams {
   leads: Lead[];
@@ -110,9 +111,25 @@ export const filterLeads = ({
     filtered = filtered.filter(lead => lead.industry === selectedIndustry);
   }
 
-  // Filter by country
+  // Filter by country (with fallback: try to parse from phone if not set)
   if (countryFilter !== 'all') {
-    filtered = filtered.filter(lead => lead.country === countryFilter);
+    filtered = filtered.filter(lead => {
+      let countryName = lead.country;
+      if ((!countryName || countryName === '') && lead.phone) {
+        try {
+          const parsed = getCountryFromPhoneNumber(lead.phone);
+          countryName = parsed?.name ?? '';
+        } catch (e) {
+          // fallback continues to no match
+        }
+      }
+      return countryName === countryFilter;
+    });
+    if (filtered.length === 0 && leads.length > 0) {
+      // log one lead to help debugging what exists
+      console.log('[LeadsFiltering] Example lead:', leads[0]);
+      console.log(`[LeadsFiltering] Searched for country: "${countryFilter}"`);
+    }
     console.log('After country filter:', filtered.length);
   }
 
