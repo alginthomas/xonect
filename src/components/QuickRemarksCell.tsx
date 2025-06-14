@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Save, X, Edit3, Clock } from 'lucide-react';
+import { MessageSquare, Save, X, Edit3, Clock, History } from 'lucide-react';
 import { format } from 'date-fns';
 import type { RemarkEntry } from '@/types/lead';
 
@@ -22,6 +22,7 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleSave = () => {
     if (!editValue.trim()) return;
@@ -52,20 +53,20 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
 
   if (isEditing) {
     return (
-      <div className={`space-y-2 ${className}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`space-y-3 ${className}`} onClick={(e) => e.stopPropagation()}>
         <Textarea
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
-          className="h-20 text-xs"
-          placeholder="Add remarks..."
+          className="min-h-[100px] text-sm resize-none"
+          placeholder="Add your remarks..."
           autoFocus
         />
-        <div className="flex gap-1">
-          <Button size="sm" variant="default" onClick={handleSave} className="h-6 px-2 text-xs">
+        <div className="flex gap-2">
+          <Button size="sm" variant="default" onClick={handleSave} className="h-8 px-3 text-xs">
             <Save className="h-3 w-3 mr-1" />
             Save
           </Button>
-          <Button size="sm" variant="outline" onClick={handleCancel} className="h-6 px-2 text-xs">
+          <Button size="sm" variant="outline" onClick={handleCancel} className="h-8 px-3 text-xs">
             <X className="h-3 w-3" />
           </Button>
         </div>
@@ -74,33 +75,80 @@ export const QuickRemarksCell: React.FC<QuickRemarksCellProps> = ({
   }
 
   return (
-    <div 
-      className={`cursor-pointer hover:bg-muted/50 rounded p-1 group ${className}`}
-      onClick={handleClick}
-    >
-      {remarks ? (
-        <div className="flex items-start gap-2">
-          <MessageSquare className="h-3 w-3 mt-0.5 text-muted-foreground" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground line-clamp-2">
-              {remarks}
-            </p>
-            {remarksHistory.length > 0 && (
-              <div className="flex items-center gap-1 mt-1">
-                <Clock className="h-2 w-2 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">
-                  {format(remarksHistory[remarksHistory.length - 1].timestamp, 'MMM dd, HH:mm')}
-                </span>
-              </div>
-            )}
+    <div className={`space-y-3 ${className}`}>
+      {/* Current/Latest Remark */}
+      <div 
+        className="cursor-pointer hover:bg-muted/50 rounded-lg p-3 group border border-border/40"
+        onClick={handleClick}
+      >
+        {remarks ? (
+          <div className="flex items-start gap-3">
+            <MessageSquare className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-foreground leading-relaxed">
+                {remarks}
+              </p>
+              {remarksHistory.length > 0 && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">
+                    {format(remarksHistory[remarksHistory.length - 1].timestamp, 'MMM dd, yyyy HH:mm')}
+                  </span>
+                </div>
+              )}
+            </div>
+            <Edit3 className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
           </div>
-          <Edit3 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-        </div>
-      ) : (
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <MessageSquare className="h-3 w-3" />
-          <span className="text-xs">Add remarks...</span>
-          <Edit3 className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+        ) : (
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <MessageSquare className="h-4 w-4" />
+            <span className="text-sm">Add remarks...</span>
+            <Edit3 className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity ml-auto" />
+          </div>
+        )}
+      </div>
+
+      {/* Remarks History */}
+      {remarksHistory.length > 1 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">
+                Previous Remarks ({remarksHistory.length - 1})
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-xs"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowHistory(!showHistory);
+              }}
+            >
+              {showHistory ? 'Hide' : 'Show'}
+            </Button>
+          </div>
+          
+          {showHistory && (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {remarksHistory.slice(0, -1).reverse().map((entry, index) => (
+                <div key={entry.id} className="p-3 bg-muted/20 rounded-lg border border-border/20">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span>{format(entry.timestamp, 'MMM dd, yyyy HH:mm')}</span>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      #{remarksHistory.length - index - 1}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">{entry.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

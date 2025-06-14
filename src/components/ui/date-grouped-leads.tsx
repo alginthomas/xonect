@@ -68,8 +68,19 @@ export const DateGroupedLeads: React.FC<DateGroupedLeadsProps> = ({
           </div>
 
           {/* Leads in this date group */}
-          <div className="space-y-1 px-[12px] my-0">
-            {groupLeads.map(lead => <CompactLeadCard key={lead.id} lead={lead} categories={categories} isSelected={selectedLeads.has(lead.id)} onSelect={checked => onSelectLead(lead.id, checked)} onStatusChange={status => onStatusChange(lead.id, status)} onRemarksUpdate={remarks => onRemarksUpdate(lead.id, remarks)} onEmailClick={() => onEmailClick(lead)} onViewDetails={() => onViewDetails(lead)} onDeleteLead={() => onDeleteLead(lead.id)} />)}
+          <div className="space-y-3 px-3 my-0">
+            {groupLeads.map(lead => <CompactLeadCard 
+              key={lead.id} 
+              lead={lead} 
+              categories={categories} 
+              isSelected={selectedLeads.has(lead.id)} 
+              onSelect={checked => onSelectLead(lead.id, checked)} 
+              onStatusChange={status => onStatusChange(lead.id, status)} 
+              onRemarksUpdate={remarks => onRemarksUpdate(lead.id, remarks)} 
+              onEmailClick={() => onEmailClick(lead)} 
+              onViewDetails={() => onViewDetails(lead)} 
+              onDeleteLead={() => onDeleteLead(lead.id)} 
+            />)}
           </div>
         </div>)}
     </div>;

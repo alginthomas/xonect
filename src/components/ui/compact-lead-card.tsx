@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,9 +7,13 @@ import {
   Mail, 
   Phone, 
   Check,
-  Globe
+  Globe,
+  MessageSquare,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
+import { QuickRemarksCell } from '@/components/QuickRemarksCell';
 import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead, LeadStatus } from '@/types/lead';
 import type { Category } from '@/types/category';
@@ -41,6 +44,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
   selectionMode = false
 }) => {
   const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
+  const [showRemarks, setShowRemarks] = useState(false);
 
   const handleCallAction = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -97,6 +101,10 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
       clearTimeout(longPressTimer);
       setLongPressTimer(null);
     }
+  };
+
+  const handleRemarksUpdateWrapper = (remarks: string, remarksHistory: import('@/types/lead').RemarkEntry[]) => {
+    onRemarksUpdate(remarks);
   };
 
   return (
@@ -171,6 +179,44 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
               <Globe className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
               <span className="text-xs sm:text-sm font-medium">View Website</span>
             </Button>
+          )}
+        </div>
+
+        {/* Remarks Section */}
+        <div className="mb-4 sm:mb-5" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-muted-foreground">Remarks</span>
+              {lead.remarksHistory && lead.remarksHistory.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {lead.remarksHistory.length}
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2"
+              onClick={() => setShowRemarks(!showRemarks)}
+            >
+              {showRemarks ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )}
+            </Button>
+          </div>
+          
+          {showRemarks && (
+            <div className="bg-muted/30 rounded-lg p-3">
+              <QuickRemarksCell
+                remarks={lead.remarks || ''}
+                remarksHistory={lead.remarksHistory || []}
+                onUpdate={handleRemarksUpdateWrapper}
+                className="w-full"
+              />
+            </div>
           )}
         </div>
 

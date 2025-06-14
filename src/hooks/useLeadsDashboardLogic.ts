@@ -196,10 +196,29 @@ export const useLeadsDashboardLogic = ({
 
   const handleRemarksUpdate = async (leadId: string, remarks: string) => {
     try {
-      await onUpdateLead(leadId, { remarks });
+      // Find the current lead to get existing remarks history
+      const currentLead = leads.find(lead => lead.id === leadId);
+      if (!currentLead) return;
+
+      // Create new remark entry with timestamp
+      const newRemarkEntry: import('@/types/lead').RemarkEntry = {
+        id: crypto.randomUUID(),
+        text: remarks,
+        timestamp: new Date()
+      };
+
+      // Update remarks history with new entry
+      const updatedRemarksHistory = [...(currentLead.remarksHistory || []), newRemarkEntry];
+
+      // Update lead with both current remarks and history
+      await onUpdateLead(leadId, { 
+        remarks,
+        remarksHistory: updatedRemarksHistory
+      });
+      
       toast({
         title: 'Remarks updated',
-        description: 'Lead remarks have been updated.'
+        description: 'Lead remarks have been updated with timestamp.'
       });
     } catch (error) {
       toast({
