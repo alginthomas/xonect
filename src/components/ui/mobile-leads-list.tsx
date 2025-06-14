@@ -57,7 +57,7 @@ export const MobileLeadsList: React.FC<MobileLeadsListProps> = ({
     totalLeads
   } = useLeadsFiltering({
     leads,
-    searchQuery,
+    searchQuery: searchQuery || '',
     selectedStatus,
     selectedCategory,
     selectedSeniority,

@@ -1,64 +1,60 @@
+
 import { useMemo, useEffect } from 'react';
-import type { Lead } from '@/types/lead';
-import type { ImportBatch } from '@/types/category';
+import type { Lead, LeadStatus, Seniority, CompanySize } from '@/types/lead';
 import { filterDuplicatePhoneNumbers, getLeadsWithDuplicatePhones } from '@/utils/phoneDeduplication';
 
 interface UseLeadsFilteringProps {
   leads: Lead[];
-  importBatches: ImportBatch[];
-  selectedBatchId?: string | null;
-  searchTerm: string;
-  statusFilter: string;
-  categoryFilter: string;
-  dataAvailabilityFilter: string;
-  countryFilter?: string;
-  duplicatePhoneFilter?: string;
+  searchQuery: string;
+  selectedStatus: LeadStatus | 'all';
+  selectedCategory: string;
+  selectedSeniority: Seniority | 'all';
+  selectedCompanySize: CompanySize | 'all';
+  selectedLocation: string;
+  selectedIndustry: string;
+  selectedDataFilter: string;
+  countryFilter: string;
+  duplicatePhoneFilter: string;
+  currentPage: number;
+  itemsPerPage: number;
   sortField: string;
   sortDirection: 'asc' | 'desc';
-  setCurrentPage: (page: number) => void;
 }
 
 export const useLeadsFiltering = ({
   leads,
-  importBatches,
-  selectedBatchId,
-  searchTerm,
-  statusFilter,
-  categoryFilter,
-  dataAvailabilityFilter,
-  countryFilter = 'all',
-  duplicatePhoneFilter = 'all',
+  searchQuery,
+  selectedStatus,
+  selectedCategory,
+  selectedSeniority,
+  selectedCompanySize,
+  selectedLocation,
+  selectedIndustry,
+  selectedDataFilter,
+  countryFilter,
+  duplicatePhoneFilter,
+  currentPage,
+  itemsPerPage,
   sortField,
-  sortDirection,
-  setCurrentPage
+  sortDirection
 }: UseLeadsFilteringProps) => {
-  // Filter leads based on batch selection and other filters
+  // Filter leads based on various criteria
   const filteredLeads = useMemo(() => {
     console.log('Filtering leads:', {
       totalLeads: leads.length,
-      selectedBatchId,
-      searchTerm,
-      statusFilter,
-      categoryFilter,
-      dataAvailabilityFilter,
+      searchQuery,
+      selectedStatus,
+      selectedCategory,
+      selectedDataFilter: selectedDataFilter,
       countryFilter,
       duplicatePhoneFilter
     });
+    
     let filtered = leads;
 
-    // Filter by selected batch
-    if (selectedBatchId) {
-      const selectedBatch = importBatches.find(b => b.id === selectedBatchId);
-      filtered = filtered.filter(lead => 
-        lead.importBatchId === selectedBatchId || 
-        (selectedBatch && lead.categoryId === selectedBatch.categoryId)
-      );
-      console.log('After batch filter:', filtered.length, 'leads found for batch:', selectedBatchId);
-    }
-
-    // Filter by search term
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase().trim();
+    // Filter by search term - add null check
+    if (searchQuery && searchQuery.trim()) {
+      const term = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(lead =>
         lead.firstName?.toLowerCase().includes(term) ||
         lead.lastName?.toLowerCase().includes(term) ||
@@ -70,15 +66,35 @@ export const useLeadsFiltering = ({
     }
 
     // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.status === statusFilter);
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter(lead => lead.status === selectedStatus);
       console.log('After status filter:', filtered.length);
     }
 
     // Filter by category
-    if (categoryFilter !== 'all') {
-      filtered = filtered.filter(lead => lead.categoryId === categoryFilter);
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(lead => lead.categoryId === selectedCategory);
       console.log('After category filter:', filtered.length);
+    }
+
+    // Filter by seniority
+    if (selectedSeniority !== 'all') {
+      filtered = filtered.filter(lead => lead.seniority === selectedSeniority);
+    }
+
+    // Filter by company size
+    if (selectedCompanySize !== 'all') {
+      filtered = filtered.filter(lead => lead.companySize === selectedCompanySize);
+    }
+
+    // Filter by location
+    if (selectedLocation && selectedLocation.trim()) {
+      filtered = filtered.filter(lead => lead.location === selectedLocation);
+    }
+
+    // Filter by industry
+    if (selectedIndustry && selectedIndustry.trim()) {
+      filtered = filtered.filter(lead => lead.industry === selectedIndustry);
     }
 
     // Filter by country
@@ -88,11 +104,11 @@ export const useLeadsFiltering = ({
     }
 
     // Filter by data availability
-    if (dataAvailabilityFilter === 'has-phone') {
+    if (selectedDataFilter === 'has-phone') {
       filtered = filtered.filter(lead => lead.phone && lead.phone.trim() !== '');
-    } else if (dataAvailabilityFilter === 'has-email') {
+    } else if (selectedDataFilter === 'has-email') {
       filtered = filtered.filter(lead => lead.email && lead.email.trim() !== '');
-    } else if (dataAvailabilityFilter === 'has-both') {
+    } else if (selectedDataFilter === 'has-both') {
       filtered = filtered.filter(lead => 
         lead.phone && lead.phone.trim() !== '' && 
         lead.email && lead.email.trim() !== ''
@@ -110,7 +126,7 @@ export const useLeadsFiltering = ({
 
     console.log('Final filtered count:', filtered.length);
     return filtered;
-  }, [leads, selectedBatchId, searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter, importBatches]);
+  }, [leads, searchQuery, selectedStatus, selectedCategory, selectedSeniority, selectedCompanySize, selectedLocation, selectedIndustry, selectedDataFilter, countryFilter, duplicatePhoneFilter]);
 
   // Sort leads
   const sortedLeads = useMemo(() => {
@@ -129,13 +145,15 @@ export const useLeadsFiltering = ({
     });
   }, [filteredLeads, sortField, sortDirection]);
 
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, statusFilter, categoryFilter, dataAvailabilityFilter, countryFilter, duplicatePhoneFilter, selectedBatchId, setCurrentPage]);
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredLeads.length / itemsPerPage);
+  const totalLeads = filteredLeads.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedLeads = sortedLeads.slice(startIndex, startIndex + itemsPerPage);
 
   return {
-    filteredLeads,
-    sortedLeads
+    filteredLeads: paginatedLeads,
+    totalPages,
+    totalLeads
   };
 };
