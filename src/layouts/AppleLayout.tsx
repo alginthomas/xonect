@@ -12,7 +12,7 @@ interface AppleLayoutProps {
 
 const AppleLayout: React.FC<AppleLayoutProps> = ({ 
   children, 
-  activeTab = 'dashboard', // Set default back to 'dashboard'
+  activeTab = 'dashboard',
   onTabChange = () => {}
 }) => {
   const isMobile = useIsMobile();
@@ -26,8 +26,8 @@ const AppleLayout: React.FC<AppleLayoutProps> = ({
       
       <main className="flex-1 overflow-hidden">
         {isMobile ? (
-          // Mobile Layout - Full height container with proper bottom spacing for nav
-          <div className="h-full pb-20">
+          // Mobile Layout - Optimized spacing for smaller screens like iPhone 12 Mini
+          <div className="h-full pb-16 sm:pb-18">
             {children}
           </div>
         ) : (
@@ -38,7 +38,7 @@ const AppleLayout: React.FC<AppleLayoutProps> = ({
         )}
       </main>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation - More compact for small screens */}
       {isMobile && (
         <MobileBottomNav
           activeTab={activeTab}
