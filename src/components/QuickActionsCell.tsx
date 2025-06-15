@@ -66,25 +66,25 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
 
   return (
     <div className={`flex items-center gap-6 justify-center ${className}`}>
-      {/* Website Button */}
+      {/* Website Button - Globe Icon for Organization Website */}
       <Button
         size="sm"
         variant="ghost"
         className="h-8 w-8 p-0"
         onClick={(e) => handleClick(e, openWebsite)}
-        title="Visit Website"
+        title="Visit Company Website"
         disabled={!lead.organizationWebsite}
       >
         <Globe className="h-5 w-5" />
       </Button>
 
-      {/* LinkedIn Button */}
+      {/* LinkedIn Button - LinkedIn Icon for LinkedIn Profile */}
       <Button
         size="sm"
         variant="ghost"
         className="h-8 w-8 p-0"
         onClick={(e) => handleClick(e, openLinkedIn)}
-        title="Open LinkedIn"
+        title="View LinkedIn Profile"
         disabled={!lead.linkedin}
       >
         <Linkedin className="h-5 w-5" />

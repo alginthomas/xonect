@@ -9,7 +9,8 @@ import {
   Mail, 
   Eye,
   Trash2,
-  Globe
+  Globe,
+  Linkedin
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { QuickRemarksCell } from '@/components/QuickRemarksCell';
@@ -58,6 +59,17 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
     e.stopPropagation();
     if (lead.organizationWebsite) {
       let url = lead.organizationWebsite;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleLinkedInAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lead.linkedin) {
+      let url = lead.linkedin;
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
@@ -186,16 +198,29 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
       case 'actions':
         return (
           <div className="flex items-center gap-1">
-            {/* Website Button */}
+            {/* Website Button - Globe Icon for Organization Website */}
             {lead.organizationWebsite && (
               <Button
                 variant="ghost"
                 size="icon-sm"
                 className="h-8 w-8"
                 onClick={handleWebsiteAction}
-                title="Visit Website"
+                title="Visit Company Website"
               >
                 <Globe className="h-4 w-4" />
+              </Button>
+            )}
+            
+            {/* LinkedIn Button - LinkedIn Icon for LinkedIn Profile */}
+            {lead.linkedin && (
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="h-8 w-8"
+                onClick={handleLinkedInAction}
+                title="View LinkedIn Profile"
+              >
+                <Linkedin className="h-4 w-4" />
               </Button>
             )}
             

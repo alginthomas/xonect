@@ -12,7 +12,8 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
-  MoreHorizontal
+  MoreHorizontal,
+  Linkedin
 } from 'lucide-react';
 import { QuickStatusEditor } from '@/components/QuickStatusEditor';
 import { QuickRemarksCell } from '@/components/QuickRemarksCell';
@@ -66,6 +67,17 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
     e.stopPropagation();
     if (lead.organizationWebsite) {
       let url = lead.organizationWebsite;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleLinkedInAction = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (lead.linkedin) {
+      let url = lead.linkedin;
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
@@ -213,20 +225,34 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </div>
         )}
 
-        {/* Website Button (Full Width) */}
-        {lead.organizationWebsite && (
-          <div className="mb-5">
+        {/* Website and LinkedIn Buttons */}
+        <div className="grid grid-cols-2 gap-3 mb-5">
+          {/* Website Button - Globe Icon for Organization Website */}
+          {lead.organizationWebsite && (
             <Button
               variant="ghost"
               size="lg"
-              className="w-full h-14 py-4 text-foreground hover:bg-muted/50 border border-border/30 rounded-xl font-medium"
+              className="h-14 py-4 text-foreground hover:bg-muted/50 border border-border/30 rounded-xl font-medium"
               onClick={handleWebsiteAction}
             >
               <Globe className="h-5 w-5 mr-3 flex-shrink-0" />
               <span className="text-base">Visit Website</span>
             </Button>
-          </div>
-        )}
+          )}
+
+          {/* LinkedIn Button - LinkedIn Icon for LinkedIn Profile */}
+          {lead.linkedin && (
+            <Button
+              variant="ghost"
+              size="lg"
+              className="h-14 py-4 text-foreground hover:bg-muted/50 border border-border/30 rounded-xl font-medium"
+              onClick={handleLinkedInAction}
+            >
+              <Linkedin className="h-5 w-5 mr-3 flex-shrink-0" />
+              <span className="text-base">LinkedIn</span>
+            </Button>
+          )}
+        </div>
 
         {/* Action Buttons Row */}
         <div className="flex gap-3">
