@@ -17,7 +17,7 @@ export const checkForCSVDuplicate = (
   const normalizedNewPhone = newLead.phone ? normalizePhoneForComparison(newLead.phone) : '';
 
   // Filter existing leads by user if userId is provided
-  const userLeads = userId ? existingLeads.filter(lead => lead.user_id === userId) : existingLeads;
+  const userLeads = userId ? existingLeads.filter(lead => lead.userId === userId) : existingLeads;
 
   for (const existingLead of userLeads) {
     const normalizedExistingEmail = normalizeEmail(existingLead.email);

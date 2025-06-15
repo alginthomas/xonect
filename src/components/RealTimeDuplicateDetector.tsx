@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +34,7 @@ export const RealTimeDuplicateDetector: React.FC<RealTimeDuplicateDetectorProps>
 
     // Filter existing leads to only include the current user's leads
     const userLeads = currentUserId 
-      ? existingLeads.filter(lead => lead.user_id === currentUserId)
+      ? existingLeads.filter(lead => lead.userId === currentUserId)
       : existingLeads;
 
     return findAdvancedDuplicates(formData, userLeads, {

@@ -1,251 +1,189 @@
 
-import { normalizeEmail, normalizePhoneForComparison } from './duplicateDetection';
 import type { Lead } from '@/types/lead';
+import { findAdvancedDuplicates } from './advancedDuplicateDetection';
+
+export interface DuplicateDetail {
+  lead: any;
+  matchedAgainst: Lead;
+  confidence: number;
+  matchType: string;
+  reason: string;
+}
 
 export interface DuplicateValidationResult {
   isValid: boolean;
   duplicateCount: number;
+  canProceed: boolean;
+  recommendations: string[];
   duplicateDetails: {
     withinFile: DuplicateDetail[];
     againstDatabase: DuplicateDetail[];
   };
-  recommendations: string[];
-  canProceed: boolean;
+  summary: {
+    totalRows: number;
+    duplicatesFound: number;
+    uniqueRows: number;
+    highConfidenceMatches: number;
+    mediumConfidenceMatches: number;
+    lowConfidenceMatches: number;
+  };
 }
 
-export interface DuplicateDetail {
-  index: number;
-  lead: any;
-  duplicateType: 'email' | 'phone' | 'name_company' | 'fuzzy_match';
-  confidence: number;
-  matchedWith?: Lead | any;
-  reason: string;
-}
-
-/**
- * Advanced duplicate validation with detailed reporting (user-scoped)
- */
 export const validateForDuplicates = (
   csvData: any[],
   existingLeads: Lead[],
   strictMode: boolean = false,
   userId?: string
 ): DuplicateValidationResult => {
-  const duplicateDetails = {
-    withinFile: [] as DuplicateDetail[],
-    againstDatabase: [] as DuplicateDetail[]
+  console.log('🔍 Advanced duplicate validation starting:', {
+    csvRows: csvData.length,
+    existingLeads: existingLeads.length,
+    strictMode,
+    userId
+  });
+
+  const duplicateDetails: {
+    withinFile: DuplicateDetail[];
+    againstDatabase: DuplicateDetail[];
+  } = {
+    withinFile: [],
+    againstDatabase: []
   };
+
+  // Filter existing leads by user if userId is provided
+  const userExistingLeads = userId ? existingLeads.filter(lead => lead.userId === userId) : existingLeads;
+
+  // Check each CSV row against existing database leads (user-scoped)
+  csvData.forEach((row, index) => {
+    const potentialLead = {
+      firstName: row.first_name || row.firstName || '',
+      lastName: row.last_name || row.lastName || '', 
+      email: row.email || '',
+      phone: row.phone || '',
+      company: row.company || ''
+    };
+
+    const matches = findAdvancedDuplicates(potentialLead, userExistingLeads, {
+      emailThreshold: strictMode ? 0.95 : 0.85,
+      nameThreshold: strictMode ? 0.9 : 0.8,
+      phoneThreshold: strictMode ? 0.95 : 0.9,
+      includeNameCompanyMatch: true
+    });
+
+    matches.forEach(match => {
+      duplicateDetails.againstDatabase.push({
+        lead: { ...row, _csvIndex: index },
+        matchedAgainst: match.existingLead,
+        confidence: match.confidence,
+        matchType: match.matchType,
+        reason: `Row ${index + 1}: ${match.matchType} match with confidence ${(match.confidence * 100).toFixed(1)}%`
+      });
+    });
+  });
+
+  // Check for duplicates within the CSV file itself
+  const seenEmails = new Map<string, number>();
+  const seenPhones = new Map<string, number>();
+  const seenNameCompany = new Map<string, number>();
+
+  csvData.forEach((row, index) => {
+    const email = (row.email || '').toLowerCase().trim();
+    const phone = (row.phone || '').replace(/\D/g, '');
+    const nameCompany = `${(row.first_name || '').toLowerCase()}-${(row.last_name || '').toLowerCase()}-${(row.company || '').toLowerCase()}`;
+
+    // Check email duplicates within file
+    if (email && seenEmails.has(email)) {
+      const originalIndex = seenEmails.get(email)!;
+      duplicateDetails.withinFile.push({
+        lead: { ...row, _csvIndex: index },
+        matchedAgainst: csvData[originalIndex] as any,
+        confidence: 1.0,
+        matchType: 'email',
+        reason: `Row ${index + 1} has duplicate email with row ${originalIndex + 1}`
+      });
+    } else if (email) {
+      seenEmails.set(email, index);
+    }
+
+    // Check phone duplicates within file
+    if (phone && phone.length >= 7 && seenPhones.has(phone)) {
+      const originalIndex = seenPhones.get(phone)!;
+      duplicateDetails.withinFile.push({
+        lead: { ...row, _csvIndex: index },
+        matchedAgainst: csvData[originalIndex] as any,
+        confidence: 1.0,
+        matchType: 'phone',
+        reason: `Row ${index + 1} has duplicate phone with row ${originalIndex + 1}`
+      });
+    } else if (phone && phone.length >= 7) {
+      seenPhones.set(phone, index);
+    }
+
+    // Check name+company duplicates within file
+    if (nameCompany && seenNameCompany.has(nameCompany)) {
+      const originalIndex = seenNameCompany.get(nameCompany)!;
+      duplicateDetails.withinFile.push({
+        lead: { ...row, _csvIndex: index },
+        matchedAgainst: csvData[originalIndex] as any,
+        confidence: 1.0,
+        matchType: 'name_company',
+        reason: `Row ${index + 1} has duplicate name+company with row ${originalIndex + 1}`
+      });
+    } else if (nameCompany) {
+      seenNameCompany.set(nameCompany, index);
+    }
+  });
+
+  const totalDuplicates = duplicateDetails.withinFile.length + duplicateDetails.againstDatabase.length;
+  const uniqueRows = csvData.length - duplicateDetails.withinFile.length;
+
+  const highConfidenceMatches = duplicateDetails.againstDatabase.filter(d => d.confidence >= 0.9).length;
+  const mediumConfidenceMatches = duplicateDetails.againstDatabase.filter(d => d.confidence >= 0.7 && d.confidence < 0.9).length;
+  const lowConfidenceMatches = duplicateDetails.againstDatabase.filter(d => d.confidence < 0.7).length;
+
   const recommendations: string[] = [];
-
-  // Check for duplicates within the file
-  const withinFileResults = findDuplicatesWithinFile(csvData);
-  duplicateDetails.withinFile = withinFileResults;
-
-  // Check against existing database (user-scoped)
-  const againstDbResults = findDuplicatesAgainstDatabase(csvData, existingLeads, strictMode, userId);
-  duplicateDetails.againstDatabase = againstDbResults;
-
-  const totalDuplicates = withinFileResults.length + againstDbResults.length;
-
-  // Generate recommendations
-  if (withinFileResults.length > 0) {
-    recommendations.push(`Found ${withinFileResults.length} duplicate(s) within the file`);
+  
+  if (duplicateDetails.withinFile.length > 0) {
+    recommendations.push(`Found ${duplicateDetails.withinFile.length} duplicate(s) within the CSV file. Consider cleaning the file before import.`);
   }
   
-  if (againstDbResults.length > 0) {
-    recommendations.push(`Found ${againstDbResults.length} duplicate(s) against your existing leads`);
+  if (highConfidenceMatches > 0) {
+    recommendations.push(`${highConfidenceMatches} high-confidence duplicate(s) found against existing data. Review these carefully.`);
   }
-
-  if (totalDuplicates > csvData.length * 0.3) {
-    recommendations.push('High duplicate rate detected - consider reviewing data source');
+  
+  if (mediumConfidenceMatches > 0) {
+    recommendations.push(`${mediumConfidenceMatches} medium-confidence potential duplicate(s) found. Manual review recommended.`);
   }
 
   if (strictMode && totalDuplicates > 0) {
-    recommendations.push('Strict mode enabled - all duplicates will be rejected');
+    recommendations.push('Strict mode is enabled. Consider resolving duplicates before proceeding.');
   }
 
-  const canProceed = !strictMode || totalDuplicates === 0;
-  const isValid = totalDuplicates < csvData.length;
+  const canProceed = strictMode ? totalDuplicates === 0 : true;
+
+  console.log('✅ Advanced validation completed:', {
+    totalDuplicates,
+    uniqueRows,
+    canProceed,
+    highConfidenceMatches,
+    mediumConfidenceMatches,
+    lowConfidenceMatches,
+    userId
+  });
 
   return {
-    isValid,
+    isValid: totalDuplicates === 0,
     duplicateCount: totalDuplicates,
-    duplicateDetails,
+    canProceed,
     recommendations,
-    canProceed
+    duplicateDetails,
+    summary: {
+      totalRows: csvData.length,
+      duplicatesFound: totalDuplicates,
+      uniqueRows,
+      highConfidenceMatches,
+      mediumConfidenceMatches,
+      lowConfidenceMatches
+    }
   };
-};
-
-const findDuplicatesWithinFile = (csvData: any[]): DuplicateDetail[] => {
-  const duplicates: DuplicateDetail[] = [];
-  const seen = new Map<string, number>();
-
-  csvData.forEach((row, index) => {
-    const email = normalizeEmail(row.email || row.Email || '');
-    const phone = normalizePhoneForComparison(row.phone || row.Phone || '');
-    const nameCompany = `${(row.first_name || row['First Name'] || '').toLowerCase()}-${(row.last_name || row['Last Name'] || '').toLowerCase()}-${(row.company || row.Company || '').toLowerCase()}`;
-
-    // Check email duplicates
-    if (email) {
-      const emailKey = `email:${email}`;
-      if (seen.has(emailKey)) {
-        duplicates.push({
-          index,
-          lead: row,
-          duplicateType: 'email',
-          confidence: 1.0,
-          reason: `Duplicate email found at row ${seen.get(emailKey)! + 1}`,
-          matchedWith: csvData[seen.get(emailKey)!]
-        });
-      } else {
-        seen.set(emailKey, index);
-      }
-    }
-
-    // Check phone duplicates
-    if (phone) {
-      const phoneKey = `phone:${phone}`;
-      if (seen.has(phoneKey)) {
-        duplicates.push({
-          index,
-          lead: row,
-          duplicateType: 'phone',
-          confidence: 1.0,
-          reason: `Duplicate phone found at row ${seen.get(phoneKey)! + 1}`,
-          matchedWith: csvData[seen.get(phoneKey)!]
-        });
-      } else {
-        seen.set(phoneKey, index);
-      }
-    }
-
-    // Check name + company duplicates
-    if (nameCompany && nameCompany !== '--') {
-      const nameKey = `name:${nameCompany}`;
-      if (seen.has(nameKey)) {
-        duplicates.push({
-          index,
-          lead: row,
-          duplicateType: 'name_company',
-          confidence: 0.9,
-          reason: `Duplicate name and company found at row ${seen.get(nameKey)! + 1}`,
-          matchedWith: csvData[seen.get(nameKey)!]
-        });
-      } else {
-        seen.set(nameKey, index);
-      }
-    }
-  });
-
-  return duplicates;
-};
-
-const findDuplicatesAgainstDatabase = (
-  csvData: any[],
-  existingLeads: Lead[],
-  strictMode: boolean,
-  userId?: string
-): DuplicateDetail[] => {
-  const duplicates: DuplicateDetail[] = [];
-
-  // Filter existing leads by user if userId is provided
-  const userLeads = userId ? existingLeads.filter(lead => lead.user_id === userId) : existingLeads;
-
-  csvData.forEach((row, index) => {
-    const email = normalizeEmail(row.email || row.Email || '');
-    const phone = normalizePhoneForComparison(row.phone || row.Phone || '');
-    const firstName = (row.first_name || row['First Name'] || '').toLowerCase();
-    const lastName = (row.last_name || row['Last Name'] || '').toLowerCase();
-    const company = (row.company || row.Company || '').toLowerCase();
-
-    for (const existingLead of userLeads) {
-      const existingEmail = normalizeEmail(existingLead.email);
-      const existingPhone = normalizePhoneForComparison(existingLead.phone || '');
-      const existingFirstName = existingLead.firstName.toLowerCase();
-      const existingLastName = existingLead.lastName.toLowerCase();
-      const existingCompany = existingLead.company.toLowerCase();
-
-      // Email match
-      if (email && email === existingEmail) {
-        duplicates.push({
-          index,
-          lead: row,
-          duplicateType: 'email',
-          confidence: 1.0,
-          reason: 'Email already exists in your database',
-          matchedWith: existingLead
-        });
-        break; // One match per row is enough
-      }
-
-      // Phone match
-      if (phone && phone === existingPhone) {
-        duplicates.push({
-          index,
-          lead: row,
-          duplicateType: 'phone',
-          confidence: 1.0,
-          reason: 'Phone number already exists in your database',
-          matchedWith: existingLead
-        });
-        break;
-      }
-
-      // Name + company match
-      if (firstName && lastName && company &&
-          firstName === existingFirstName &&
-          lastName === existingLastName &&
-          company === existingCompany) {
-        duplicates.push({
-          index,
-          lead: row,
-          duplicateType: 'name_company',
-          confidence: 0.95,
-          reason: 'Name and company combination already exists in your database',
-          matchedWith: existingLead
-        });
-        break;
-      }
-
-      // Fuzzy matching in strict mode
-      if (strictMode) {
-        const nameSimilarity = calculateNameSimilarity(
-          `${firstName} ${lastName}`,
-          `${existingFirstName} ${existingLastName}`
-        );
-        
-        if (nameSimilarity > 0.85 && company === existingCompany) {
-          duplicates.push({
-            index,
-            lead: row,
-            duplicateType: 'fuzzy_match',
-            confidence: nameSimilarity,
-            reason: `Similar name (${(nameSimilarity * 100).toFixed(0)}% match) with same company in your database`,
-            matchedWith: existingLead
-          });
-          break;
-        }
-      }
-    }
-  });
-
-  return duplicates;
-};
-
-const calculateNameSimilarity = (name1: string, name2: string): number => {
-  const words1 = name1.toLowerCase().split(' ').filter(w => w.length > 0);
-  const words2 = name2.toLowerCase().split(' ').filter(w => w.length > 0);
-  
-  if (words1.length === 0 || words2.length === 0) return 0;
-  
-  let matches = 0;
-  const maxWords = Math.max(words1.length, words2.length);
-  
-  words1.forEach(word1 => {
-    if (words2.some(word2 => word2.includes(word1) || word1.includes(word2))) {
-      matches++;
-    }
-  });
-  
-  return matches / maxWords;
 };

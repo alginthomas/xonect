@@ -29,7 +29,7 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
   const duplicateAnalysis = useMemo(() => {
     // Filter leads to only include the current user's leads
     const userLeads = currentUserId 
-      ? leads.filter(lead => lead.user_id === currentUserId)
+      ? leads.filter(lead => lead.userId === currentUserId)
       : leads;
 
     const report = generateDuplicateReport(userLeads);

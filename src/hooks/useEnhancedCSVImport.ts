@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -61,7 +62,7 @@ export const useEnhancedCSVImport = ({
       remarks: row.remarks,
       remarksHistory: row.remarks_history || [],
       activityLog: row.activity_log || [],
-      user_id: row.user_id
+      userId: row.user_id
     };
   };
 
@@ -207,7 +208,19 @@ export const useEnhancedCSVImport = ({
       }
 
       // Create or find category if provided
-      const categoryId = await findOrCreateCategory(selectedCategory, categories, importName, user.id);
+      let categoryId: string | null = null;
+      if (selectedCategory && selectedCategory.trim()) {
+        categoryId = await findOrCreateCategory(selectedCategory, categories, importName, user.id);
+        
+        // If a new category was created, trigger a refresh of the categories
+        if (categoryId) {
+          console.log('📁 Category created/found:', { categoryId, selectedCategory });
+          // Call onImportComplete early to refresh categories
+          setTimeout(() => {
+            window.location.reload(); // Force a full refresh to update categories
+          }, 100);
+        }
+      }
 
       // Map CSV data to leads format
       const potentialLeads = csvData.map(row => mapCSVToLead(row, categoryId, null, user.id));
