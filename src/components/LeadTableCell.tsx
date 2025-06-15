@@ -126,6 +126,13 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
           </div>
         );
 
+      case 'email':
+        return (
+          <div className="text-sm truncate max-w-[200px]">
+            {lead.email}
+          </div>
+        );
+
       case 'status':
         return (
           <div onClick={(e) => e.stopPropagation()}>
