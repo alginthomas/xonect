@@ -46,7 +46,6 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
 
   // Enhanced phone number detection logic
   const getPhoneValue = (row: any): string => {
-    // Try various likely candidates
     const possiblePhoneKeys = [
       'Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber',
       'mobile', 'cell', 'Cell Phone', 'Mobile Phone', 'tel', 'telephone',
@@ -190,18 +189,18 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
   const mappedLead = {
     first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
     last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
-    email: getEmailValue(csvRow), // Enhanced email mapping
+    email: getEmailValue(csvRow),
     phone: getPhoneValue(csvRow),
     company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
     title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
-    linkedin: getLinkedInValue(csvRow), // Enhanced LinkedIn mapping
+    linkedin: getLinkedInValue(csvRow),
     industry: getFieldValue(['Industry', 'industry', 'sector']),
     location: getFieldValue(['Location', 'location', 'city', 'address', 'country']),
     seniority: 'Mid-level' as const,
     company_size: 'Small (1-50)' as const,
     status: 'New' as const,
     emails_sent: 0,
-    completeness_score: 0, // Will be calculated
+    completeness_score: 0,
     category_id: categoryId || null,
     import_batch_id: importBatchId || null,
     user_id: userId || '',
@@ -213,7 +212,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
     twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
     facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
-    organization_website: getWebsiteValue(csvRow), // Enhanced website mapping
+    organization_website: getWebsiteValue(csvRow),
     organization_founded: (() => {
       const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
       return founded ? parseInt(founded) : null;

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,23 +33,23 @@ export const useEnhancedCSVImport = () => {
     return [];
   };
 
-  // Helper function to convert database row to Lead type
+  // Helper function to convert database row to Lead type with proper field mapping
   const convertDatabaseRowToLead = (lead: any): Lead => ({
     id: lead.id,
-    firstName: lead.first_name,
-    lastName: lead.last_name,
-    email: lead.email,
+    firstName: lead.first_name || '',
+    lastName: lead.last_name || '',
+    email: lead.email || '',
     phone: lead.phone || '',
-    company: lead.company,
-    title: lead.title,
+    company: lead.company || '',
+    title: lead.title || '',
     linkedin: lead.linkedin || '',
     industry: lead.industry || '',
     location: lead.location || '',
     seniority: lead.seniority,
     companySize: lead.company_size,
     status: lead.status,
-    emailsSent: lead.emails_sent,
-    completenessScore: lead.completeness_score,
+    emailsSent: lead.emails_sent || 0,
+    completenessScore: lead.completeness_score || 0,
     categoryId: lead.category_id,
     importBatchId: lead.import_batch_id,
     userId: lead.user_id,
@@ -69,14 +68,14 @@ export const useEnhancedCSVImport = () => {
       timestamp: new Date(activity.timestamp || Date.now()),
       userId: activity.userId
     })) as ActivityEntry[],
-    department: lead.department,
-    personalEmail: lead.personal_email,
-    photoUrl: lead.photo_url,
-    twitterUrl: lead.twitter_url,
-    facebookUrl: lead.facebook_url,
-    organizationWebsite: lead.organization_website,
+    department: lead.department || '',
+    personalEmail: lead.personal_email || '',
+    photoUrl: lead.photo_url || '',
+    twitterUrl: lead.twitter_url || '',
+    facebookUrl: lead.facebook_url || '',
+    organizationWebsite: lead.organization_website || '',
     organizationFounded: lead.organization_founded,
-    remarks: lead.remarks,
+    remarks: lead.remarks || '',
     createdAt: new Date(lead.created_at),
     lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
   });
@@ -228,7 +227,7 @@ export const useEnhancedCSVImport = () => {
       console.log('📦 Import batch created:', importBatch.id);
       setImportProgress(30);
 
-      // Step 4: Process and insert leads
+      // Step 4: Process and insert leads with proper field mapping
       const leadsToInsert: any[] = [];
       let successCount = 0;
       let failCount = 0;
@@ -237,13 +236,14 @@ export const useEnhancedCSVImport = () => {
         try {
           const mappedLead = mapCSVToLead(csvData[i], selectedCategoryId, importBatch.id, userId);
           
+          // Ensure all required fields are present and properly mapped
           const leadData = {
-            first_name: mappedLead.first_name,
-            last_name: mappedLead.last_name,
-            email: mappedLead.email,
+            first_name: mappedLead.first_name || '',
+            last_name: mappedLead.last_name || '',
+            email: mappedLead.email || '',
             phone: mappedLead.phone || '',
-            company: mappedLead.company,
-            title: mappedLead.title,
+            company: mappedLead.company || '',
+            title: mappedLead.title || '',
             linkedin: mappedLead.linkedin || '',
             industry: mappedLead.industry || '',
             location: mappedLead.location || '',
@@ -258,14 +258,14 @@ export const useEnhancedCSVImport = () => {
             tags: mappedLead.tags,
             remarks_history: mappedLead.remarks_history,
             activity_log: mappedLead.activity_log,
-            department: mappedLead.department,
-            personal_email: mappedLead.personal_email,
-            photo_url: mappedLead.photo_url,
-            twitter_url: mappedLead.twitter_url,
-            facebook_url: mappedLead.facebook_url,
-            organization_website: mappedLead.organization_website,
+            department: mappedLead.department || '',
+            personal_email: mappedLead.personal_email || '',
+            photo_url: mappedLead.photo_url || '',
+            twitter_url: mappedLead.twitter_url || '',
+            facebook_url: mappedLead.facebook_url || '',
+            organization_website: mappedLead.organization_website || '',
             organization_founded: mappedLead.organization_founded,
-            remarks: mappedLead.remarks
+            remarks: mappedLead.remarks || ''
           };
 
           leadsToInsert.push(leadData);
