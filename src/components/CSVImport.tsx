@@ -121,6 +121,13 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     maxFiles: 1
   });
 
+  // Utility: Get the UUID for a category name (returns undefined if not found)
+  const getSelectedCategoryId = () => {
+    if (!selectedCategory) return undefined;
+    const found = categories.find(cat => cat.name === selectedCategory);
+    return found ? found.id : undefined;
+  };
+
   const handleValidate = async () => {
     if (csvData.length === 0) {
       setFileError('No data to validate. Please upload a CSV file.');
@@ -139,7 +146,8 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   };
 
   const handleImport = async () => {
-    const success = await importCSVData(csvData, fileName, importName, selectedCategory, true, user?.id);
+    const categoryId = getSelectedCategoryId(); // Use UUID, not name
+    const success = await importCSVData(csvData, fileName, importName, categoryId, true, user?.id);
     if (success) {
       clearFile();
       onImportComplete();
