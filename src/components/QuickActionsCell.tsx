@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Mail, Phone, MessageSquare, MoreHorizontal, Eye, Trash2, Copy, Linkedin, Globe } from 'lucide-react';
+import { Mail, Phone, Globe, Linkedin, View, Trash } from 'lucide-react';
 import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead } from '@/types/lead';
 
@@ -44,7 +44,8 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
 
   const emailLead = async () => {
     await copyEmailOnly(lead.email);
-    // Do not call onEmailClick to prevent status changes
+    // Optionally, call onEmailClick to trigger marking as "Contacted"
+    if (onEmailClick) onEmailClick();
   };
 
   const openLinkedIn = () => {
@@ -55,126 +56,85 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
 
   const openWebsite = () => {
     if (lead.organizationWebsite) {
-      window.open(lead.organizationWebsite, '_blank', 'noopener,noreferrer');
+      let url = lead.organizationWebsite;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
-      {/* Quick Email Button */}
+    <div className={`flex items-center gap-6 justify-center ${className}`}>
+      {/* Website Button */}
       <Button
         size="sm"
         variant="ghost"
-        className="h-7 w-7 p-0"
-        onClick={(e) => handleClick(e, emailLead)}
-        title="Copy Email"
+        className="h-8 w-8 p-0"
+        onClick={(e) => handleClick(e, openWebsite)}
+        title="Visit Website"
+        disabled={!lead.organizationWebsite}
       >
-        <Mail className="h-3 w-3" />
+        <Globe className="h-5 w-5" />
       </Button>
 
-      {/* Quick Call Button */}
-      {lead.phone && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0"
-          onClick={(e) => handleClick(e, callLead)}
-          title="Call Lead"
-        >
-          <Phone className="h-3 w-3" />
-        </Button>
-      )}
+      {/* Phone Button */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 w-8 p-0"
+        onClick={(e) => handleClick(e, callLead)}
+        title="Call Lead"
+        disabled={!lead.phone}
+      >
+        <Phone className="h-5 w-5" />
+      </Button>
+
+      {/* Email Button */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 w-8 p-0"
+        onClick={(e) => handleClick(e, copyEmail)}
+        title="Copy Email"
+        disabled={!lead.email}
+      >
+        <Mail className="h-5 w-5" />
+      </Button>
 
       {/* LinkedIn Button */}
-      {lead.linkedin && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0"
-          onClick={(e) => handleClick(e, openLinkedIn)}
-          title="Open LinkedIn"
-        >
-          <Linkedin className="h-3 w-3" />
-        </Button>
-      )}
-
-      {/* Website Button */}
-      {lead.organizationWebsite && (
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0"
-          onClick={(e) => handleClick(e, openWebsite)}
-          title="Visit Website"
-        >
-          <Globe className="h-3 w-3" />
-        </Button>
-      )}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 w-8 p-0"
+        onClick={(e) => handleClick(e, openLinkedIn)}
+        title="Open LinkedIn"
+        disabled={!lead.linkedin}
+      >
+        <Linkedin className="h-5 w-5" />
+      </Button>
 
       {/* View Details Button */}
       <Button
         size="sm"
         variant="ghost"
-        className="h-7 w-7 p-0"
+        className="h-8 w-8 p-0"
         onClick={(e) => handleClick(e, onViewDetails)}
         title="View Details"
       >
-        <Eye className="h-3 w-3" />
+        <View className="h-5 w-5" />
       </Button>
 
-      {/* More Actions Dropdown */}
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            className="h-7 w-7 p-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreHorizontal className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={() => emailLead()}>
-            <Mail className="h-4 w-4 mr-2" />
-            Copy Email
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => copyEmail()}>
-            <Copy className="h-4 w-4 mr-2" />
-            Copy Email
-          </DropdownMenuItem>
-          {lead.phone && (
-            <DropdownMenuItem onClick={() => callLead()}>
-              <Phone className="h-4 w-4 mr-2" />
-              Call Lead
-            </DropdownMenuItem>
-          )}
-          {lead.linkedin && (
-            <DropdownMenuItem onClick={() => openLinkedIn()}>
-              <Linkedin className="h-4 w-4 mr-2" />
-              Open LinkedIn
-            </DropdownMenuItem>
-          )}
-          {lead.organizationWebsite && (
-            <DropdownMenuItem onClick={() => openWebsite()}>
-              <Globe className="h-4 w-4 mr-2" />
-              Visit Website
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={() => onViewDetails()}>
-            <Eye className="h-4 w-4 mr-2" />
-            View Full Details
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem 
-            onClick={() => onDeleteLead()}
-            className="text-red-600"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Lead
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {/* Delete Button */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 w-8 p-0 text-red-600 hover:bg-red-100"
+        onClick={(e) => handleClick(e, onDeleteLead)}
+        title="Delete Lead"
+      >
+        <Trash className="h-5 w-5" />
+      </Button>
     </div>
   );
 };
