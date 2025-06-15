@@ -125,7 +125,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
-  // FIXED: Enhanced website detection logic with comprehensive organization website mapping
+  // ENHANCED: Organization website detection with support for "organization/website_url" format
   const getOrganizationWebsiteValue = (row: any): string => {
     console.log('🔍 Starting website detection for row:', Object.keys(row));
     
@@ -133,6 +133,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     const possibleWebsiteKeys = [
       // Organization/Company specific
       'Organization Website', 'organization_website', 'OrganizationWebsite', 'organization website',
+      'organization/website_url', 'Organization/Website_URL', 'organization/website', 'Organization/Website',
       'Company Website', 'company_website', 'CompanyWebsite', 'company website',
       'Corporate Website', 'corporate_website', 'CorporateWebsite', 'corporate website',
       'Business Website', 'business_website', 'BusinessWebsite', 'business website',
@@ -167,10 +168,14 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       }
     }
     
-    // Second pass: Look for columns containing website-related keywords (case-insensitive)
+    // Second pass: Look for columns containing organization/website patterns (case-insensitive)
     const websitePatterns = [
-      /^(organization|company|corporate|business|org)[\s_-]*(website|site|url|domain)$/i,
-      /^(website|site|url|domain)[\s_-]*(organization|company|corporate|business|org)?$/i,
+      /^organization[\/\\_\\-]website[\\\_\\-]?url$/i,
+      /^organization[\/\\_\\-]website$/i,
+      /^(organization|company|corporate|business|org)[\s_\/-]*(website|site|url|domain)$/i,
+      /^(website|site|url|domain)[\s_\/-]*(organization|company|corporate|business|org)?$/i,
+      /organization.*website/i,
+      /website.*organization/i,
       /website/i,
       /\burl\b/i,
       /\bsite\b/i,
@@ -199,7 +204,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
-  // Helper function to clean website URLs
+  // Helper function to clean website URLs with enhanced support for various formats
   const cleanWebsiteUrl = (website: string): string => {
     if (!website) return '';
     
@@ -211,15 +216,22 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       return '';
     }
     
+    // Handle URLs that might have extra path information or formatting issues
+    // Remove any quotes or extra formatting
+    website = website.replace(/^["']|["']$/g, '');
+    
+    // If it already has a protocol, validate and return
+    if (website.startsWith('http://') || website.startsWith('https://')) {
+      return website;
+    }
+    
     // Add protocol if missing and it looks like a domain
-    if (!website.startsWith('http://') && !website.startsWith('https://')) {
-      if (website.includes('.') && !website.includes(' ') && website.length > 3) {
-        // Remove 'www.' if it's at the beginning without protocol
-        if (website.toLowerCase().startsWith('www.')) {
-          website = website.substring(4);
-        }
-        website = 'https://' + website;
+    if (website.includes('.') && !website.includes(' ') && website.length > 3) {
+      // Remove 'www.' if it's at the beginning without protocol
+      if (website.toLowerCase().startsWith('www.')) {
+        website = website.substring(4);
       }
+      website = 'https://' + website;
     }
     
     return website;
