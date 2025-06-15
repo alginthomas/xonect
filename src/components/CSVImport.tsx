@@ -121,26 +121,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     maxFiles: 1
   });
 
-  // Utility: Get the UUID for a category name or handle creation
-  const getSelectedCategoryId = async () => {
-    if (!selectedCategory || !user?.id) return undefined;
-    
-    // Check if it's an existing category first
+  // Utility: Get the UUID for a category name (returns undefined if not found)
+  const getSelectedCategoryId = () => {
+    if (!selectedCategory) return undefined;
     const found = categories.find(cat => cat.name === selectedCategory);
-    if (found) {
-      return found.id;
-    }
-    
-    // If not found, create new category using findOrCreateCategory
-    try {
-      const { findOrCreateCategory } = await import('@/utils/importBatchManager');
-      const categoryId = await findOrCreateCategory(selectedCategory, categories, importName, user.id);
-      console.log('📂 Created/found category ID:', categoryId);
-      return categoryId;
-    } catch (error) {
-      console.error('❌ Error creating category:', error);
-      return undefined;
-    }
+    return found ? found.id : undefined;
   };
 
   const handleValidate = async () => {
@@ -161,16 +146,11 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   };
 
   const handleImport = async () => {
-    try {
-      const categoryId = await getSelectedCategoryId(); // Get UUID, not name
-      console.log('🏷️ Using category ID for import:', categoryId);
-      const success = await importCSVData(csvData, fileName, importName, categoryId, true, user?.id);
-      if (success) {
-        clearFile();
-        onImportComplete();
-      }
-    } catch (error) {
-      console.error('❌ Import failed:', error);
+    const categoryId = getSelectedCategoryId(); // Use UUID, not name
+    const success = await importCSVData(csvData, fileName, importName, categoryId, true, user?.id);
+    if (success) {
+      clearFile();
+      onImportComplete();
     }
   };
 

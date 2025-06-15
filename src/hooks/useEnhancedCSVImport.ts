@@ -1,15 +1,11 @@
-
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mapCSVToLead } from '@/utils/csvMapping';
 import { validateForDuplicates } from '@/utils/advancedDuplicateValidation';
-import { validateCSVFile as validateCSVFileSecurity, scanCSVForThreats, sanitizeCSVRow } from '@/utils/security/csvSecurity';
-import { findOrCreateCategory } from '@/utils/importBatchManager';
 import type { Lead, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { DuplicateValidationResult } from '@/utils/advancedDuplicateValidation';
-import type { Category } from '@/types/category';
 
 export const useEnhancedCSVImport = () => {
   const [isImporting, setIsImporting] = useState(false);
@@ -88,8 +84,7 @@ export const useEnhancedCSVImport = () => {
     csvData: any[],
     fileName: string,
     strictMode: boolean = false,
-    userId?: string,
-    csvFile?: File
+    userId?: string
   ) => {
     if (!csvData.length) {
       throw new Error('No data to validate');
@@ -98,24 +93,6 @@ export const useEnhancedCSVImport = () => {
     setIsValidating(true);
 
     try {
-      // Security validation for file if provided
-      if (csvFile) {
-        const fileValidation = validateCSVFileSecurity(csvFile);
-        if (!fileValidation.isValid) {
-          throw new Error(`File validation failed: ${fileValidation.errors.join(', ')}`);
-        }
-      }
-
-      // Security scan for CSV content
-      const csvContent = JSON.stringify(csvData);
-      const threatScan = await scanCSVForThreats(csvContent);
-      if (!threatScan.isSafe) {
-        throw new Error(`Security threats detected: ${threatScan.threats.join(', ')}`);
-      }
-
-      // Sanitize CSV data
-      const sanitizedData = csvData.map(sanitizeCSVRow);
-
       // Get existing leads for duplicate validation (user-scoped)
       const { data: existingLeads, error: leadsError } = await supabase
         .from('leads')
@@ -132,9 +109,9 @@ export const useEnhancedCSVImport = () => {
 
       console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
 
-      // Validate for duplicates using sanitized data
+      // Validate for duplicates
       const validationResult = validateForDuplicates(
-        sanitizedData,
+        csvData,
         convertedLeads,
         strictMode,
         userId
@@ -191,16 +168,6 @@ export const useEnhancedCSVImport = () => {
     setImportProgress(0);
 
     try {
-      // Security scan for CSV content
-      const csvContent = JSON.stringify(csvData);
-      const threatScan = await scanCSVForThreats(csvContent);
-      if (!threatScan.isSafe) {
-        throw new Error(`Security threats detected: ${threatScan.threats.join(', ')}`);
-      }
-
-      // Sanitize CSV data
-      const sanitizedData = csvData.map(sanitizeCSVRow);
-      
       // Get existing leads for duplicate validation (user-scoped)
       const { data: existingLeads, error: leadsError } = await supabase
         .from('leads')
@@ -218,9 +185,9 @@ export const useEnhancedCSVImport = () => {
       console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
       setImportProgress(10);
 
-      // Step 2: Validate for duplicates using sanitized data
+      // Step 2: Validate for duplicates
       const validationResult = validateForDuplicates(
-        sanitizedData,
+        csvData,
         convertedLeads,
         strictMode,
         userId
@@ -239,15 +206,14 @@ export const useEnhancedCSVImport = () => {
         .from('import_batches')
         .insert({
           name: batchName,
-          total_leads: sanitizedData.length,
+          total_leads: csvData.length,
           successful_imports: 0,
           failed_imports: 0,
           category_id: selectedCategoryId,
           user_id: userId || '',
           metadata: {
             validation_result: JSON.parse(JSON.stringify(validationResult)),
-            strict_mode: strictMode,
-            security_scanned: true
+            strict_mode: strictMode
           }
         })
         .select()
@@ -261,14 +227,14 @@ export const useEnhancedCSVImport = () => {
       console.log('📦 Import batch created:', importBatch.id);
       setImportProgress(30);
 
-      // Step 4: Process and insert leads with proper field mapping using sanitized data
+      // Step 4: Process and insert leads with proper field mapping
       const leadsToInsert: any[] = [];
       let successCount = 0;
       let failCount = 0;
 
-      for (let i = 0; i < sanitizedData.length; i++) {
+      for (let i = 0; i < csvData.length; i++) {
         try {
-          const mappedLead = mapCSVToLead(sanitizedData[i], selectedCategoryId, importBatch.id, userId);
+          const mappedLead = mapCSVToLead(csvData[i], selectedCategoryId, importBatch.id, userId);
           
           // Ensure all required fields are present and properly mapped
           const leadData = {
@@ -310,7 +276,7 @@ export const useEnhancedCSVImport = () => {
         }
 
         // Update progress
-        const progress = 30 + ((i + 1) / sanitizedData.length) * 50;
+        const progress = 30 + ((i + 1) / csvData.length) * 50;
         setImportProgress(progress);
       }
 
