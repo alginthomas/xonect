@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
@@ -81,7 +82,7 @@ export const useLeadsDashboardLogic = ({
     if (statusParam && !navigationFilter) {
       console.log('Setting navigation filter from URL:', statusParam);
       setNavigationFilter({ status: statusParam });
-      setStatusFilter(statusParam as any);
+      setStatusFilter(statusParam as LeadStatus | 'all');
     }
     
     // If we have a batch ID from URL but it doesn't match selectedBatchId, log it
@@ -99,7 +100,7 @@ export const useLeadsDashboardLogic = ({
   }, [selectedBatchId, leads]);
 
   // Clear navigation filter when status filter is manually changed to prevent conflicts
-  const handleStatusFilterChange = (status: string) => {
+  const handleStatusFilterChange = (status: LeadStatus | 'all') => {
     console.log('Manual status filter change:', status);
     setStatusFilter(status);
     // Clear navigation filter to prevent conflicts
