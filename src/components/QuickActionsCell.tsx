@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Mail, Phone, Globe, Linkedin, View, Trash } from 'lucide-react';
+import { Globe, Phone, Mail, Linkedin, Eye, Trash2 } from 'lucide-react'; // use only allowed icons
 import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead } from '@/types/lead';
 
@@ -27,9 +27,26 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   onDeleteLead,
   className = ""
 }) => {
-  const handleClick = (e: React.MouseEvent, action: () => void) => {
-    e.stopPropagation();
-    action();
+  // Consistent openers for website and linkedin fields
+  const openWebsite = () => {
+    if (lead.organizationWebsite) {
+      let url = lead.organizationWebsite;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const openLinkedIn = () => {
+    if (lead.linkedin) {
+      let url = lead.linkedin;
+      // Normalize missing protocol
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://' + url;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const callLead = () => {
@@ -42,26 +59,9 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     await copyEmailOnly(lead.email);
   };
 
-  const emailLead = async () => {
-    await copyEmailOnly(lead.email);
-    // Optionally, call onEmailClick to trigger marking as "Contacted"
-    if (onEmailClick) onEmailClick();
-  };
-
-  const openLinkedIn = () => {
-    if (lead.linkedin) {
-      window.open(lead.linkedin, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const openWebsite = () => {
-    if (lead.organizationWebsite) {
-      let url = lead.organizationWebsite;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'https://' + url;
-      }
-      window.open(url, '_blank', 'noopener,noreferrer');
-    }
+  const handleClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
   };
 
   return (
@@ -76,6 +76,18 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         disabled={!lead.organizationWebsite}
       >
         <Globe className="h-5 w-5" />
+      </Button>
+
+      {/* LinkedIn Button */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-8 w-8 p-0"
+        onClick={(e) => handleClick(e, openLinkedIn)}
+        title="Open LinkedIn"
+        disabled={!lead.linkedin}
+      >
+        <Linkedin className="h-5 w-5" />
       </Button>
 
       {/* Phone Button */}
@@ -102,18 +114,6 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         <Mail className="h-5 w-5" />
       </Button>
 
-      {/* LinkedIn Button */}
-      <Button
-        size="sm"
-        variant="ghost"
-        className="h-8 w-8 p-0"
-        onClick={(e) => handleClick(e, openLinkedIn)}
-        title="Open LinkedIn"
-        disabled={!lead.linkedin}
-      >
-        <Linkedin className="h-5 w-5" />
-      </Button>
-
       {/* View Details Button */}
       <Button
         size="sm"
@@ -122,7 +122,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         onClick={(e) => handleClick(e, onViewDetails)}
         title="View Details"
       >
-        <View className="h-5 w-5" />
+        <Eye className="h-5 w-5" />
       </Button>
 
       {/* Delete Button */}
@@ -133,7 +133,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
         onClick={(e) => handleClick(e, onDeleteLead)}
         title="Delete Lead"
       >
-        <Trash className="h-5 w-5" />
+        <Trash2 className="h-5 w-5" />
       </Button>
     </div>
   );
