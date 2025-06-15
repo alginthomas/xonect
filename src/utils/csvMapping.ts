@@ -68,6 +68,64 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
+  // Enhanced LinkedIn detection logic
+  const getLinkedInValue = (row: any): string => {
+    const possibleLinkedInKeys = [
+      'LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 
+      'linkedin_profile', 'LinkedIn Profile', 'linkedin profile', 'Linkedin',
+      'linkedin-url', 'linkedin link', 'LinkedIn Link', 'profile_linkedin',
+      'Profile LinkedIn', 'ln_url', 'LN URL', 'social_linkedin', 'Social LinkedIn'
+    ];
+    
+    for (const key of possibleLinkedInKeys) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+        let linkedin = String(row[key]).trim();
+        
+        // Clean up LinkedIn URL if needed
+        if (linkedin && !linkedin.startsWith('http://') && !linkedin.startsWith('https://')) {
+          // Check if it's a LinkedIn URL without protocol
+          if (linkedin.includes('linkedin.com') || linkedin.startsWith('www.linkedin.com')) {
+            linkedin = 'https://' + linkedin;
+          } else if (linkedin.includes('/in/') || linkedin.includes('/company/')) {
+            // Looks like a LinkedIn path
+            linkedin = 'https://www.linkedin.com' + (linkedin.startsWith('/') ? '' : '/') + linkedin;
+          } else if (!linkedin.includes('.') && linkedin.length > 3) {
+            // Might be just a username
+            linkedin = 'https://www.linkedin.com/in/' + linkedin;
+          }
+        }
+        
+        // Validate that it looks like a proper LinkedIn URL
+        if (linkedin.includes('linkedin.com')) {
+          return linkedin;
+        }
+      }
+    }
+    
+    // fallback: look for any key containing 'linkedin' (case-insensitive)
+    for (const col in row) {
+      if (/linkedin/i.test(col) && row[col] && String(row[col]).trim() !== '') {
+        let linkedin = String(row[col]).trim();
+        
+        // Clean up LinkedIn URL if needed
+        if (linkedin && !linkedin.startsWith('http://') && !linkedin.startsWith('https://')) {
+          if (linkedin.includes('linkedin.com') || linkedin.startsWith('www.linkedin.com')) {
+            linkedin = 'https://' + linkedin;
+          } else if (linkedin.includes('/in/') || linkedin.includes('/company/')) {
+            linkedin = 'https://www.linkedin.com' + (linkedin.startsWith('/') ? '' : '/') + linkedin;
+          } else if (!linkedin.includes('.') && linkedin.length > 3) {
+            linkedin = 'https://www.linkedin.com/in/' + linkedin;
+          }
+        }
+        
+        if (linkedin.includes('linkedin.com')) {
+          return linkedin;
+        }
+      }
+    }
+    return '';
+  };
+
   // Enhanced website detection logic
   const getWebsiteValue = (row: any): string => {
     const possibleWebsiteKeys = [
@@ -77,7 +135,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       'Company URL', 'company_url', 'Homepage', 'homepage', 'Web Address',
       'web_address', 'WebAddress', 'company site', 'org website', 'corporate_website',
       'corporate website', 'business_website', 'business website', 'www', 'WWW',
-      'company_domain', 'company domain', 'org_url', 'org url'
+      'company_domain', 'company domain', 'org_url', 'org url', 'Company Domain'
     ];
     
     for (const key of possibleWebsiteKeys) {
@@ -136,7 +194,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     phone: getPhoneValue(csvRow),
     company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
     title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
-    linkedin: getFieldValue(['LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 'linkedin_profile']),
+    linkedin: getLinkedInValue(csvRow), // Enhanced LinkedIn mapping
     industry: getFieldValue(['Industry', 'industry', 'sector']),
     location: getFieldValue(['Location', 'location', 'city', 'address', 'country']),
     seniority: 'Mid-level' as const,
@@ -179,7 +237,8 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     originalRow: csvRow, 
     mappedLead,
     emailDetected: mappedLead.email ? 'Yes' : 'No',
-    websiteDetected: mappedLead.organization_website ? 'Yes' : 'No'
+    websiteDetected: mappedLead.organization_website ? 'Yes' : 'No',
+    linkedinDetected: mappedLead.linkedin ? 'Yes' : 'No'
   });
 
   return mappedLead;

@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Globe, Phone, Mail, Linkedin, Eye, Trash2 } from 'lucide-react'; // use only allowed icons
+import { Globe, Phone, Mail, Linkedin, Eye, Trash2 } from 'lucide-react';
 import { copyEmailOnly } from '@/utils/emailUtils';
 import type { Lead } from '@/types/lead';
 
@@ -27,7 +27,7 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
   onDeleteLead,
   className = ""
 }) => {
-  // Consistent openers for website and linkedin fields
+  // Open organization website
   const openWebsite = () => {
     if (lead.organizationWebsite) {
       let url = lead.organizationWebsite;
@@ -38,10 +38,10 @@ export const QuickActionsCell: React.FC<QuickActionsCellProps> = ({
     }
   };
 
+  // Open LinkedIn profile
   const openLinkedIn = () => {
     if (lead.linkedin) {
       let url = lead.linkedin;
-      // Normalize missing protocol
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
