@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -177,6 +178,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     handleSelectLead(leadId, selected);
   };
 
+  // Status filter wrapper to ensure type safety
+  const handleStatusFilterChange = (value: string) => {
+    setStatusFilter(value as LeadStatus | 'all');
+  };
+
   // Create a wrapper for handleRemarksUpdate that includes the full signature for mobile
   const handleRemarksUpdateMobile = async (leadId: string, remarks: string) => {
     const currentLead = leads.find(lead => lead.id === leadId);
@@ -207,13 +213,13 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
       {/* Mobile Layout */}
       {isMobile ? (
         <div className="flex flex-col h-full">
-          {/* Mobile Search Toolbar - Fixed at top */}
+          {/* Mobile Search Toolbar - Fixed at top with smaller padding */}
           <div className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/40 sticky top-0 z-30">
             <MobileSearchToolbar
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               statusFilter={statusFilter}
-              onStatusChange={setStatusFilter}
+              onStatusChange={handleStatusFilterChange}
               categoryFilter={categoryFilter}
               onCategoryChange={setCategoryFilter}
               dataAvailabilityFilter={dataAvailabilityFilter}
@@ -234,7 +240,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
           {/* Batch Filter Indicator */}
           {selectedBatchId && onClearBatchFilter && (
-            <div className="flex-shrink-0 px-4 pt-3">
+            <div className="flex-shrink-0 px-3 sm:px-4 pt-2 sm:pt-3">
               <BatchFilterIndicator
                 batchId={selectedBatchId}
                 importBatches={importBatches}
@@ -245,7 +251,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
           {/* Navigation Filter Indicator */}
           {navigationFilter && (
-            <div className="flex-shrink-0 px-4 pt-3">
+            <div className="flex-shrink-0 px-3 sm:px-4 pt-2 sm:pt-3">
               <NavigationFilterIndicator
                 navigationFilter={navigationFilter}
                 onClearFilter={clearNavigationFilter}
@@ -255,7 +261,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
           {/* Bulk Actions */}
           {selectedLeads.size > 0 && (
-            <div className="flex-shrink-0 px-4 pt-3">
+            <div className="flex-shrink-0 px-3 sm:px-4 pt-2 sm:pt-3">
               <BulkActionsBar
                 selectedCount={selectedLeads.size}
                 onClearSelection={clearSelection}
@@ -267,7 +273,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           {/* Main Content - Scrollable */}
           <div className="flex-1 overflow-hidden">
             <Card className="apple-card h-full rounded-none border-x-0 border-b-0">
-              <div className="px-4 py-3 border-b border-border/40">
+              <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-border/40">
                 <ResultsOverview
                   filteredLeadsCount={filteredLeads.length}
                   selectedCount={selectedLeads.size}
@@ -293,7 +299,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
                 />
 
                 {/* Mobile Pagination */}
-                <div className="p-4 border-t border-border/40 bg-background">
+                <div className="p-3 sm:p-4 border-t border-border/40 bg-background">
                   <LeadsPagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -310,10 +316,10 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
 
                 {/* No Results State */}
                 {sortedLeads.length === 0 && (
-                  <div className="text-center py-12 px-4">
-                    <Users className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-xl font-medium mb-2">No leads found</h3>
-                    <p className="text-muted-foreground">
+                  <div className="text-center py-8 sm:py-12 px-4">
+                    <Users className="h-12 w-12 sm:h-16 sm:w-16 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+                    <h3 className="text-lg sm:text-xl font-medium mb-2">No leads found</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground">
                       {filteredLeads.length === 0 
                         ? "Try adjusting your search or filters to find leads."
                         : "All leads are filtered out by your current criteria."
@@ -333,7 +339,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             searchTerm={searchTerm}
             onSearchChange={setSearchTerm}
             statusFilter={statusFilter}
-            onStatusChange={setStatusFilter}
+            onStatusChange={handleStatusFilterChange}
             categoryFilter={categoryFilter}
             onCategoryChange={setCategoryFilter}
             dataAvailabilityFilter={dataAvailabilityFilter}

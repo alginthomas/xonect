@@ -1,5 +1,7 @@
+
 import * as React from "react"
 
+// Updated breakpoint to be more inclusive of small screens
 const MOBILE_BREAKPOINT = 768
 
 export function useIsMobile() {

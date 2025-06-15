@@ -77,23 +77,23 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
     (remarksFilter !== 'all' ? 1 : 0);
 
   return (
-    <div className="space-y-4 p-4">
-      {/* Search Bar and Filter Button Row */}
-      <div className="flex items-center gap-3">
+    <div className="space-y-3 p-3 sm:p-4">
+      {/* Search Bar and Filter Button Row - More compact */}
+      <div className="flex items-center gap-2 sm:gap-3">
         {/* Search Bar */}
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-2.5 sm:left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search leads..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 pr-10 h-11"
+            className="pl-8 sm:pl-10 pr-8 sm:pr-10 h-9 sm:h-11 text-sm"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               size="sm"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
+              className="absolute right-1.5 sm:right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 sm:h-7 sm:w-7 p-0"
               onClick={() => onSearchChange('')}
             >
               <X className="h-3 w-3" />
@@ -101,24 +101,24 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
           )}
         </div>
 
-        {/* Filter Button */}
+        {/* Filter Button - More compact */}
         <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="lg" className="h-11 px-4 text-sm relative flex-shrink-0 whitespace-nowrap">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
+            <Button variant="outline" size="sm" className="h-9 sm:h-11 px-3 sm:px-4 text-xs sm:text-sm relative flex-shrink-0 whitespace-nowrap">
+              <Filter className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+              <span className="hidden xs:inline">Filters</span>
               {totalActiveFilters > 0 && (
-                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center">
+                <Badge variant="secondary" className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 p-0 text-xs flex items-center justify-center">
                   {totalActiveFilters}
                 </Badge>
               )}
             </Button>
           </SheetTrigger>
           <SheetContent side="bottom" className="h-[90vh] max-h-[90vh] flex flex-col p-0">
-            <div className="flex-shrink-0 p-6 border-b">
+            <div className="flex-shrink-0 p-4 sm:p-6 border-b">
               <SheetHeader className="text-left">
-                <SheetTitle>Filter Leads</SheetTitle>
-                <SheetDescription>
+                <SheetTitle className="text-lg sm:text-xl">Filter Leads</SheetTitle>
+                <SheetDescription className="text-sm">
                   Refine your search with filters
                 </SheetDescription>
               </SheetHeader>
@@ -126,24 +126,24 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
             
             <div className="flex-1 min-h-0 overflow-hidden">
               <ScrollArea className="h-full">
-                <div className="p-6">
-                  <div className="space-y-8 pb-24">
+                <div className="p-4 sm:p-6">
+                  <div className="space-y-6 sm:space-y-8 pb-20 sm:pb-24">
                     {/* Export Action */}
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <h4 className="font-medium text-sm">Actions</h4>
-                      <Button onClick={onExport} className="w-full">
+                      <Button onClick={onExport} className="w-full h-10 sm:h-11 text-sm">
                         Export Leads
                       </Button>
                     </div>
 
                     {/* Basic Filters */}
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <h4 className="font-medium text-sm">Basic Filters</h4>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-3 sm:gap-4">
                         <div className="space-y-2">
                           <label className="text-xs text-muted-foreground">Status</label>
                           <Select value={statusFilter} onValueChange={onStatusChange}>
-                            <SelectTrigger className="h-11 w-full">
+                            <SelectTrigger className="h-10 sm:h-11 w-full text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -158,7 +158,7 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
                         <div className="space-y-2">
                           <label className="text-xs text-muted-foreground">Category</label>
                           <Select value={categoryFilter} onValueChange={onCategoryChange}>
-                            <SelectTrigger className="h-11 w-full">
+                            <SelectTrigger className="h-10 sm:h-11 w-full text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -178,16 +178,16 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
                     </div>
 
                     {/* Data & Contact Filters */}
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <h4 className="font-medium text-sm flex items-center gap-2">
                         <Database className="h-4 w-4" />
                         Data & Contact Information
                       </h4>
-                      <div className="grid grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-3 sm:gap-4">
                         <div className="space-y-2">
                           <label className="text-xs text-muted-foreground">Data Availability</label>
                           <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
-                            <SelectTrigger className="h-11 w-full">
+                            <SelectTrigger className="h-10 sm:h-11 w-full text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -203,7 +203,7 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
                           <div className="space-y-2">
                             <label className="text-xs text-muted-foreground">Phone Duplicates</label>
                             <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
-                              <SelectTrigger className="h-11 w-full">
+                              <SelectTrigger className="h-10 sm:h-11 w-full text-sm">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -219,7 +219,7 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
                           <div className="space-y-2">
                             <label className="text-xs text-muted-foreground">Remarks</label>
                             <Select value={remarksFilter} onValueChange={onRemarksChange}>
-                              <SelectTrigger className="h-11 w-full">
+                              <SelectTrigger className="h-10 sm:h-11 w-full text-sm">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
@@ -235,7 +235,7 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
 
                     {/* Location Filters */}
                     {onCountryChange && availableCountries.length > 0 && (
-                      <div className="space-y-4">
+                      <div className="space-y-3 sm:space-y-4">
                         <h4 className="font-medium text-sm flex items-center gap-2">
                           <MapPin className="h-4 w-4" />
                           Location & Geography
@@ -243,7 +243,7 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
                         <div className="space-y-2">
                           <label className="text-xs text-muted-foreground">Country</label>
                           <Select value={countryFilter} onValueChange={onCountryChange}>
-                            <SelectTrigger className="h-11 w-full">
+                            <SelectTrigger className="h-10 sm:h-11 w-full text-sm">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -267,14 +267,14 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
             </div>
 
             {/* Fixed Action Buttons */}
-            <div className="flex-shrink-0 bg-background border-t p-6">
-              <div className="flex flex-col gap-3">
+            <div className="flex-shrink-0 bg-background border-t p-4 sm:p-6">
+              <div className="flex flex-col gap-2 sm:gap-3">
                 {totalActiveFilters > 0 && (
-                  <Button variant="outline" onClick={handleClearAllFilters} className="h-11">
+                  <Button variant="outline" onClick={handleClearAllFilters} className="h-10 sm:h-11 text-sm">
                     Clear All Filters
                   </Button>
                 )}
-                <Button onClick={() => setIsFilterSheetOpen(false)} className="h-11">
+                <Button onClick={() => setIsFilterSheetOpen(false)} className="h-10 sm:h-11 text-sm">
                   Apply Filters
                 </Button>
               </div>
@@ -283,39 +283,39 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
         </Sheet>
       </div>
 
-      {/* Active Filters Display */}
+      {/* Active Filters Display - More compact */}
       {totalActiveFilters > 0 && (
         <div className="overflow-x-auto scrollbar-hide">
-          <div className="flex items-center gap-2 min-w-max">
-            <span className="text-xs text-muted-foreground flex-shrink-0">Active filters:</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-max">
+            <span className="text-xs text-muted-foreground flex-shrink-0">Active:</span>
             {statusFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
-                Status: {statusFilter}
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1">
+                {statusFilter}
               </Badge>
             )}
             {categoryFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
-                Category: {categories.find((c) => c.id === categoryFilter)?.name}
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1 max-w-20 truncate">
+                {categories.find((c) => c.id === categoryFilter)?.name}
               </Badge>
             )}
             {dataAvailabilityFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
-                Data: {dataAvailabilityFilter.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1">
+                {dataAvailabilityFilter.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
               </Badge>
             )}
             {countryFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
-                Country: {countryFilter}
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1 max-w-20 truncate">
+                {countryFilter}
               </Badge>
             )}
             {duplicatePhoneFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
-                Phone: {duplicatePhoneFilter === 'unique-only' ? 'Unique Only' : 'Duplicates Only'}
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1">
+                {duplicatePhoneFilter === 'unique-only' ? 'Unique' : 'Duplicates'}
               </Badge>
             )}
             {remarksFilter !== 'all' && (
-              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
-                Remarks: {remarksFilter === 'has-remarks' ? 'Has Remarks' : 'No Remarks'}
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1">
+                {remarksFilter === 'has-remarks' ? 'Has Notes' : 'No Notes'}
               </Badge>
             )}
           </div>

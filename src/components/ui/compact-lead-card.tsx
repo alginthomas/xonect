@@ -125,7 +125,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 
   return (
     <Card 
-      className={`w-full max-w-full mb-4 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-2xl overflow-hidden cursor-pointer ${
+      className={`w-full max-w-full mb-3 shadow-sm border-border/40 bg-card hover:shadow-md transition-all duration-200 rounded-xl overflow-hidden cursor-pointer ${
         isSelected ? 'ring-2 ring-primary bg-primary/5' : ''
       }`}
       onClick={handleCardClick}
@@ -133,13 +133,13 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
       onTouchEnd={handleTouchEnd}
       onTouchMove={handleTouchMove}
     >
-      <div className="p-5">
-        {/* Header with Avatar and Info */}
-        <div className="flex items-start gap-4 mb-5">
+      <div className="p-3 sm:p-4">
+        {/* Header with Avatar and Info - More compact for small screens */}
+        <div className="flex items-start gap-3 mb-3">
           {/* Selection indicator */}
           {selectionMode && (
             <div className="pt-1 flex-shrink-0">
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+              <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
                 isSelected 
                   ? 'bg-primary border-primary text-primary-foreground' 
                   : 'border-border bg-background'
@@ -149,24 +149,24 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
             </div>
           )}
           
-          {/* Avatar */}
-          <Avatar className="h-16 w-16 flex-shrink-0">
+          {/* Avatar - Smaller on mobile */}
+          <Avatar className="h-12 w-12 sm:h-16 sm:w-16 flex-shrink-0">
             <AvatarImage src={lead.photoUrl} alt={`${lead.firstName} ${lead.lastName}`} />
-            <AvatarFallback className="text-lg font-semibold bg-primary/10 text-primary">
+            <AvatarFallback className="text-base sm:text-lg font-semibold bg-primary/10 text-primary">
               {lead.firstName.charAt(0)}{lead.lastName.charAt(0)}
             </AvatarFallback>
           </Avatar>
           
-          {/* Lead info */}
+          {/* Lead info - More compact text */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-xl leading-tight mb-2 text-left truncate">
+            <h3 className="font-bold text-lg sm:text-xl leading-tight mb-1 sm:mb-2 text-left truncate">
               {lead.firstName} {lead.lastName}
             </h3>
-            <div className="space-y-1 text-left">
-              <p className="text-base text-muted-foreground font-medium truncate">
+            <div className="space-y-0.5 sm:space-y-1 text-left">
+              <p className="text-sm sm:text-base text-muted-foreground font-medium truncate">
                 {lead.company}
               </p>
-              <p className="text-sm text-muted-foreground truncate">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 {lead.title}
               </p>
               <p className="text-xs text-muted-foreground truncate">
@@ -176,9 +176,9 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </div>
         </div>
 
-        {/* Status Row */}
-        <div className="flex items-center gap-3 mb-5" onClick={(e) => e.stopPropagation()}>
-          <span className="text-sm font-medium text-muted-foreground flex-shrink-0">Status:</span>
+        {/* Status Row - More compact */}
+        <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4" onClick={(e) => e.stopPropagation()}>
+          <span className="text-xs sm:text-sm font-medium text-muted-foreground flex-shrink-0">Status:</span>
           <div className="min-w-0">
             <QuickStatusEditor
               status={lead.status}
@@ -187,9 +187,9 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </div>
         </div>
 
-        {/* Mobile Remarks Section */}
+        {/* Mobile Remarks Section - More compact */}
         {isMobile && (
-          <div className="mb-5" onClick={(e) => e.stopPropagation()}>
+          <div className="mb-3 sm:mb-4" onClick={(e) => e.stopPropagation()}>
             <MobileRemarksButtons
               remarks={lead.remarks || ''}
               remarksHistory={lead.remarksHistory || []}
@@ -201,7 +201,7 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
 
         {/* Desktop Remarks Section */}
         {!isMobile && (
-          <div className="mb-5" onClick={(e) => e.stopPropagation()}>
+          <div className="mb-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
@@ -225,59 +225,59 @@ export const CompactLeadCard: React.FC<CompactLeadCardProps> = ({
           </div>
         )}
 
-        {/* Website and LinkedIn Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          {/* Website Button - Globe Icon for Organization Website */}
+        {/* Website and LinkedIn Buttons - More compact grid */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
+          {/* Website Button */}
           {lead.organizationWebsite && (
             <Button
               variant="ghost"
-              size="lg"
-              className="h-14 py-4 text-foreground hover:bg-muted/50 border border-border/30 rounded-xl font-medium"
+              size="sm"
+              className="h-10 sm:h-12 py-2 sm:py-3 text-foreground hover:bg-muted/50 border border-border/30 rounded-lg font-medium text-xs sm:text-sm"
               onClick={handleWebsiteAction}
             >
-              <Globe className="h-5 w-5 mr-3 flex-shrink-0" />
-              <span className="text-base">Visit Website</span>
+              <Globe className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">Website</span>
             </Button>
           )}
 
-          {/* LinkedIn Button - LinkedIn Icon for LinkedIn Profile */}
+          {/* LinkedIn Button */}
           {lead.linkedin && (
             <Button
               variant="ghost"
-              size="lg"
-              className="h-14 py-4 text-foreground hover:bg-muted/50 border border-border/30 rounded-xl font-medium"
+              size="sm"
+              className="h-10 sm:h-12 py-2 sm:py-3 text-foreground hover:bg-muted/50 border border-border/30 rounded-lg font-medium text-xs sm:text-sm"
               onClick={handleLinkedInAction}
             >
-              <Linkedin className="h-5 w-5 mr-3 flex-shrink-0" />
-              <span className="text-base">LinkedIn</span>
+              <Linkedin className="h-4 w-4 mr-2 flex-shrink-0" />
+              <span className="truncate">LinkedIn</span>
             </Button>
           )}
         </div>
 
-        {/* Action Buttons Row */}
-        <div className="flex gap-3">
+        {/* Action Buttons Row - More compact */}
+        <div className="flex gap-2 sm:gap-3">
           {/* Call Button */}
           {lead.phone && (
             <Button
               variant="ghost"
-              size="lg"
-              className="flex-1 h-14 py-4 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0 font-medium"
+              size="sm"
+              className="flex-1 h-10 sm:h-12 py-2 sm:py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg min-w-0 font-medium text-xs sm:text-sm"
               onClick={handleCallAction}
             >
-              <Phone className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-              <span className="text-base text-primary">Call</span>
+              <Phone className="h-4 w-4 mr-2 text-primary flex-shrink-0" />
+              <span className="text-primary truncate">Call</span>
             </Button>
           )}
 
           {/* Copy Email Button */}
           <Button
             variant="ghost"
-            size="lg"
-            className="flex-1 h-14 py-4 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-xl min-w-0 font-medium"
+            size="sm"
+            className="flex-1 h-10 sm:h-12 py-2 sm:py-3 bg-primary/5 hover:bg-primary/10 border border-primary/20 rounded-lg min-w-0 font-medium text-xs sm:text-sm"
             onClick={handleEmailAction}
           >
-            <Mail className="h-5 w-5 mr-3 text-primary flex-shrink-0" />
-            <span className="text-base text-primary">Copy Email</span>
+            <Mail className="h-4 w-4 mr-2 text-primary flex-shrink-0" />
+            <span className="text-primary truncate">Copy Email</span>
           </Button>
         </div>
       </div>
