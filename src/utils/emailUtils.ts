@@ -1,5 +1,6 @@
 
 import { toast } from '@/hooks/use-toast';
+import { sanitizeTemplateVariable } from '@/utils/security/inputSanitization';
 
 export interface EmailData {
   to: string;
@@ -12,10 +13,16 @@ export interface EmailData {
 export const openEmailClient = async (emailData: EmailData) => {
   const { to, firstName, lastName, company, title } = emailData;
   
-  // Create personalized subject and body
-  const subject = encodeURIComponent(`Re: ${company} - ${title ? title + ' ' : ''}Opportunity`);
+  // Sanitize all input data
+  const sanitizedFirstName = sanitizeTemplateVariable(firstName);
+  const sanitizedLastName = sanitizeTemplateVariable(lastName);
+  const sanitizedCompany = sanitizeTemplateVariable(company);
+  const sanitizedTitle = title ? sanitizeTemplateVariable(title) : '';
+  
+  // Create personalized subject and body with sanitized content
+  const subject = encodeURIComponent(`Re: ${sanitizedCompany} - ${sanitizedTitle ? sanitizedTitle + ' ' : ''}Opportunity`);
   const body = encodeURIComponent(
-    `Hi ${firstName},\n\nI hope this email finds you well. I wanted to reach out regarding potential opportunities at ${company}.\n\nBest regards`
+    `Hi ${sanitizedFirstName},\n\nI hope this email finds you well. I wanted to reach out regarding potential opportunities at ${sanitizedCompany}.\n\nBest regards`
   );
   
   // Copy email to clipboard first
@@ -36,6 +43,16 @@ export const openEmailClient = async (emailData: EmailData) => {
 
 export const copyEmailOnly = async (email: string) => {
   try {
+    // Basic email validation before copying
+    if (!email || !email.includes('@') || !email.includes('.')) {
+      toast({
+        title: 'Invalid email',
+        description: 'The email address appears to be invalid.',
+        variant: 'destructive',
+      });
+      return false;
+    }
+    
     await navigator.clipboard.writeText(email);
     toast({
       title: 'Email copied',

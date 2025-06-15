@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { PasswordStrengthIndicator } from '@/components/security/PasswordStrengthIndicator';
+import { validatePasswordStrength } from '@/utils/security/passwordValidation';
 
 interface SignUpFormProps {
   email: string;
@@ -26,6 +28,9 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
   onFullNameChange,
   onSubmit,
 }) => {
+  const passwordStrength = validatePasswordStrength(password);
+  const isPasswordValid = passwordStrength.isValid;
+  
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <div className="space-y-3">
@@ -63,18 +68,19 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
         <Input
           id="signup-password"
           type="password"
-          placeholder="Create a password (min. 6 characters)"
+          placeholder="Create a strong password"
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}
           required
-          minLength={6}
+          minLength={8}
           className="w-full h-12"
         />
+        <PasswordStrengthIndicator password={password} />
       </div>
       <Button 
         type="submit" 
         className="w-full h-12 mt-8 rounded-xl font-semibold text-base transition-all duration-200 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]" 
-        disabled={loading}
+        disabled={loading || !isPasswordValid}
       >
         {loading ? (
           <>

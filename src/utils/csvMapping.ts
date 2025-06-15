@@ -1,12 +1,23 @@
 
 import type { Lead } from '@/types/lead';
+import { validateLinkedInUrl, validateWebsiteUrl } from '@/utils/security/urlValidation';
+import { sanitizeHtml, validateInput } from '@/utils/security/inputSanitization';
 
 export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
   // Enhanced CSV field mapping with more flexible column name matching
   const getFieldValue = (possibleNames: string[]): string => {
     for (const name of possibleNames) {
       if (csvRow[name] !== undefined && csvRow[name] !== null && csvRow[name] !== '') {
-        return String(csvRow[name]).trim();
+        const value = String(csvRow[name]).trim();
+        
+        // Validate and sanitize input
+        const validation = validateInput(value, 500);
+        if (!validation.isValid) {
+          console.warn(`Invalid input for field ${name}: ${validation.error}`);
+          return '';
+        }
+        
+        return sanitizeHtml(value);
       }
     }
     return '';
@@ -26,7 +37,10 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
         const email = String(row[key]).trim();
         // Basic email validation
         if (email.includes('@') && email.includes('.')) {
-          return email;
+          const validation = validateInput(email, 254); // Max email length
+          if (validation.isValid) {
+            return sanitizeHtml(email);
+          }
         }
       }
     }
@@ -37,7 +51,10 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
         const email = String(row[col]).trim();
         // Basic email validation
         if (email.includes('@') && email.includes('.')) {
-          return email;
+          const validation = validateInput(email, 254);
+          if (validation.isValid) {
+            return sanitizeHtml(email);
+          }
         }
       }
     }
@@ -55,19 +72,27 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     ];
     for (const key of possiblePhoneKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-        return String(row[key]).trim();
+        const phone = String(row[key]).trim();
+        const validation = validateInput(phone, 50);
+        if (validation.isValid) {
+          return sanitizeHtml(phone);
+        }
       }
     }
     // fallback: look for any key containing 'phone' or 'mobile' (case-insensitive)
     for (const col in row) {
       if (/phone|mobile|tel/i.test(col) && row[col] && String(row[col]).trim() !== '') {
-        return String(row[col]).trim();
+        const phone = String(row[col]).trim();
+        const validation = validateInput(phone, 50);
+        if (validation.isValid) {
+          return sanitizeHtml(phone);
+        }
       }
     }
     return '';
   };
 
-  // Enhanced LinkedIn detection logic
+  // Enhanced LinkedIn detection logic with security validation
   const getLinkedInValue = (row: any): string => {
     const possibleLinkedInKeys = [
       'LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 
@@ -78,25 +103,12 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     
     for (const key of possibleLinkedInKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-        let linkedin = String(row[key]).trim();
+        const linkedin = String(row[key]).trim();
         
-        // Clean up LinkedIn URL if needed
-        if (linkedin && !linkedin.startsWith('http://') && !linkedin.startsWith('https://')) {
-          // Check if it's a LinkedIn URL without protocol
-          if (linkedin.includes('linkedin.com') || linkedin.startsWith('www.linkedin.com')) {
-            linkedin = 'https://' + linkedin;
-          } else if (linkedin.includes('/in/') || linkedin.includes('/company/')) {
-            // Looks like a LinkedIn path
-            linkedin = 'https://www.linkedin.com' + (linkedin.startsWith('/') ? '' : '/') + linkedin;
-          } else if (!linkedin.includes('.') && linkedin.length > 3) {
-            // Might be just a username
-            linkedin = 'https://www.linkedin.com/in/' + linkedin;
-          }
-        }
-        
-        // Validate that it looks like a proper LinkedIn URL
-        if (linkedin.includes('linkedin.com')) {
-          return linkedin;
+        // Use security validation
+        const validation = validateLinkedInUrl(linkedin);
+        if (validation.isValid && validation.sanitizedUrl) {
+          return validation.sanitizedUrl;
         }
       }
     }
@@ -104,28 +116,18 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     // fallback: look for any key containing 'linkedin' (case-insensitive)
     for (const col in row) {
       if (/linkedin/i.test(col) && row[col] && String(row[col]).trim() !== '') {
-        let linkedin = String(row[col]).trim();
+        const linkedin = String(row[col]).trim();
         
-        // Clean up LinkedIn URL if needed
-        if (linkedin && !linkedin.startsWith('http://') && !linkedin.startsWith('https://')) {
-          if (linkedin.includes('linkedin.com') || linkedin.startsWith('www.linkedin.com')) {
-            linkedin = 'https://' + linkedin;
-          } else if (linkedin.includes('/in/') || linkedin.includes('/company/')) {
-            linkedin = 'https://www.linkedin.com' + (linkedin.startsWith('/') ? '' : '/') + linkedin;
-          } else if (!linkedin.includes('.') && linkedin.length > 3) {
-            linkedin = 'https://www.linkedin.com/in/' + linkedin;
-          }
-        }
-        
-        if (linkedin.includes('linkedin.com')) {
-          return linkedin;
+        const validation = validateLinkedInUrl(linkedin);
+        if (validation.isValid && validation.sanitizedUrl) {
+          return validation.sanitizedUrl;
         }
       }
     }
     return '';
   };
 
-  // Enhanced website detection logic
+  // Enhanced website detection logic with security validation
   const getWebsiteValue = (row: any): string => {
     const possibleWebsiteKeys = [
       'Website', 'website', 'Company Website', 'company_website', 'CompanyWebsite',
@@ -139,23 +141,12 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     
     for (const key of possibleWebsiteKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-        let website = String(row[key]).trim();
+        const website = String(row[key]).trim();
         
-        // Clean up the website URL if needed
-        if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
-          // Only add https:// if it looks like a domain
-          if (website.includes('.') && !website.includes(' ') && website.length > 3) {
-            // Remove 'www.' if it's at the beginning without protocol
-            if (website.toLowerCase().startsWith('www.')) {
-              website = website.substring(4);
-            }
-            website = 'https://' + website;
-          }
-        }
-        
-        // Validate that it looks like a proper URL
-        if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
-          return website;
+        // Use security validation
+        const validation = validateWebsiteUrl(website);
+        if (validation.isValid && validation.sanitizedUrl) {
+          return validation.sanitizedUrl;
         }
       }
     }
@@ -163,23 +154,11 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     // fallback: look for any key containing 'website', 'url', or 'web' (case-insensitive)
     for (const col in row) {
       if (/website|url|web(?!_)|site/i.test(col) && row[col] && String(row[col]).trim() !== '') {
-        let website = String(row[col]).trim();
+        const website = String(row[col]).trim();
         
-        // Clean up the website URL if needed
-        if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
-          // Only add https:// if it looks like a domain
-          if (website.includes('.') && !website.includes(' ') && website.length > 3) {
-            // Remove 'www.' if it's at the beginning without protocol
-            if (website.toLowerCase().startsWith('www.')) {
-              website = website.substring(4);
-            }
-            website = 'https://' + website;
-          }
-        }
-        
-        // Validate that it looks like a proper URL
-        if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
-          return website;
+        const validation = validateWebsiteUrl(website);
+        if (validation.isValid && validation.sanitizedUrl) {
+          return validation.sanitizedUrl;
         }
       }
     }
