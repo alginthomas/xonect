@@ -10,12 +10,16 @@ export interface DuplicateCheckResult {
 
 export const checkForCSVDuplicate = (
   newLead: { first_name: string; last_name: string; email: string; phone?: string; company: string },
-  existingLeads: Lead[]
+  existingLeads: Lead[],
+  userId?: string
 ): DuplicateCheckResult => {
   const normalizedNewEmail = normalizeEmail(newLead.email);
   const normalizedNewPhone = newLead.phone ? normalizePhoneForComparison(newLead.phone) : '';
 
-  for (const existingLead of existingLeads) {
+  // Filter existing leads by user if userId is provided
+  const userLeads = userId ? existingLeads.filter(lead => lead.user_id === userId) : existingLeads;
+
+  for (const existingLead of userLeads) {
     const normalizedExistingEmail = normalizeEmail(existingLead.email);
     const normalizedExistingPhone = existingLead.phone ? normalizePhoneForComparison(existingLead.phone) : '';
 
@@ -60,7 +64,8 @@ export const checkForCSVDuplicate = (
 
 export const filterDuplicatesFromCSV = (
   leadsToImport: Array<{ first_name: string; last_name: string; email: string; phone?: string; company: string; [key: string]: any }>,
-  existingLeads: Lead[]
+  existingLeads: Lead[],
+  userId?: string
 ): {
   uniqueLeads: Array<{ first_name: string; last_name: string; email: string; phone?: string; company: string; [key: string]: any }>;
   duplicates: Array<{
@@ -82,8 +87,8 @@ export const filterDuplicatesFromCSV = (
   const seenInBatch = new Map<string, { first_name: string; last_name: string; email: string; phone?: string; company: string; [key: string]: any }>();
 
   for (const leadToImport of leadsToImport) {
-    // Check against existing leads in database
-    const duplicateCheck = checkForCSVDuplicate(leadToImport, existingLeads);
+    // Check against existing leads in database (user-scoped)
+    const duplicateCheck = checkForCSVDuplicate(leadToImport, existingLeads, userId);
     
     if (duplicateCheck.isDuplicate) {
       duplicates.push({

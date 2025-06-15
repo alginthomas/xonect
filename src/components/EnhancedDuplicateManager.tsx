@@ -12,28 +12,35 @@ import type { Lead } from '@/types/lead';
 
 interface EnhancedDuplicateManagerProps {
   leads: Lead[];
+  currentUserId?: string;
   onBulkAction: (action: 'delete' | 'merge', leadIds: string[]) => Promise<void>;
   onMergeLeads?: (leadsToMerge: Lead[], keepLead: Lead) => Promise<void>;
 }
 
 export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> = ({
   leads,
+  currentUserId,
   onBulkAction,
   onMergeLeads
 }) => {
   const [selectedDuplicates, setSelectedDuplicates] = useState<Set<string>>(new Set());
 
-  // Generate comprehensive duplicate analysis
+  // Generate comprehensive duplicate analysis (user-scoped)
   const duplicateAnalysis = useMemo(() => {
-    const report = generateDuplicateReport(leads);
+    // Filter leads to only include the current user's leads
+    const userLeads = currentUserId 
+      ? leads.filter(lead => lead.user_id === currentUserId)
+      : leads;
+
+    const report = generateDuplicateReport(userLeads);
     const groups: Lead[][] = [];
     const processedIds = new Set<string>();
 
     // Find duplicate groups
-    leads.forEach(lead => {
+    userLeads.forEach(lead => {
       if (processedIds.has(lead.id)) return;
 
-      const matches = findAdvancedDuplicates(lead, leads.filter(l => l.id !== lead.id));
+      const matches = findAdvancedDuplicates(lead, userLeads.filter(l => l.id !== lead.id));
       if (matches.length > 0) {
         const group = [lead, ...matches.map(m => m.existingLead)];
         const uniqueGroup = group.filter(l => !processedIds.has(l.id));
@@ -45,8 +52,8 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
       }
     });
 
-    return { report, groups };
-  }, [leads]);
+    return { report, groups, userLeads };
+  }, [leads, currentUserId]);
 
   const handleSelectDuplicate = (leadId: string, checked: boolean) => {
     setSelectedDuplicates(prev => {
@@ -94,7 +101,7 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
       <div className="flex-shrink-0 p-4 border-b bg-background">
         <DuplicateQualityMetrics 
           report={duplicateAnalysis.report}
-          totalLeads={leads.length}
+          totalLeads={duplicateAnalysis.userLeads.length}
           duplicateGroupsCount={duplicateAnalysis.groups.length}
         />
       </div>
@@ -146,7 +153,7 @@ export const EnhancedDuplicateManager: React.FC<EnhancedDuplicateManagerProps> =
             <TabsContent value="analytics" className="p-4 mt-0 h-full">
               <DuplicateAnalyticsView 
                 report={duplicateAnalysis.report}
-                totalLeads={leads.length}
+                totalLeads={duplicateAnalysis.userLeads.length}
                 duplicateGroupsCount={duplicateAnalysis.groups.length}
               />
             </TabsContent>

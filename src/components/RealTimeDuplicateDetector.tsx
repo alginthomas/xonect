@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +9,7 @@ import type { Lead } from '@/types/lead';
 interface RealTimeDuplicateDetectorProps {
   formData: Partial<Lead>;
   existingLeads: Lead[];
+  currentUserId?: string;
   onShowDuplicates?: (matches: DuplicateMatch[]) => void;
   onMergeSuggestion?: (suggestedLead: Lead) => void;
   className?: string;
@@ -18,25 +18,31 @@ interface RealTimeDuplicateDetectorProps {
 export const RealTimeDuplicateDetector: React.FC<RealTimeDuplicateDetectorProps> = ({
   formData,
   existingLeads,
+  currentUserId,
   onShowDuplicates,
   onMergeSuggestion,
   className = ''
 }) => {
   const [showMatches, setShowMatches] = useState(false);
 
-  // Debounced duplicate detection
+  // Debounced duplicate detection (user-scoped)
   const duplicateMatches = useMemo(() => {
     if (!formData.email && !formData.phone && !formData.firstName) {
       return [];
     }
 
-    return findAdvancedDuplicates(formData, existingLeads, {
+    // Filter existing leads to only include the current user's leads
+    const userLeads = currentUserId 
+      ? existingLeads.filter(lead => lead.user_id === currentUserId)
+      : existingLeads;
+
+    return findAdvancedDuplicates(formData, userLeads, {
       emailThreshold: 0.85,
       nameThreshold: 0.8,
       phoneThreshold: 0.9,
       includeNameCompanyMatch: true
     });
-  }, [formData, existingLeads]);
+  }, [formData, existingLeads, currentUserId]);
 
   useEffect(() => {
     if (duplicateMatches.length > 0) {

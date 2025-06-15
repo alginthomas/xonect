@@ -1,3 +1,4 @@
+
 import type { Lead } from '@/types/lead';
 
 export interface DuplicateCheckResult {
@@ -45,16 +46,20 @@ export const normalizePhoneForComparison = (phone: string): string => {
 };
 
 /**
- * Check if a lead is a duplicate based on email or phone
+ * Check if a lead is a duplicate based on email or phone (user-scoped)
  */
 export const checkForDuplicate = (
   newLead: { email: string; phone?: string },
-  existingLeads: Lead[]
+  existingLeads: Lead[],
+  userId?: string
 ): DuplicateCheckResult => {
   const normalizedNewEmail = normalizeEmail(newLead.email);
   const normalizedNewPhone = newLead.phone ? normalizePhoneForComparison(newLead.phone) : '';
 
-  for (const existingLead of existingLeads) {
+  // Filter existing leads by user if userId is provided
+  const userLeads = userId ? existingLeads.filter(lead => lead.user_id === userId) : existingLeads;
+
+  for (const existingLead of userLeads) {
     const normalizedExistingEmail = normalizeEmail(existingLead.email);
     const normalizedExistingPhone = existingLead.phone ? normalizePhoneForComparison(existingLead.phone) : '';
 
@@ -89,11 +94,12 @@ export const checkForDuplicate = (
 };
 
 /**
- * Filter out duplicates from a list of leads to be imported
+ * Filter out duplicates from a list of leads to be imported (user-scoped)
  */
 export const filterDuplicatesFromImport = (
   leadsToImport: Array<{ email: string; phone?: string; [key: string]: any }>,
-  existingLeads: Lead[]
+  existingLeads: Lead[],
+  userId?: string
 ): {
   uniqueLeads: Array<{ email: string; phone?: string; [key: string]: any }>;
   duplicates: Array<{
@@ -115,8 +121,8 @@ export const filterDuplicatesFromImport = (
   const seenInBatch = new Map<string, { email: string; phone?: string; [key: string]: any }>();
 
   for (const leadToImport of leadsToImport) {
-    // Check against existing leads in database
-    const duplicateCheck = checkForDuplicate(leadToImport, existingLeads);
+    // Check against existing leads in database (user-scoped)
+    const duplicateCheck = checkForDuplicate(leadToImport, existingLeads, userId);
     
     if (duplicateCheck.isDuplicate) {
       duplicates.push({
@@ -161,18 +167,21 @@ export const filterDuplicatesFromImport = (
 };
 
 /**
- * Find all duplicate leads in the database
+ * Find all duplicate leads in the database (user-scoped)
  */
-export const findAllDuplicatesInDatabase = (leads: Lead[]): {
+export const findAllDuplicatesInDatabase = (leads: Lead[], userId?: string): {
   emailDuplicateGroups: Lead[][];
   phoneDuplicateGroups: Lead[][];
   allDuplicateLeads: Lead[];
 } => {
+  // Filter leads by user if userId is provided
+  const userLeads = userId ? leads.filter(lead => lead.user_id === userId) : leads;
+  
   const emailGroups = new Map<string, Lead[]>();
   const phoneGroups = new Map<string, Lead[]>();
   
   // Group leads by normalized email and phone
-  leads.forEach(lead => {
+  userLeads.forEach(lead => {
     const normalizedEmail = normalizeEmail(lead.email);
     const normalizedPhone = lead.phone ? normalizePhoneForComparison(lead.phone) : '';
     
@@ -277,16 +286,20 @@ export const generateFileHash = (fileContent: string): string => {
 };
 
 /**
- * Check if a file has been imported before
+ * Check if a file has been imported before (user-scoped)
  */
 export const checkFileAlreadyImported = (
   fileContent: string,
   fileName: string,
-  importBatches: Array<{ sourceFile?: string; metadata?: Record<string, any> }>
+  importBatches: Array<{ sourceFile?: string; metadata?: Record<string, any>; user_id?: string }>,
+  userId?: string
 ): boolean => {
   const fileHash = generateFileHash(fileContent);
   
-  return importBatches.some(batch => {
+  // Filter import batches by user if userId is provided
+  const userBatches = userId ? importBatches.filter(batch => batch.user_id === userId) : importBatches;
+  
+  return userBatches.some(batch => {
     // Check by file name
     if (batch.sourceFile === fileName) {
       return true;
@@ -332,12 +345,13 @@ export const getDuplicateStats = (
 };
 
 /**
- * Enhanced duplicate prevention for imports
+ * Enhanced duplicate prevention for imports (user-scoped)
  */
 export const preventDuplicateImport = (
   leadsToImport: Array<{ email: string; phone?: string; [key: string]: any }>,
   existingLeads: Lead[],
-  strictMode: boolean = false
+  strictMode: boolean = false,
+  userId?: string
 ): {
   allowedLeads: Array<{ email: string; phone?: string; [key: string]: any }>;
   blockedLeads: Array<{
@@ -355,7 +369,7 @@ export const preventDuplicateImport = (
   }> = [];
   const warnings: string[] = [];
   
-  const { uniqueLeads, duplicates, withinBatchDuplicates } = filterDuplicatesFromImport(leadsToImport, existingLeads);
+  const { uniqueLeads, duplicates, withinBatchDuplicates } = filterDuplicatesFromImport(leadsToImport, existingLeads, userId);
   
   // Add unique leads to allowed list
   allowedLeads.push(...uniqueLeads);

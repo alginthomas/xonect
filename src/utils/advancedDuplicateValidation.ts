@@ -23,12 +23,13 @@ export interface DuplicateDetail {
 }
 
 /**
- * Advanced duplicate validation with detailed reporting
+ * Advanced duplicate validation with detailed reporting (user-scoped)
  */
 export const validateForDuplicates = (
   csvData: any[],
   existingLeads: Lead[],
-  strictMode: boolean = false
+  strictMode: boolean = false,
+  userId?: string
 ): DuplicateValidationResult => {
   const duplicateDetails = {
     withinFile: [] as DuplicateDetail[],
@@ -40,8 +41,8 @@ export const validateForDuplicates = (
   const withinFileResults = findDuplicatesWithinFile(csvData);
   duplicateDetails.withinFile = withinFileResults;
 
-  // Check against existing database
-  const againstDbResults = findDuplicatesAgainstDatabase(csvData, existingLeads, strictMode);
+  // Check against existing database (user-scoped)
+  const againstDbResults = findDuplicatesAgainstDatabase(csvData, existingLeads, strictMode, userId);
   duplicateDetails.againstDatabase = againstDbResults;
 
   const totalDuplicates = withinFileResults.length + againstDbResults.length;
@@ -52,7 +53,7 @@ export const validateForDuplicates = (
   }
   
   if (againstDbResults.length > 0) {
-    recommendations.push(`Found ${againstDbResults.length} duplicate(s) against existing leads`);
+    recommendations.push(`Found ${againstDbResults.length} duplicate(s) against your existing leads`);
   }
 
   if (totalDuplicates > csvData.length * 0.3) {
@@ -142,9 +143,13 @@ const findDuplicatesWithinFile = (csvData: any[]): DuplicateDetail[] => {
 const findDuplicatesAgainstDatabase = (
   csvData: any[],
   existingLeads: Lead[],
-  strictMode: boolean
+  strictMode: boolean,
+  userId?: string
 ): DuplicateDetail[] => {
   const duplicates: DuplicateDetail[] = [];
+
+  // Filter existing leads by user if userId is provided
+  const userLeads = userId ? existingLeads.filter(lead => lead.user_id === userId) : existingLeads;
 
   csvData.forEach((row, index) => {
     const email = normalizeEmail(row.email || row.Email || '');
@@ -153,7 +158,7 @@ const findDuplicatesAgainstDatabase = (
     const lastName = (row.last_name || row['Last Name'] || '').toLowerCase();
     const company = (row.company || row.Company || '').toLowerCase();
 
-    for (const existingLead of existingLeads) {
+    for (const existingLead of userLeads) {
       const existingEmail = normalizeEmail(existingLead.email);
       const existingPhone = normalizePhoneForComparison(existingLead.phone || '');
       const existingFirstName = existingLead.firstName.toLowerCase();
@@ -167,7 +172,7 @@ const findDuplicatesAgainstDatabase = (
           lead: row,
           duplicateType: 'email',
           confidence: 1.0,
-          reason: 'Email already exists in database',
+          reason: 'Email already exists in your database',
           matchedWith: existingLead
         });
         break; // One match per row is enough
@@ -180,7 +185,7 @@ const findDuplicatesAgainstDatabase = (
           lead: row,
           duplicateType: 'phone',
           confidence: 1.0,
-          reason: 'Phone number already exists in database',
+          reason: 'Phone number already exists in your database',
           matchedWith: existingLead
         });
         break;
@@ -196,7 +201,7 @@ const findDuplicatesAgainstDatabase = (
           lead: row,
           duplicateType: 'name_company',
           confidence: 0.95,
-          reason: 'Name and company combination already exists',
+          reason: 'Name and company combination already exists in your database',
           matchedWith: existingLead
         });
         break;
@@ -215,7 +220,7 @@ const findDuplicatesAgainstDatabase = (
             lead: row,
             duplicateType: 'fuzzy_match',
             confidence: nameSimilarity,
-            reason: `Similar name (${(nameSimilarity * 100).toFixed(0)}% match) with same company`,
+            reason: `Similar name (${(nameSimilarity * 100).toFixed(0)}% match) with same company in your database`,
             matchedWith: existingLead
           });
           break;

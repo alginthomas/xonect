@@ -60,7 +60,8 @@ export const useEnhancedCSVImport = ({
       importBatchId: row.import_batch_id,
       remarks: row.remarks,
       remarksHistory: row.remarks_history || [],
-      activityLog: row.activity_log || []
+      activityLog: row.activity_log || [],
+      user_id: row.user_id
     };
   };
 
@@ -83,14 +84,19 @@ export const useEnhancedCSVImport = ({
         strictMode
       });
 
+      // Get current user for user-scoped validation
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
       // Generate enhanced file hash
       const hash = generateEnhancedFileHash(csvData, fileName);
       setFileHash(hash);
 
-      // Check for file conflicts with existing imports
+      // Check for file conflicts with existing imports (user-scoped)
+      const userImportBatches = userId ? importBatches.filter(batch => batch.user_id === userId) : importBatches;
       const fileConflicts: Array<{ batch: ImportBatch; similarity: any }> = [];
       
-      for (const batch of importBatches) {
+      for (const batch of userImportBatches) {
         if (batch.metadata?.fileHash) {
           const existingHash = batch.metadata as any;
           if (existingHash.combinedHash) {
@@ -130,15 +136,16 @@ export const useEnhancedCSVImport = ({
         }
       }
 
-      // Validate for duplicates
-      const validation = validateForDuplicates(csvData, existingLeads, strictMode);
+      // Validate for duplicates (user-scoped)
+      const validation = validateForDuplicates(csvData, existingLeads, strictMode, userId);
       setValidationResult(validation);
 
       console.log('✅ Validation completed:', {
         isValid: validation.isValid,
         duplicateCount: validation.duplicateCount,
         canProceed: validation.canProceed,
-        fileConflicts: fileConflicts.length
+        fileConflicts: fileConflicts.length,
+        userId
       });
 
       return {
@@ -205,10 +212,11 @@ export const useEnhancedCSVImport = ({
       // Map CSV data to leads format
       const potentialLeads = csvData.map(row => mapCSVToLead(row, categoryId, null, user.id));
 
-      // Filter out duplicates using the existing logic
+      // Filter out duplicates using the existing logic (user-scoped)
       const { uniqueLeads, duplicates, withinBatchDuplicates } = filterDuplicatesFromCSV(
         potentialLeads,
-        existingLeads
+        existingLeads,
+        user.id
       );
 
       const totalDuplicates = duplicates.length + withinBatchDuplicates.length;
@@ -217,7 +225,8 @@ export const useEnhancedCSVImport = ({
         totalProcessed: potentialLeads.length,
         uniqueLeads: uniqueLeads.length,
         duplicates: duplicates.length,
-        withinBatchDuplicates: withinBatchDuplicates.length
+        withinBatchDuplicates: withinBatchDuplicates.length,
+        userId: user.id
       });
 
       // Create import batch record with enhanced metadata
