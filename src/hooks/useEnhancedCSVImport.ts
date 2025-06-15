@@ -6,12 +6,118 @@ import { useToast } from '@/hooks/use-toast';
 import { mapCSVToLead } from '@/utils/csvMapping';
 import { validateForDuplicates } from '@/utils/advancedDuplicateValidation';
 import type { Lead } from '@/types/lead';
+import type { DuplicateValidationResult } from '@/utils/advancedDuplicateValidation';
 
 export const useEnhancedCSVImport = () => {
   const [isImporting, setIsImporting] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
+  const [validationResult, setValidationResult] = useState<DuplicateValidationResult | null>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const clearValidation = () => {
+    setValidationResult(null);
+  };
+
+  const validateCSVFile = async (
+    csvData: any[],
+    fileName: string,
+    strictMode: boolean = false,
+    userId?: string
+  ) => {
+    if (!csvData.length) {
+      throw new Error('No data to validate');
+    }
+
+    setIsValidating(true);
+
+    try {
+      // Get existing leads for duplicate validation (user-scoped)
+      const { data: existingLeads, error: leadsError } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('user_id', userId || '');
+
+      if (leadsError) {
+        console.error('❌ Error fetching existing leads:', leadsError);
+        throw leadsError;
+      }
+
+      // Convert database leads to Lead type format
+      const convertedLeads: Lead[] = (existingLeads || []).map(lead => ({
+        id: lead.id,
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        email: lead.email,
+        phone: lead.phone || '',
+        company: lead.company,
+        title: lead.title,
+        linkedin: lead.linkedin || '',
+        industry: lead.industry || '',
+        location: lead.location || '',
+        seniority: lead.seniority,
+        companySize: lead.company_size,
+        status: lead.status,
+        emailsSent: lead.emails_sent,
+        completenessScore: lead.completeness_score,
+        categoryId: lead.category_id,
+        importBatchId: lead.import_batch_id,
+        userId: lead.user_id,
+        tags: lead.tags || [],
+        remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history : [],
+        activityLog: Array.isArray(lead.activity_log) ? lead.activity_log : [],
+        department: lead.department,
+        personalEmail: lead.personal_email,
+        photoUrl: lead.photo_url,
+        twitterUrl: lead.twitter_url,
+        facebookUrl: lead.facebook_url,
+        organizationWebsite: lead.organization_website,
+        organizationFounded: lead.organization_founded,
+        remarks: lead.remarks,
+        createdAt: new Date(lead.created_at),
+        lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
+      }));
+
+      console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
+
+      // Validate for duplicates
+      const validationResult = validateForDuplicates(
+        csvData,
+        convertedLeads,
+        strictMode,
+        userId
+      );
+
+      console.log('🔍 Validation completed:', validationResult);
+      setValidationResult(validationResult);
+
+      return validationResult;
+    } catch (error: any) {
+      console.error('❌ Validation failed:', error);
+      
+      toast({
+        title: 'Validation failed',
+        description: error.message || 'An unexpected error occurred during validation',
+        variant: 'destructive',
+      });
+      
+      throw error;
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const importCSVData = async (
+    csvData: any[],
+    fileName: string,
+    importName: string,
+    selectedCategoryId?: string,
+    proceedAfterValidation: boolean = false,
+    userId?: string
+  ) => {
+    return await importLeads(csvData, selectedCategoryId, false, userId);
+  };
 
   const importLeads = async (
     csvData: any[],
@@ -34,7 +140,7 @@ export const useEnhancedCSVImport = () => {
     setImportProgress(0);
 
     try {
-      // Step 1: Get existing leads for duplicate validation (user-scoped)
+      // Get existing leads for duplicate validation (user-scoped)
       const { data: existingLeads, error: leadsError } = await supabase
         .from('leads')
         .select('*')
@@ -45,13 +151,48 @@ export const useEnhancedCSVImport = () => {
         throw leadsError;
       }
 
-      console.log('📋 Fetched existing leads for validation:', existingLeads?.length || 0);
+      // Convert to Lead type format for validation
+      const convertedLeads: Lead[] = (existingLeads || []).map(lead => ({
+        id: lead.id,
+        firstName: lead.first_name,
+        lastName: lead.last_name,
+        email: lead.email,
+        phone: lead.phone || '',
+        company: lead.company,
+        title: lead.title,
+        linkedin: lead.linkedin || '',
+        industry: lead.industry || '',
+        location: lead.location || '',
+        seniority: lead.seniority,
+        companySize: lead.company_size,
+        status: lead.status,
+        emailsSent: lead.emails_sent,
+        completenessScore: lead.completeness_score,
+        categoryId: lead.category_id,
+        importBatchId: lead.import_batch_id,
+        userId: lead.user_id,
+        tags: lead.tags || [],
+        remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history : [],
+        activityLog: Array.isArray(lead.activity_log) ? lead.activity_log : [],
+        department: lead.department,
+        personalEmail: lead.personal_email,
+        photoUrl: lead.photo_url,
+        twitterUrl: lead.twitter_url,
+        facebookUrl: lead.facebook_url,
+        organizationWebsite: lead.organization_website,
+        organizationFounded: lead.organization_founded,
+        remarks: lead.remarks,
+        createdAt: new Date(lead.created_at),
+        lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
+      }));
+
+      console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
       setImportProgress(10);
 
       // Step 2: Validate for duplicates
       const validationResult = validateForDuplicates(
         csvData,
-        existingLeads || [],
+        convertedLeads,
         strictMode,
         userId
       );
@@ -75,7 +216,7 @@ export const useEnhancedCSVImport = () => {
           category_id: selectedCategoryId,
           user_id: userId || '',
           metadata: {
-            validation_result: validationResult,
+            validation_result: validationResult as any,
             strict_mode: strictMode
           }
         })
@@ -91,7 +232,7 @@ export const useEnhancedCSVImport = () => {
       setImportProgress(30);
 
       // Step 4: Process and insert leads
-      const leadsToInsert: Partial<Lead>[] = [];
+      const leadsToInsert: any[] = [];
       let successCount = 0;
       let failCount = 0;
 
@@ -99,9 +240,9 @@ export const useEnhancedCSVImport = () => {
         try {
           const mappedLead = mapCSVToLead(csvData[i], selectedCategoryId, importBatch.id, userId);
           
-          const leadData: Partial<Lead> = {
-            firstName: mappedLead.first_name,
-            lastName: mappedLead.last_name,
+          const leadData = {
+            first_name: mappedLead.first_name,
+            last_name: mappedLead.last_name,
             email: mappedLead.email,
             phone: mappedLead.phone || '',
             company: mappedLead.company,
@@ -110,25 +251,24 @@ export const useEnhancedCSVImport = () => {
             industry: mappedLead.industry || '',
             location: mappedLead.location || '',
             seniority: mappedLead.seniority,
-            companySize: mappedLead.company_size,
+            company_size: mappedLead.company_size,
             status: mappedLead.status,
-            emailsSent: mappedLead.emails_sent,
-            completenessScore: mappedLead.completeness_score,
-            categoryId: mappedLead.category_id,
-            importBatchId: mappedLead.import_batch_id,
-            userId: mappedLead.user_id,
+            emails_sent: mappedLead.emails_sent,
+            completeness_score: mappedLead.completeness_score,
+            category_id: mappedLead.category_id,
+            import_batch_id: mappedLead.import_batch_id,
+            user_id: mappedLead.user_id,
             tags: mappedLead.tags,
-            remarksHistory: mappedLead.remarks_history,
-            activityLog: mappedLead.activity_log,
+            remarks_history: mappedLead.remarks_history,
+            activity_log: mappedLead.activity_log,
             department: mappedLead.department,
-            personalEmail: mappedLead.personal_email,
-            photoUrl: mappedLead.photo_url,
-            twitterUrl: mappedLead.twitter_url,
-            facebookUrl: mappedLead.facebook_url,
-            organizationWebsite: mappedLead.organization_website,
-            organizationFounded: mappedLead.organization_founded,
-            remarks: mappedLead.remarks,
-            createdAt: new Date()
+            personal_email: mappedLead.personal_email,
+            photo_url: mappedLead.photo_url,
+            twitter_url: mappedLead.twitter_url,
+            facebook_url: mappedLead.facebook_url,
+            organization_website: mappedLead.organization_website,
+            organization_founded: mappedLead.organization_founded,
+            remarks: mappedLead.remarks
           };
 
           leadsToInsert.push(leadData);
@@ -151,36 +291,7 @@ export const useEnhancedCSVImport = () => {
         
         const { error: insertError } = await supabase
           .from('leads')
-          .insert(leadsToInsert.map(lead => ({
-            first_name: lead.firstName,
-            last_name: lead.lastName,
-            email: lead.email,
-            phone: lead.phone,
-            company: lead.company,
-            title: lead.title,
-            linkedin: lead.linkedin,
-            industry: lead.industry,
-            location: lead.location,
-            seniority: lead.seniority,
-            company_size: lead.companySize,
-            status: lead.status,
-            emails_sent: lead.emailsSent,
-            completeness_score: lead.completenessScore,
-            category_id: lead.categoryId,
-            import_batch_id: lead.importBatchId,
-            user_id: lead.userId,
-            tags: lead.tags,
-            remarks_history: lead.remarksHistory,
-            activity_log: lead.activityLog,
-            department: lead.department,
-            personal_email: lead.personalEmail,
-            photo_url: lead.photoUrl,
-            twitter_url: lead.twitterUrl,
-            facebook_url: lead.facebookUrl,
-            organization_website: lead.organizationWebsite,
-            organization_founded: lead.organizationFounded,
-            remarks: lead.remarks
-          })));
+          .insert(leadsToInsert);
 
         if (insertError) {
           console.error('❌ Error inserting leads:', insertError);
@@ -247,8 +358,12 @@ export const useEnhancedCSVImport = () => {
 
   return {
     importLeads,
+    importCSVData,
+    validateCSVFile,
+    clearValidation,
     isImporting,
-    importProgress
+    isValidating,
+    importProgress,
+    validationResult
   };
 };
-
