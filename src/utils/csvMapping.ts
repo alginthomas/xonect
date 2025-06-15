@@ -125,76 +125,127 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
-  // Enhanced website detection logic with better organization website mapping
-  const getWebsiteValue = (row: any): string => {
+  // FIXED: Enhanced website detection logic with comprehensive organization website mapping
+  const getOrganizationWebsiteValue = (row: any): string => {
+    console.log('🔍 Starting website detection for row:', Object.keys(row));
+    
+    // Primary website column names - most specific first
     const possibleWebsiteKeys = [
-      'Website', 'website', 'Company Website', 'company_website', 'CompanyWebsite',
-      'Organization Website', 'organization_website', 'OrganizationWebsite',
-      'URL', 'url', 'Web', 'web', 'Site', 'site', 'Domain', 'domain',
-      'Company URL', 'company_url', 'Homepage', 'homepage', 'Web Address',
-      'web_address', 'WebAddress', 'company site', 'org website', 'corporate_website',
-      'corporate website', 'business_website', 'business website', 'www', 'WWW',
-      'company_domain', 'company domain', 'org_url', 'org url', 'Company Domain',
-      'Company Site', 'Organization URL', 'Org Website', 'Corp Website'
+      // Organization/Company specific
+      'Organization Website', 'organization_website', 'OrganizationWebsite', 'organization website',
+      'Company Website', 'company_website', 'CompanyWebsite', 'company website',
+      'Corporate Website', 'corporate_website', 'CorporateWebsite', 'corporate website',
+      'Business Website', 'business_website', 'BusinessWebsite', 'business website',
+      'Org Website', 'org_website', 'OrgWebsite', 'org website',
+      'Company Site', 'company_site', 'CompanySite', 'company site',
+      'Company URL', 'company_url', 'CompanyURL', 'company url',
+      'Organization URL', 'organization_url', 'OrganizationURL', 'organization url',
+      'Corporate URL', 'corporate_url', 'CorporateURL', 'corporate url',
+      'Business URL', 'business_url', 'BusinessURL', 'business url',
+      'Company Domain', 'company_domain', 'CompanyDomain', 'company domain',
+      'Organization Domain', 'organization_domain', 'OrganizationDomain', 'organization domain',
+      // Generic website fields
+      'Website', 'website', 'WEBSITE', 'Web Site', 'web_site', 'WebSite',
+      'URL', 'url', 'Url', 'Web', 'web', 'Site', 'site', 'Domain', 'domain',
+      'Homepage', 'homepage', 'HomePage', 'home_page', 'Web Address', 'web_address', 'WebAddress',
+      'WWW', 'www', 'Link', 'link', 'Web URL', 'web_url', 'WebURL'
     ];
     
+    // First pass: Look for exact column name matches
     for (const key of possibleWebsiteKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
         let website = String(row[key]).trim();
+        console.log('🎯 Found exact match for website:', { key, rawValue: website });
         
-        console.log('🔍 Found potential website value:', { key, website });
+        // Clean up the website URL
+        website = cleanWebsiteUrl(website);
         
-        // Clean up the website URL if needed
-        if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
-          // Only add https:// if it looks like a domain
-          if (website.includes('.') && !website.includes(' ') && website.length > 3) {
-            // Remove 'www.' if it's at the beginning without protocol
-            if (website.toLowerCase().startsWith('www.')) {
-              website = website.substring(4);
-            }
-            website = 'https://' + website;
-          }
-        }
-        
-        // Validate that it looks like a proper URL
-        if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
-          console.log('✅ Valid website found:', website);
+        if (isValidWebsiteUrl(website)) {
+          console.log('✅ Valid website URL found (exact match):', website);
           return website;
         }
       }
     }
     
-    // fallback: look for any key containing 'website', 'url', or 'web' (case-insensitive)
+    // Second pass: Look for columns containing website-related keywords (case-insensitive)
+    const websitePatterns = [
+      /^(organization|company|corporate|business|org)[\s_-]*(website|site|url|domain)$/i,
+      /^(website|site|url|domain)[\s_-]*(organization|company|corporate|business|org)?$/i,
+      /website/i,
+      /\burl\b/i,
+      /\bsite\b/i,
+      /\bdomain\b/i,
+      /\bweb\b/i
+    ];
+    
     for (const col in row) {
-      if (/website|url|web(?!_)|site/i.test(col) && row[col] && String(row[col]).trim() !== '') {
-        let website = String(row[col]).trim();
-        
-        console.log('🔍 Fallback found potential website value:', { column: col, website });
-        
-        // Clean up the website URL if needed
-        if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
-          // Only add https:// if it looks like a domain
-          if (website.includes('.') && !website.includes(' ') && website.length > 3) {
-            // Remove 'www.' if it's at the beginning without protocol
-            if (website.toLowerCase().startsWith('www.')) {
-              website = website.substring(4);
-            }
-            website = 'https://' + website;
+      for (const pattern of websitePatterns) {
+        if (pattern.test(col) && row[col] && String(row[col]).trim() !== '') {
+          let website = String(row[col]).trim();
+          console.log('🔍 Found pattern match for website:', { column: col, pattern: pattern.source, rawValue: website });
+          
+          // Clean up the website URL
+          website = cleanWebsiteUrl(website);
+          
+          if (isValidWebsiteUrl(website)) {
+            console.log('✅ Valid website URL found (pattern match):', website);
+            return website;
           }
-        }
-        
-        // Validate that it looks like a proper URL
-        if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
-          console.log('✅ Valid fallback website found:', website);
-          return website;
         }
       }
     }
-    console.log('❌ No website found in row');
+    
+    console.log('❌ No valid website URL found in row');
     return '';
   };
 
-  const organizationWebsite = getWebsiteValue(csvRow);
+  // Helper function to clean website URLs
+  const cleanWebsiteUrl = (website: string): string => {
+    if (!website) return '';
+    
+    // Remove whitespace
+    website = website.trim();
+    
+    // Skip if it looks like an email or LinkedIn URL
+    if (website.includes('@') || website.toLowerCase().includes('linkedin.com')) {
+      return '';
+    }
+    
+    // Add protocol if missing and it looks like a domain
+    if (!website.startsWith('http://') && !website.startsWith('https://')) {
+      if (website.includes('.') && !website.includes(' ') && website.length > 3) {
+        // Remove 'www.' if it's at the beginning without protocol
+        if (website.toLowerCase().startsWith('www.')) {
+          website = website.substring(4);
+        }
+        website = 'https://' + website;
+      }
+    }
+    
+    return website;
+  };
+
+  // Helper function to validate website URLs
+  const isValidWebsiteUrl = (url: string): boolean => {
+    if (!url) return false;
+    
+    // Must contain a dot and start with http/https
+    const hasValidFormat = url.includes('.') && (url.startsWith('http://') || url.startsWith('https://'));
+    
+    // Must not be an email or LinkedIn URL
+    const isNotEmail = !url.includes('@');
+    const isNotLinkedIn = !url.toLowerCase().includes('linkedin.com');
+    
+    // Must not contain spaces (invalid URL)
+    const hasNoSpaces = !url.includes(' ');
+    
+    // Must be reasonably long
+    const isReasonableLength = url.length > 10;
+    
+    return hasValidFormat && isNotEmail && isNotLinkedIn && hasNoSpaces && isReasonableLength;
+  };
+
+  const organizationWebsite = getOrganizationWebsiteValue(csvRow);
 
   const mappedLead = {
     first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
@@ -242,10 +293,14 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     organizationWebsite: mappedLead.organization_website,
   });
 
-  console.log('🔄 Mapped CSV row to lead:', { 
+  console.log('🔄 Final mapped lead:', { 
     originalRow: csvRow, 
-    mappedLead,
-    emailDetected: mappedLead.email ? 'Yes' : 'No',
+    mappedLead: {
+      company: mappedLead.company,
+      organizationWebsite: mappedLead.organization_website,
+      linkedin: mappedLead.linkedin,
+      email: mappedLead.email
+    },
     websiteDetected: mappedLead.organization_website ? 'Yes' : 'No',
     linkedinDetected: mappedLead.linkedin ? 'Yes' : 'No'
   });
