@@ -1,43 +1,44 @@
 
 import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Search, 
-  Filter, 
-  X, 
-  Download,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Search, Filter, X, SlidersHorizontal, Calendar, Building2, MapPin, Users, Phone, Mail, Globe, MessageSquare, Database } from 'lucide-react';
 import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
-import type { LeadStatus, Lead } from '@/types/lead';
+import type { LeadStatus, Seniority, CompanySize, Lead } from '@/types/lead';
 import type { Category } from '@/types/category';
-import { cn } from '@/lib/utils';
 
 interface MobileSearchToolbarProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
-  statusFilter: LeadStatus | 'all';
-  onStatusChange: (status: LeadStatus | 'all') => void;
+  statusFilter: string;
+  onStatusChange: (value: string) => void;
   categoryFilter: string;
-  onCategoryChange: (categoryId: string) => void;
+  onCategoryChange: (value: string) => void;
   dataAvailabilityFilter: string;
-  onDataAvailabilityChange: (filter: string) => void;
-  countryFilter: string;
-  onCountryChange: (country: string) => void;
-  duplicatePhoneFilter: string;
-  onDuplicatePhoneChange: (filter: string) => void;
-  remarksFilter: string;
-  onRemarksChange: (filter: string) => void;
+  onDataAvailabilityChange: (value: string) => void;
+  countryFilter?: string;
+  onCountryChange?: (value: string) => void;
+  duplicatePhoneFilter?: string;
+  onDuplicatePhoneChange?: (value: string) => void;
+  remarksFilter?: string;
+  onRemarksChange?: (value: string) => void;
   categories: Category[];
   leads: Lead[];
   onExport: () => void;
   onClearFilters: () => void;
   activeFiltersCount: number;
 }
+
+// All available lead statuses
+const allLeadStatuses: LeadStatus[] = [
+  'New', 'Contacted', 'Opened', 'Clicked', 'Replied', 
+  'Qualified', 'Unqualified', 'Call Back', 'Unresponsive', 
+  'Not Interested', 'Interested', 'Send Email'
+];
 
 export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
   searchTerm,
@@ -48,11 +49,11 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
   onCategoryChange,
   dataAvailabilityFilter,
   onDataAvailabilityChange,
-  countryFilter,
+  countryFilter = 'all',
   onCountryChange,
-  duplicatePhoneFilter,
+  duplicatePhoneFilter = 'all',
   onDuplicatePhoneChange,
-  remarksFilter,
+  remarksFilter = 'all',
   onRemarksChange,
   categories,
   leads,
@@ -60,191 +61,263 @@ export const MobileSearchToolbar: React.FC<MobileSearchToolbarProps> = ({
   onClearFilters,
   activeFiltersCount
 }) => {
-  const [showFilters, setShowFilters] = useState(false);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
 
-  const uniqueCountries = getUniqueCountriesFromLeads(leads);
+  // Get unique countries from leads
+  const availableCountries = getUniqueCountriesFromLeads(leads);
+
+  const handleClearAllFilters = () => {
+    onClearFilters();
+    setIsFilterSheetOpen(false);
+  };
+
+  const totalActiveFilters = activeFiltersCount + 
+    (countryFilter !== 'all' ? 1 : 0) + 
+    (duplicatePhoneFilter !== 'all' ? 1 : 0) +
+    (remarksFilter !== 'all' ? 1 : 0);
 
   return (
-    <div className="bg-background/95 backdrop-blur-sm border-b border-border/40">
-      {/* Search Bar - Optimized for small screens */}
-      <div className="px-3 sm:px-4 py-2 sm:py-3">
-        <div className="relative">
+    <div className="space-y-4 p-4">
+      {/* Search Bar and Filter Button Row */}
+      <div className="flex items-center gap-3">
+        {/* Search Bar */}
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search leads..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 pr-16 h-9 sm:h-10 text-sm border-border/50 focus:border-primary/50 bg-background/80"
+            className="pl-10 pr-10 h-11"
           />
           {searchTerm && (
             <Button
               variant="ghost"
               size="sm"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0"
               onClick={() => onSearchChange('')}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
             >
               <X className="h-3 w-3" />
             </Button>
           )}
         </div>
-      </div>
 
-      {/* Filter Toggle Row - More compact */}
-      <div className="px-3 sm:px-4 pb-2 sm:pb-3 flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className={cn(
-            "h-8 sm:h-9 text-xs sm:text-sm border-border/50 hover:bg-muted/50",
-            showFilters && "bg-muted"
-          )}
-        >
-          <Filter className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-          Filters
-          {activeFiltersCount > 0 && (
-            <Badge variant="secondary" className="ml-1 sm:ml-2 h-4 w-4 p-0 text-xs">
-              {activeFiltersCount}
-            </Badge>
-          )}
-          {showFilters ? (
-            <ChevronUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-          ) : (
-            <ChevronDown className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
-          )}
-        </Button>
-
-        <div className="flex gap-1 sm:gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExport}
-            className="h-8 sm:h-9 text-xs sm:text-sm border-border/50 hover:bg-muted/50"
-          >
-            <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline ml-2">Export</span>
-          </Button>
-
-          {activeFiltersCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearFilters}
-              className="h-8 sm:h-9 text-xs sm:text-sm border-border/50 hover:bg-muted/50 text-destructive"
-            >
-              <X className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline ml-2">Clear</span>
+        {/* Filter Button */}
+        <Sheet open={isFilterSheetOpen} onOpenChange={setIsFilterSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" size="lg" className="h-11 px-4 text-sm relative flex-shrink-0 whitespace-nowrap">
+              <Filter className="h-4 w-4 mr-2" />
+              Filters
+              {totalActiveFilters > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 text-xs flex items-center justify-center">
+                  {totalActiveFilters}
+                </Badge>
+              )}
             </Button>
-          )}
-        </div>
+          </SheetTrigger>
+          <SheetContent side="bottom" className="h-[90vh] max-h-[90vh] flex flex-col p-0">
+            <div className="flex-shrink-0 p-6 border-b">
+              <SheetHeader className="text-left">
+                <SheetTitle>Filter Leads</SheetTitle>
+                <SheetDescription>
+                  Refine your search with filters
+                </SheetDescription>
+              </SheetHeader>
+            </div>
+            
+            <div className="flex-1 min-h-0 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="p-6">
+                  <div className="space-y-8 pb-24">
+                    {/* Export Action */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Actions</h4>
+                      <Button onClick={onExport} className="w-full">
+                        Export Leads
+                      </Button>
+                    </div>
+
+                    {/* Basic Filters */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm">Basic Filters</h4>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs text-muted-foreground">Status</label>
+                          <Select value={statusFilter} onValueChange={onStatusChange}>
+                            <SelectTrigger className="h-11 w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Status</SelectItem>
+                              {allLeadStatuses.map((status) => (
+                                <SelectItem key={status} value={status}>{status}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-xs text-muted-foreground">Category</label>
+                          <Select value={categoryFilter} onValueChange={onCategoryChange}>
+                            <SelectTrigger className="h-11 w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Categories</SelectItem>
+                              {categories.map((category) => (
+                                <SelectItem key={category.id} value={category.id}>
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
+                                    {category.name}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Data & Contact Filters */}
+                    <div className="space-y-4">
+                      <h4 className="font-medium text-sm flex items-center gap-2">
+                        <Database className="h-4 w-4" />
+                        Data & Contact Information
+                      </h4>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs text-muted-foreground">Data Availability</label>
+                          <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
+                            <SelectTrigger className="h-11 w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Data</SelectItem>
+                              <SelectItem value="has-phone">Has Phone</SelectItem>
+                              <SelectItem value="has-email">Has Email</SelectItem>
+                              <SelectItem value="has-both">Has Both</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {onDuplicatePhoneChange && (
+                          <div className="space-y-2">
+                            <label className="text-xs text-muted-foreground">Phone Duplicates</label>
+                            <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
+                              <SelectTrigger className="h-11 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Phone Numbers</SelectItem>
+                                <SelectItem value="unique-only">Unique Phone Only</SelectItem>
+                                <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+
+                        {onRemarksChange && (
+                          <div className="space-y-2">
+                            <label className="text-xs text-muted-foreground">Remarks</label>
+                            <Select value={remarksFilter} onValueChange={onRemarksChange}>
+                              <SelectTrigger className="h-11 w-full">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="all">All Remarks</SelectItem>
+                                <SelectItem value="has-remarks">Has Remarks</SelectItem>
+                                <SelectItem value="no-remarks">No Remarks</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Location Filters */}
+                    {onCountryChange && availableCountries.length > 0 && (
+                      <div className="space-y-4">
+                        <h4 className="font-medium text-sm flex items-center gap-2">
+                          <MapPin className="h-4 w-4" />
+                          Location & Geography
+                        </h4>
+                        <div className="space-y-2">
+                          <label className="text-xs text-muted-foreground">Country</label>
+                          <Select value={countryFilter} onValueChange={onCountryChange}>
+                            <SelectTrigger className="h-11 w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">All Countries</SelectItem>
+                              {availableCountries.map(country => (
+                                <SelectItem key={country.code} value={country.name}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{country.flag}</span>
+                                    <span>{country.name}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </ScrollArea>
+            </div>
+
+            {/* Fixed Action Buttons */}
+            <div className="flex-shrink-0 bg-background border-t p-6">
+              <div className="flex flex-col gap-3">
+                {totalActiveFilters > 0 && (
+                  <Button variant="outline" onClick={handleClearAllFilters} className="h-11">
+                    Clear All Filters
+                  </Button>
+                )}
+                <Button onClick={() => setIsFilterSheetOpen(false)} className="h-11">
+                  Apply Filters
+                </Button>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
 
-      {/* Expandable Filters Section - Better spacing for small screens */}
-      {showFilters && (
-        <div className="px-3 sm:px-4 pb-3 border-t border-border/30 bg-muted/20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-3">
-            {/* Status Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Status</label>
-              <Select value={statusFilter} onValueChange={onStatusChange}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                  <SelectItem value="Proposal">Proposal</SelectItem>
-                  <SelectItem value="Negotiation">Negotiation</SelectItem>
-                  <SelectItem value="Closed Won">Closed Won</SelectItem>
-                  <SelectItem value="Closed Lost">Closed Lost</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Category Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Category</label>
-              <Select value={categoryFilter} onValueChange={onCategoryChange}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Data Availability Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Data</label>
-              <Select value={dataAvailabilityFilter} onValueChange={onDataAvailabilityChange}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="All Data" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Data</SelectItem>
-                  <SelectItem value="complete">Complete Data</SelectItem>
-                  <SelectItem value="missing-phone">Missing Phone</SelectItem>
-                  <SelectItem value="missing-email">Missing Email</SelectItem>
-                  <SelectItem value="missing-linkedin">Missing LinkedIn</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Country Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Country</label>
-              <Select value={countryFilter} onValueChange={onCountryChange}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="All Countries" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Countries</SelectItem>
-                  {uniqueCountries.map((country) => (
-                    <SelectItem key={country.code} value={country.name}>
-                      {country.flag} {country.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Duplicate Phone Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Phone</label>
-              <Select value={duplicatePhoneFilter} onValueChange={onDuplicatePhoneChange}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="All Phones" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="unique-only">Unique Only</SelectItem>
-                  <SelectItem value="duplicates-only">Duplicates Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Remarks Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Remarks</label>
-              <Select value={remarksFilter} onValueChange={onRemarksChange}>
-                <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm">
-                  <SelectValue placeholder="All Remarks" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="has-remarks">Has Remarks</SelectItem>
-                  <SelectItem value="no-remarks">No Remarks</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Active Filters Display */}
+      {totalActiveFilters > 0 && (
+        <div className="overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 min-w-max">
+            <span className="text-xs text-muted-foreground flex-shrink-0">Active filters:</span>
+            {statusFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Status: {statusFilter}
+              </Badge>
+            )}
+            {categoryFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Category: {categories.find((c) => c.id === categoryFilter)?.name}
+              </Badge>
+            )}
+            {dataAvailabilityFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Data: {dataAvailabilityFilter.replace('-', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+              </Badge>
+            )}
+            {countryFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Country: {countryFilter}
+              </Badge>
+            )}
+            {duplicatePhoneFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Phone: {duplicatePhoneFilter === 'unique-only' ? 'Unique Only' : 'Duplicates Only'}
+              </Badge>
+            )}
+            {remarksFilter !== 'all' && (
+              <Badge variant="secondary" className="text-xs flex-shrink-0 px-2 py-1">
+                Remarks: {remarksFilter === 'has-remarks' ? 'Has Remarks' : 'No Remarks'}
+              </Badge>
+            )}
           </div>
         </div>
       )}

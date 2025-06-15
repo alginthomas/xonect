@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -203,11 +202,6 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     await handleRemarksUpdate(leadId, remarks, remarksHistory);
   };
 
-  // Create a wrapper for status change to handle the type casting
-  const handleStatusFilterChange = (value: string) => {
-    setStatusFilter(value as LeadStatus | 'all');
-  };
-
   return (
     <div className="w-full h-full bg-background">
       {/* Mobile Layout */}
@@ -219,7 +213,7 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
               statusFilter={statusFilter}
-              onStatusChange={handleStatusFilterChange}
+              onStatusChange={setStatusFilter}
               categoryFilter={categoryFilter}
               onCategoryChange={setCategoryFilter}
               dataAvailabilityFilter={dataAvailabilityFilter}
