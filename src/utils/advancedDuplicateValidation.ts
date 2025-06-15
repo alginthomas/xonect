@@ -8,6 +8,8 @@ export interface DuplicateDetail {
   confidence: number;
   matchType: string;
   reason: string;
+  index?: number; // Added index property
+  duplicateType?: string; // Added duplicateType property
 }
 
 export interface DuplicateValidationResult {
@@ -76,7 +78,9 @@ export const validateForDuplicates = (
         matchedAgainst: match.existingLead,
         confidence: match.confidence,
         matchType: match.matchType,
-        reason: `Row ${index + 1}: ${match.matchType} match with confidence ${(match.confidence * 100).toFixed(1)}%`
+        reason: `Row ${index + 1}: ${match.matchType} match with confidence ${(match.confidence * 100).toFixed(1)}%`,
+        index,
+        duplicateType: match.matchType
       });
     });
   });
@@ -99,7 +103,9 @@ export const validateForDuplicates = (
         matchedAgainst: csvData[originalIndex] as any,
         confidence: 1.0,
         matchType: 'email',
-        reason: `Row ${index + 1} has duplicate email with row ${originalIndex + 1}`
+        reason: `Row ${index + 1} has duplicate email with row ${originalIndex + 1}`,
+        index,
+        duplicateType: 'email'
       });
     } else if (email) {
       seenEmails.set(email, index);
@@ -113,7 +119,9 @@ export const validateForDuplicates = (
         matchedAgainst: csvData[originalIndex] as any,
         confidence: 1.0,
         matchType: 'phone',
-        reason: `Row ${index + 1} has duplicate phone with row ${originalIndex + 1}`
+        reason: `Row ${index + 1} has duplicate phone with row ${originalIndex + 1}`,
+        index,
+        duplicateType: 'phone'
       });
     } else if (phone && phone.length >= 7) {
       seenPhones.set(phone, index);
@@ -127,7 +135,9 @@ export const validateForDuplicates = (
         matchedAgainst: csvData[originalIndex] as any,
         confidence: 1.0,
         matchType: 'name_company',
-        reason: `Row ${index + 1} has duplicate name+company with row ${originalIndex + 1}`
+        reason: `Row ${index + 1} has duplicate name+company with row ${originalIndex + 1}`,
+        index,
+        duplicateType: 'name_company'
       });
     } else if (nameCompany) {
       seenNameCompany.set(nameCompany, index);
