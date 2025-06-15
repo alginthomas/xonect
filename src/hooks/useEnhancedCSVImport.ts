@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mapCSVToLead } from '@/utils/csvMapping';
 import { validateForDuplicates } from '@/utils/advancedDuplicateValidation';
-import type { Lead } from '@/types/lead';
+import type { Lead, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { DuplicateValidationResult } from '@/utils/advancedDuplicateValidation';
 
 export const useEnhancedCSVImport = () => {
@@ -19,6 +19,67 @@ export const useEnhancedCSVImport = () => {
   const clearValidation = () => {
     setValidationResult(null);
   };
+
+  // Helper function to safely parse JSON arrays
+  const parseJsonArray = (jsonData: any): any[] => {
+    if (Array.isArray(jsonData)) return jsonData;
+    if (typeof jsonData === 'string') {
+      try {
+        const parsed = JSON.parse(jsonData);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Helper function to convert database row to Lead type
+  const convertDatabaseRowToLead = (lead: any): Lead => ({
+    id: lead.id,
+    firstName: lead.first_name,
+    lastName: lead.last_name,
+    email: lead.email,
+    phone: lead.phone || '',
+    company: lead.company,
+    title: lead.title,
+    linkedin: lead.linkedin || '',
+    industry: lead.industry || '',
+    location: lead.location || '',
+    seniority: lead.seniority,
+    companySize: lead.company_size,
+    status: lead.status,
+    emailsSent: lead.emails_sent,
+    completenessScore: lead.completeness_score,
+    categoryId: lead.category_id,
+    importBatchId: lead.import_batch_id,
+    userId: lead.user_id,
+    tags: parseJsonArray(lead.tags),
+    remarksHistory: parseJsonArray(lead.remarks_history).map((remark: any) => ({
+      id: remark.id || '',
+      text: remark.text || '',
+      timestamp: new Date(remark.timestamp || Date.now())
+    })) as RemarkEntry[],
+    activityLog: parseJsonArray(lead.activity_log).map((activity: any) => ({
+      id: activity.id || '',
+      type: activity.type || 'status_change',
+      description: activity.description || '',
+      oldValue: activity.oldValue,
+      newValue: activity.newValue,
+      timestamp: new Date(activity.timestamp || Date.now()),
+      userId: activity.userId
+    })) as ActivityEntry[],
+    department: lead.department,
+    personalEmail: lead.personal_email,
+    photoUrl: lead.photo_url,
+    twitterUrl: lead.twitter_url,
+    facebookUrl: lead.facebook_url,
+    organizationWebsite: lead.organization_website,
+    organizationFounded: lead.organization_founded,
+    remarks: lead.remarks,
+    createdAt: new Date(lead.created_at),
+    lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
+  });
 
   const validateCSVFile = async (
     csvData: any[],
@@ -45,39 +106,7 @@ export const useEnhancedCSVImport = () => {
       }
 
       // Convert database leads to Lead type format
-      const convertedLeads: Lead[] = (existingLeads || []).map(lead => ({
-        id: lead.id,
-        firstName: lead.first_name,
-        lastName: lead.last_name,
-        email: lead.email,
-        phone: lead.phone || '',
-        company: lead.company,
-        title: lead.title,
-        linkedin: lead.linkedin || '',
-        industry: lead.industry || '',
-        location: lead.location || '',
-        seniority: lead.seniority,
-        companySize: lead.company_size,
-        status: lead.status,
-        emailsSent: lead.emails_sent,
-        completenessScore: lead.completeness_score,
-        categoryId: lead.category_id,
-        importBatchId: lead.import_batch_id,
-        userId: lead.user_id,
-        tags: lead.tags || [],
-        remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history : [],
-        activityLog: Array.isArray(lead.activity_log) ? lead.activity_log : [],
-        department: lead.department,
-        personalEmail: lead.personal_email,
-        photoUrl: lead.photo_url,
-        twitterUrl: lead.twitter_url,
-        facebookUrl: lead.facebook_url,
-        organizationWebsite: lead.organization_website,
-        organizationFounded: lead.organization_founded,
-        remarks: lead.remarks,
-        createdAt: new Date(lead.created_at),
-        lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
-      }));
+      const convertedLeads: Lead[] = (existingLeads || []).map(convertDatabaseRowToLead);
 
       console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
 
@@ -152,39 +181,7 @@ export const useEnhancedCSVImport = () => {
       }
 
       // Convert to Lead type format for validation
-      const convertedLeads: Lead[] = (existingLeads || []).map(lead => ({
-        id: lead.id,
-        firstName: lead.first_name,
-        lastName: lead.last_name,
-        email: lead.email,
-        phone: lead.phone || '',
-        company: lead.company,
-        title: lead.title,
-        linkedin: lead.linkedin || '',
-        industry: lead.industry || '',
-        location: lead.location || '',
-        seniority: lead.seniority,
-        companySize: lead.company_size,
-        status: lead.status,
-        emailsSent: lead.emails_sent,
-        completenessScore: lead.completeness_score,
-        categoryId: lead.category_id,
-        importBatchId: lead.import_batch_id,
-        userId: lead.user_id,
-        tags: lead.tags || [],
-        remarksHistory: Array.isArray(lead.remarks_history) ? lead.remarks_history : [],
-        activityLog: Array.isArray(lead.activity_log) ? lead.activity_log : [],
-        department: lead.department,
-        personalEmail: lead.personal_email,
-        photoUrl: lead.photo_url,
-        twitterUrl: lead.twitter_url,
-        facebookUrl: lead.facebook_url,
-        organizationWebsite: lead.organization_website,
-        organizationFounded: lead.organization_founded,
-        remarks: lead.remarks,
-        createdAt: new Date(lead.created_at),
-        lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
-      }));
+      const convertedLeads: Lead[] = (existingLeads || []).map(convertDatabaseRowToLead);
 
       console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
       setImportProgress(10);
@@ -216,7 +213,7 @@ export const useEnhancedCSVImport = () => {
           category_id: selectedCategoryId,
           user_id: userId || '',
           metadata: {
-            validation_result: validationResult as any,
+            validation_result: JSON.parse(JSON.stringify(validationResult)),
             strict_mode: strictMode
           }
         })

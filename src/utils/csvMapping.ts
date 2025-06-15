@@ -12,6 +12,38 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
+  // Enhanced email detection logic
+  const getEmailValue = (row: any): string => {
+    const possibleEmailKeys = [
+      'Email', 'email', 'Email Address', 'email_address', 'EmailAddress', 
+      'e_mail', 'e-mail', 'work_email', 'work email', 'business_email',
+      'business email', 'primary_email', 'primary email', 'contact_email',
+      'contact email', 'professional_email', 'professional email'
+    ];
+    
+    for (const key of possibleEmailKeys) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+        const email = String(row[key]).trim();
+        // Basic email validation
+        if (email.includes('@') && email.includes('.')) {
+          return email;
+        }
+      }
+    }
+    
+    // fallback: look for any key containing 'email' (case-insensitive)
+    for (const col in row) {
+      if (/email/i.test(col) && row[col] && String(row[col]).trim() !== '') {
+        const email = String(row[col]).trim();
+        // Basic email validation
+        if (email.includes('@') && email.includes('.')) {
+          return email;
+        }
+      }
+    }
+    return '';
+  };
+
   // Enhanced phone number detection logic
   const getPhoneValue = (row: any): string => {
     // Try various likely candidates
@@ -19,7 +51,8 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       'Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber',
       'mobile', 'cell', 'Cell Phone', 'Mobile Phone', 'tel', 'telephone',
       'Primary Phone', 'Primary Contact', 'Contact Number', 'Contact', 
-      'phone number', 'Mobile', 'Contact No.'
+      'phone number', 'Mobile', 'Contact No.', 'work_phone', 'work phone',
+      'business_phone', 'business phone', 'office_phone', 'office phone'
     ];
     for (const key of possiblePhoneKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
@@ -42,20 +75,31 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       'Organization Website', 'organization_website', 'OrganizationWebsite',
       'URL', 'url', 'Web', 'web', 'Site', 'site', 'Domain', 'domain',
       'Company URL', 'company_url', 'Homepage', 'homepage', 'Web Address',
-      'web_address', 'WebAddress', 'company site', 'org website'
+      'web_address', 'WebAddress', 'company site', 'org website', 'corporate_website',
+      'corporate website', 'business_website', 'business website', 'www', 'WWW',
+      'company_domain', 'company domain', 'org_url', 'org url'
     ];
     
     for (const key of possibleWebsiteKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
         let website = String(row[key]).trim();
+        
         // Clean up the website URL if needed
         if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
           // Only add https:// if it looks like a domain
-          if (website.includes('.') && !website.includes(' ')) {
+          if (website.includes('.') && !website.includes(' ') && website.length > 3) {
+            // Remove 'www.' if it's at the beginning without protocol
+            if (website.toLowerCase().startsWith('www.')) {
+              website = website.substring(4);
+            }
             website = 'https://' + website;
           }
         }
-        return website;
+        
+        // Validate that it looks like a proper URL
+        if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
+          return website;
+        }
       }
     }
     
@@ -63,14 +107,23 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     for (const col in row) {
       if (/website|url|web(?!_)|site/i.test(col) && row[col] && String(row[col]).trim() !== '') {
         let website = String(row[col]).trim();
+        
         // Clean up the website URL if needed
         if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
           // Only add https:// if it looks like a domain
-          if (website.includes('.') && !website.includes(' ')) {
+          if (website.includes('.') && !website.includes(' ') && website.length > 3) {
+            // Remove 'www.' if it's at the beginning without protocol
+            if (website.toLowerCase().startsWith('www.')) {
+              website = website.substring(4);
+            }
             website = 'https://' + website;
           }
         }
-        return website;
+        
+        // Validate that it looks like a proper URL
+        if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
+          return website;
+        }
       }
     }
     return '';
@@ -79,7 +132,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
   const mappedLead = {
     first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
     last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
-    email: getFieldValue(['Email', 'email', 'Email Address', 'email_address', 'EmailAddress', 'e_mail']),
+    email: getEmailValue(csvRow), // Enhanced email mapping
     phone: getPhoneValue(csvRow),
     company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
     title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
@@ -119,12 +172,13 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     company: mappedLead.company,
     title: mappedLead.title,
     linkedin: mappedLead.linkedin,
-    organizationWebsite: mappedLead.organization_website, // Include website in completeness score
+    organizationWebsite: mappedLead.organization_website,
   });
 
   console.log('🔄 Mapped CSV row to lead:', { 
     originalRow: csvRow, 
     mappedLead,
+    emailDetected: mappedLead.email ? 'Yes' : 'No',
     websiteDetected: mappedLead.organization_website ? 'Yes' : 'No'
   });
 
@@ -136,4 +190,3 @@ export const calculateCompletenessScore = (lead: any): number => {
   const filledFields = fields.filter(field => lead[field] && lead[field].trim() !== '');
   return Math.round((filledFields.length / fields.length) * 100);
 };
-
