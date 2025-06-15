@@ -2,7 +2,7 @@
 import type { Lead } from '@/types/lead';
 
 export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
-  // Enhanced CSV field mapping with more flexible column name matching
+  // Enhanced CSV field mapping with support for nested structures
   const getFieldValue = (possibleNames: string[]): string => {
     for (const name of possibleNames) {
       if (csvRow[name] !== undefined && csvRow[name] !== null && csvRow[name] !== '') {
@@ -12,13 +12,37 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
+  // Get current employment from employment_history (most recent/current position)
+  const getCurrentEmployment = () => {
+    // Look for current employment in employment_history array
+    for (let i = 0; i < 20; i++) {
+      const currentField = `employment_history/${i}/current`;
+      const titleField = `employment_history/${i}/title`;
+      const orgNameField = `employment_history/${i}/organization_name`;
+      
+      if (csvRow[currentField] === true || csvRow[currentField] === 'true') {
+        return {
+          title: csvRow[titleField] || '',
+          company: csvRow[orgNameField] || ''
+        };
+      }
+    }
+    
+    // Fallback to first employment history entry
+    return {
+      title: csvRow['employment_history/0/title'] || '',
+      company: csvRow['employment_history/0/organization_name'] || ''
+    };
+  };
+
   // Enhanced email detection logic
   const getEmailValue = (row: any): string => {
     const possibleEmailKeys = [
-      'Email', 'email', 'Email Address', 'email_address', 'EmailAddress', 
+      'email', 'Email', 'Email Address', 'email_address', 'EmailAddress', 
       'e_mail', 'e-mail', 'work_email', 'work email', 'business_email',
       'business email', 'primary_email', 'primary email', 'contact_email',
-      'contact email', 'professional_email', 'professional email'
+      'contact email', 'professional_email', 'professional email',
+      'personal_emails/0', 'personal_emails/1', 'personal_emails/2'
     ];
     
     for (const key of possibleEmailKeys) {
@@ -47,17 +71,23 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
   // Enhanced phone number detection logic
   const getPhoneValue = (row: any): string => {
     const possiblePhoneKeys = [
+      'phone_numbers/0/sanitized_number', 'phone_numbers/0/raw_number',
+      'phone_numbers/1/sanitized_number', 'phone_numbers/1/raw_number',
+      'sanitized_phone', 'organization/sanitized_phone', 'organization/phone',
+      'organization/primary_phone/sanitized_number', 'organization/primary_phone/number',
       'Phone', 'phone', 'Phone Number', 'phone_number', 'PhoneNumber',
       'mobile', 'cell', 'Cell Phone', 'Mobile Phone', 'tel', 'telephone',
       'Primary Phone', 'Primary Contact', 'Contact Number', 'Contact', 
       'phone number', 'Mobile', 'Contact No.', 'work_phone', 'work phone',
       'business_phone', 'business phone', 'office_phone', 'office phone'
     ];
+    
     for (const key of possiblePhoneKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
         return String(row[key]).trim();
       }
     }
+    
     // fallback: look for any key containing 'phone' or 'mobile' (case-insensitive)
     for (const col in row) {
       if (/phone|mobile|tel/i.test(col) && row[col] && String(row[col]).trim() !== '') {
@@ -70,10 +100,11 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
   // Enhanced LinkedIn detection logic
   const getLinkedInValue = (row: any): string => {
     const possibleLinkedInKeys = [
-      'LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 
+      'linkedin_url', 'LinkedIn', 'linkedin', 'LinkedIn URL', 'linkedin_url', 'LinkedInURL', 
       'linkedin_profile', 'LinkedIn Profile', 'linkedin profile', 'Linkedin',
       'linkedin-url', 'linkedin link', 'LinkedIn Link', 'profile_linkedin',
-      'Profile LinkedIn', 'ln_url', 'LN URL', 'social_linkedin', 'Social LinkedIn'
+      'Profile LinkedIn', 'ln_url', 'LN URL', 'social_linkedin', 'Social LinkedIn',
+      'organization/linkedin_url', 'organization_linkedin_url'
     ];
     
     for (const key of possibleLinkedInKeys) {
@@ -128,7 +159,8 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
   // Enhanced website detection logic
   const getWebsiteValue = (row: any): string => {
     const possibleWebsiteKeys = [
-      'Website', 'website', 'Company Website', 'company_website', 'CompanyWebsite',
+      'organization/website_url', 'organization_website_url', 'organization/primary_domain',
+      'organization/blog_url', 'Website', 'website', 'Company Website', 'company_website', 'CompanyWebsite',
       'Organization Website', 'organization_website', 'OrganizationWebsite',
       'URL', 'url', 'Web', 'web', 'Site', 'site', 'Domain', 'domain',
       'Company URL', 'company_url', 'Homepage', 'homepage', 'Web Address',
@@ -186,16 +218,29 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
+  // Get current employment info
+  const currentEmployment = getCurrentEmployment();
+
   const mappedLead = {
-    first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
-    last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
+    first_name: getFieldValue(['first_name', 'First Name', 'firstName', 'FirstName', 'fname', 'given_name']),
+    last_name: getFieldValue(['last_name', 'Last Name', 'lastName', 'LastName', 'lname', 'family_name', 'surname']),
     email: getEmailValue(csvRow),
     phone: getPhoneValue(csvRow),
-    company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
-    title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
+    company: currentEmployment.company || getFieldValue([
+      'organization_name', 'organization/name', 'Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org'
+    ]),
+    title: currentEmployment.title || getFieldValue([
+      'title', 'Title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role', 'headline'
+    ]),
     linkedin: getLinkedInValue(csvRow),
-    industry: getFieldValue(['Industry', 'industry', 'sector']),
-    location: getFieldValue(['Location', 'location', 'city', 'address', 'country']),
+    industry: getFieldValue([
+      'industry', 'Industry', 'organization/industry', 'organization/industries/0', 'organization/industries/1', 'sector'
+    ]),
+    location: getFieldValue([
+      'city', 'country', 'state', 'organization_city', 'organization_country', 'organization_state',
+      'organization/city', 'organization/country', 'organization/state', 'present_raw_address',
+      'organization_raw_address', 'organization/raw_address', 'Location', 'location', 'address'
+    ]),
     seniority: 'Mid-level' as const,
     company_size: 'Small (1-50)' as const,
     status: 'New' as const,
@@ -207,14 +252,26 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     tags: [],
     remarks_history: [],
     activity_log: [],
-    department: getFieldValue(['Department', 'department', 'dept']),
-    personal_email: getFieldValue(['Personal Email', 'personal_email', 'personalEmail', 'private_email']),
-    photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
-    twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
-    facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
+    department: getFieldValue([
+      'departments/0', 'departments/1', 'departments/2', 'Department', 'department', 'dept',
+      'subdepartments/0', 'subdepartments/1', 'subdepartments/2', 'subdepartments/3', 'subdepartments/4'
+    ]),
+    personal_email: getFieldValue([
+      'personal_emails/0', 'personal_emails/1', 'personal_emails/2',
+      'Personal Email', 'personal_email', 'personalEmail', 'private_email'
+    ]),
+    photo_url: getFieldValue(['photo_url', 'Photo URL', 'photoUrl', 'image', 'avatar', 'picture']),
+    twitter_url: getFieldValue([
+      'twitter_url', 'organization/twitter_url', 'Twitter', 'twitter', 'TwitterURL'
+    ]),
+    facebook_url: getFieldValue([
+      'facebook_url', 'organization/facebook_url', 'Facebook', 'facebook', 'FacebookURL'
+    ]),
     organization_website: getWebsiteValue(csvRow),
     organization_founded: (() => {
-      const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
+      const founded = getFieldValue([
+        'organization_founded_year', 'organization/founded_year', 'Founded', 'founded', 'year_founded', 'establishment_year'
+      ]);
       return founded ? parseInt(founded) : null;
     })(),
     remarks: ''
@@ -237,7 +294,8 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     mappedLead,
     emailDetected: mappedLead.email ? 'Yes' : 'No',
     websiteDetected: mappedLead.organization_website ? 'Yes' : 'No',
-    linkedinDetected: mappedLead.linkedin ? 'Yes' : 'No'
+    linkedinDetected: mappedLead.linkedin ? 'Yes' : 'No',
+    currentEmployment
   });
 
   return mappedLead;
