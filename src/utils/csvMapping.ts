@@ -35,6 +35,47 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
+  // Enhanced website detection logic
+  const getWebsiteValue = (row: any): string => {
+    const possibleWebsiteKeys = [
+      'Website', 'website', 'Company Website', 'company_website', 'CompanyWebsite',
+      'Organization Website', 'organization_website', 'OrganizationWebsite',
+      'URL', 'url', 'Web', 'web', 'Site', 'site', 'Domain', 'domain',
+      'Company URL', 'company_url', 'Homepage', 'homepage', 'Web Address',
+      'web_address', 'WebAddress', 'company site', 'org website'
+    ];
+    
+    for (const key of possibleWebsiteKeys) {
+      if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+        let website = String(row[key]).trim();
+        // Clean up the website URL if needed
+        if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
+          // Only add https:// if it looks like a domain
+          if (website.includes('.') && !website.includes(' ')) {
+            website = 'https://' + website;
+          }
+        }
+        return website;
+      }
+    }
+    
+    // fallback: look for any key containing 'website', 'url', or 'web' (case-insensitive)
+    for (const col in row) {
+      if (/website|url|web(?!_)|site/i.test(col) && row[col] && String(row[col]).trim() !== '') {
+        let website = String(row[col]).trim();
+        // Clean up the website URL if needed
+        if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
+          // Only add https:// if it looks like a domain
+          if (website.includes('.') && !website.includes(' ')) {
+            website = 'https://' + website;
+          }
+        }
+        return website;
+      }
+    }
+    return '';
+  };
+
   const mappedLead = {
     first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
     last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
@@ -61,7 +102,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
     twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
     facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
-    organization_website: getFieldValue(['Website', 'website', 'company_website', 'url', 'web']),
+    organization_website: getWebsiteValue(csvRow), // Enhanced website mapping
     organization_founded: (() => {
       const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
       return founded ? parseInt(founded) : null;
@@ -78,15 +119,21 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     company: mappedLead.company,
     title: mappedLead.title,
     linkedin: mappedLead.linkedin,
+    organizationWebsite: mappedLead.organization_website, // Include website in completeness score
   });
 
-  console.log('🔄 Mapped CSV row to lead:', { originalRow: csvRow, mappedLead });
+  console.log('🔄 Mapped CSV row to lead:', { 
+    originalRow: csvRow, 
+    mappedLead,
+    websiteDetected: mappedLead.organization_website ? 'Yes' : 'No'
+  });
 
   return mappedLead;
 };
 
 export const calculateCompletenessScore = (lead: any): number => {
-  const fields = ['firstName', 'lastName', 'email', 'phone', 'company', 'title', 'linkedin'];
+  const fields = ['firstName', 'lastName', 'email', 'phone', 'company', 'title', 'linkedin', 'organizationWebsite'];
   const filledFields = fields.filter(field => lead[field] && lead[field].trim() !== '');
   return Math.round((filledFields.length / fields.length) * 100);
 };
+
