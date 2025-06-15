@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -12,6 +11,7 @@ import { BatchFilterIndicator } from '@/components/BatchFilterIndicator';
 import { LeadSidebar } from '@/components/LeadSidebar';
 import { EmailDialog } from '@/components/EmailDialog';
 import { DateGroupedLeads } from '@/components/ui/date-grouped-leads';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLeadsDashboardLogic } from '@/hooks/useLeadsDashboardLogic';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Users } from 'lucide-react';
@@ -274,12 +274,37 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
           <div className="flex-1 overflow-hidden">
             <Card className="apple-card h-full rounded-none border-x-0 border-b-0">
               <div className="px-3 sm:px-4 py-2 sm:py-3 border-b border-border/40">
-                <ResultsOverview
-                  filteredLeadsCount={filteredLeads.length}
-                  selectedCount={selectedLeads.size}
-                  selectedBatchId={selectedBatchId}
-                  importBatches={importBatches}
-                />
+                <div className="flex flex-col gap-3">
+                  <ResultsOverview
+                    filteredLeadsCount={filteredLeads.length}
+                    selectedCount={selectedLeads.size}
+                    selectedBatchId={selectedBatchId}
+                    importBatches={importBatches}
+                  />
+                  
+                  {/* Mobile Items Per Page Selector */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-muted-foreground">Show per page:</span>
+                    <Select
+                      value={itemsPerPage.toString()}
+                      onValueChange={(value) => {
+                        setItemsPerPage(Number(value));
+                        setCurrentPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-20 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="20">20</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
               <CardContent className="p-0 h-full overflow-auto">
                 {/* Mobile Date Grouped Leads */}
