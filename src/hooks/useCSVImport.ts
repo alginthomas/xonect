@@ -96,7 +96,15 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       const categoryId = await findOrCreateCategory(selectedCategory, categories, importName, user.id);
 
       // Map CSV data to leads format
-      const potentialLeads = csvData.map(row => mapCSVToLead(row, categoryId, null, user.id));
+      const potentialLeads = csvData.map(row => {
+        const mapped = mapCSVToLead(row, categoryId, null, user.id);
+        console.log('🔄 Mapping CSV row:', {
+          originalRow: row,
+          mappedWebsite: mapped.organization_website,
+          mappedLinkedIn: mapped.linkedin
+        });
+        return mapped;
+      });
 
       // Filter out duplicates
       const { uniqueLeads, duplicates, withinBatchDuplicates } = filterDuplicatesFromCSV(

@@ -161,7 +161,8 @@ export const useEnhancedCSVImport = () => {
       rowCount: csvData.length,
       categoryId: selectedCategoryId,
       strictMode,
-      userId
+      userId,
+      sampleRow: csvData[0]
     });
 
     setIsImporting(true);
@@ -236,6 +237,13 @@ export const useEnhancedCSVImport = () => {
         try {
           const mappedLead = mapCSVToLead(csvData[i], selectedCategoryId, importBatch.id, userId);
           
+          console.log(`🔄 Processing lead ${i + 1}:`, {
+            originalRow: csvData[i],
+            mappedWebsite: mappedLead.organization_website,
+            mappedLinkedIn: mappedLead.linkedin,
+            company: mappedLead.company
+          });
+          
           // Ensure all required fields are present and properly mapped
           const leadData = {
             first_name: mappedLead.first_name || '',
@@ -284,7 +292,10 @@ export const useEnhancedCSVImport = () => {
 
       // Step 5: Bulk insert leads
       if (leadsToInsert.length > 0) {
-        console.log('💾 Inserting leads into database...');
+        console.log('💾 Inserting leads into database...', {
+          totalLeads: leadsToInsert.length,
+          sampleLead: leadsToInsert[0]
+        });
         
         const { error: insertError } = await supabase
           .from('leads')

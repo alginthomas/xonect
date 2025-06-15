@@ -125,7 +125,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return '';
   };
 
-  // Enhanced website detection logic
+  // Enhanced website detection logic with better organization website mapping
   const getWebsiteValue = (row: any): string => {
     const possibleWebsiteKeys = [
       'Website', 'website', 'Company Website', 'company_website', 'CompanyWebsite',
@@ -134,12 +134,15 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       'Company URL', 'company_url', 'Homepage', 'homepage', 'Web Address',
       'web_address', 'WebAddress', 'company site', 'org website', 'corporate_website',
       'corporate website', 'business_website', 'business website', 'www', 'WWW',
-      'company_domain', 'company domain', 'org_url', 'org url', 'Company Domain'
+      'company_domain', 'company domain', 'org_url', 'org url', 'Company Domain',
+      'Company Site', 'Organization URL', 'Org Website', 'Corp Website'
     ];
     
     for (const key of possibleWebsiteKeys) {
       if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
         let website = String(row[key]).trim();
+        
+        console.log('🔍 Found potential website value:', { key, website });
         
         // Clean up the website URL if needed
         if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
@@ -155,6 +158,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
         
         // Validate that it looks like a proper URL
         if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
+          console.log('✅ Valid website found:', website);
           return website;
         }
       }
@@ -165,6 +169,8 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
       if (/website|url|web(?!_)|site/i.test(col) && row[col] && String(row[col]).trim() !== '') {
         let website = String(row[col]).trim();
         
+        console.log('🔍 Fallback found potential website value:', { column: col, website });
+        
         // Clean up the website URL if needed
         if (website && !website.startsWith('http://') && !website.startsWith('https://')) {
           // Only add https:// if it looks like a domain
@@ -179,12 +185,16 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
         
         // Validate that it looks like a proper URL
         if (website.includes('.') && (website.startsWith('http://') || website.startsWith('https://'))) {
+          console.log('✅ Valid fallback website found:', website);
           return website;
         }
       }
     }
+    console.log('❌ No website found in row');
     return '';
   };
+
+  const organizationWebsite = getWebsiteValue(csvRow);
 
   const mappedLead = {
     first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
@@ -212,7 +222,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
     twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
     facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
-    organization_website: getWebsiteValue(csvRow),
+    organization_website: organizationWebsite,
     organization_founded: (() => {
       const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
       return founded ? parseInt(founded) : null;
