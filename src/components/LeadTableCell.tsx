@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,23 +56,47 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
 
   const handleWebsiteAction = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('🌐 Website action triggered for lead:', {
+      leadId: lead.id,
+      organizationWebsite: lead.organizationWebsite,
+      linkedin: lead.linkedin,
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      company: lead.company
+    });
+    
     if (lead.organizationWebsite) {
       let url = lead.organizationWebsite;
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
+      console.log('🌐 Opening organization website:', url);
       window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      console.warn('🌐 No organization website found for lead:', lead.id);
     }
   };
 
   const handleLinkedInAction = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('🔗 LinkedIn action triggered for lead:', {
+      leadId: lead.id,
+      linkedin: lead.linkedin,
+      organizationWebsite: lead.organizationWebsite,
+      firstName: lead.firstName,
+      lastName: lead.lastName,
+      company: lead.company
+    });
+    
     if (lead.linkedin) {
       let url = lead.linkedin;
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'https://' + url;
       }
+      console.log('🔗 Opening LinkedIn profile:', url);
       window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      console.warn('🔗 No LinkedIn profile found for lead:', lead.id);
     }
   };
 
@@ -205,27 +228,27 @@ export const LeadTableCell: React.FC<LeadTableCellProps> = ({
       case 'actions':
         return (
           <div className="flex items-center gap-1">
-            {/* Website Button - Globe Icon for Organization Website */}
+            {/* Organization Website Button - Globe Icon */}
             {lead.organizationWebsite && (
               <Button
                 variant="ghost"
                 size="icon-sm"
                 className="h-8 w-8"
                 onClick={handleWebsiteAction}
-                title="Visit Company Website"
+                title={`Visit ${lead.company} Website`}
               >
                 <Globe className="h-4 w-4" />
               </Button>
             )}
             
-            {/* LinkedIn Button - LinkedIn Icon for LinkedIn Profile */}
+            {/* LinkedIn Profile Button - LinkedIn Icon */}
             {lead.linkedin && (
               <Button
                 variant="ghost"
                 size="icon-sm"
                 className="h-8 w-8"
                 onClick={handleLinkedInAction}
-                title="View LinkedIn Profile"
+                title={`View ${lead.firstName}'s LinkedIn Profile`}
               >
                 <Linkedin className="h-4 w-4" />
               </Button>
