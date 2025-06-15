@@ -5,9 +5,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mapCSVToLead } from '@/utils/csvMapping';
 import { validateForDuplicates } from '@/utils/advancedDuplicateValidation';
-import { validateCSVFile, scanCSVForThreats, sanitizeCSVRow } from '@/utils/security/csvSecurity';
+import { validateCSVFile as validateCSVFileSecurity, scanCSVForThreats, sanitizeCSVRow } from '@/utils/security/csvSecurity';
+import { findOrCreateCategory } from '@/utils/importBatchManager';
 import type { Lead, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { DuplicateValidationResult } from '@/utils/advancedDuplicateValidation';
+import type { Category } from '@/types/category';
 
 export const useEnhancedCSVImport = () => {
   const [isImporting, setIsImporting] = useState(false);
@@ -98,7 +100,7 @@ export const useEnhancedCSVImport = () => {
     try {
       // Security validation for file if provided
       if (csvFile) {
-        const fileValidation = validateCSVFile(csvFile);
+        const fileValidation = validateCSVFileSecurity(csvFile);
         if (!fileValidation.isValid) {
           throw new Error(`File validation failed: ${fileValidation.errors.join(', ')}`);
         }
