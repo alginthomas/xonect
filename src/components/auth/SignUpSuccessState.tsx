@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, Mail, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 
 interface SignUpSuccessStateProps {
   email: string;
@@ -42,6 +42,16 @@ const SignUpSuccessState: React.FC<SignUpSuccessStateProps> = ({
                 <li>Click the verification link in the email</li>
                 <li>You'll be automatically signed in to your account</li>
               </ol>
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-3 p-4 bg-amber-50/50 rounded-lg border border-amber-200/50">
+            <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="space-y-1">
+              <h4 className="font-semibold text-sm text-amber-900">Having trouble?</h4>
+              <p className="text-sm text-amber-800">
+                If the verification link doesn't work, try requesting a new one below. Make sure to use the same device and browser.
+              </p>
             </div>
           </div>
           

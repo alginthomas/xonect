@@ -27,6 +27,20 @@ const Auth = () => {
     const handleEmailConfirmation = async () => {
       const token = searchParams.get('token');
       const type = searchParams.get('type');
+      const error = searchParams.get('error');
+      const errorDescription = searchParams.get('error_description');
+      
+      // Handle verification errors from URL params
+      if (error) {
+        console.log('Verification error from URL:', error, errorDescription);
+        toast({
+          title: 'Email verification failed',
+          description: errorDescription || 'The verification link is invalid or has expired. Please request a new one.',
+          variant: 'destructive',
+        });
+        setAuthState('auth');
+        return;
+      }
       
       if (token && type === 'signup') {
         setAuthState('email-verified');
@@ -37,9 +51,10 @@ const Auth = () => {
           });
           
           if (error) {
+            console.log('Verification error:', error);
             toast({
               title: 'Email verification failed',
-              description: error.message,
+              description: 'The verification link is invalid or has expired. Please request a new verification email.',
               variant: 'destructive',
             });
             setAuthState('auth');
@@ -50,9 +65,10 @@ const Auth = () => {
             });
           }
         } catch (error: any) {
+          console.log('Verification catch error:', error);
           toast({
             title: 'Email verification failed',
-            description: 'There was an error verifying your email.',
+            description: 'There was an error verifying your email. Please try requesting a new verification email.',
             variant: 'destructive',
           });
           setAuthState('auth');
@@ -100,6 +116,9 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Use the current window location for the redirect
+      const redirectUrl = `${window.location.origin}/auth`;
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -107,7 +126,7 @@ const Auth = () => {
           data: {
             full_name: fullName,
           },
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
@@ -151,11 +170,13 @@ const Auth = () => {
 
     setResendLoading(true);
     try {
+      const redirectUrl = `${window.location.origin}/auth`;
+      
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
         options: {
-          emailRedirectTo: `${window.location.origin}/`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
