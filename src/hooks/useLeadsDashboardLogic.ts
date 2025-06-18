@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
@@ -60,6 +61,8 @@ export const useLeadsDashboardLogic = ({
     setDuplicatePhoneFilter,
     remarksFilter,
     setRemarksFilter,
+    batchFilter,
+    setBatchFilter,
     selectedLead,
     setSelectedLead,
     showSidebar,
@@ -166,12 +169,14 @@ export const useLeadsDashboardLogic = ({
     countryFilter,
     duplicatePhoneFilter,
     remarksFilter,
+    batchFilter,
     setStatusFilter: handleStatusFilterChange, // Use the wrapper function
     setCategoryFilter,
     setDataAvailabilityFilter,
     setCountryFilter,
     setDuplicatePhoneFilter,
     setRemarksFilter,
+    setBatchFilter,
     setSearchTerm,
     setNavigationFilter
   });
@@ -241,6 +246,8 @@ export const useLeadsDashboardLogic = ({
     setDuplicatePhoneFilter,
     remarksFilter,
     setRemarksFilter,
+    batchFilter,
+    setBatchFilter,
     sortField,
     setSortField,
     sortDirection,
