@@ -1,4 +1,3 @@
-
 import type { Lead } from '@/types/lead';
 
 export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
@@ -257,14 +256,23 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     return hasValidFormat && isNotEmail && isNotLinkedIn && hasNoSpaces && isReasonableLength;
   };
 
-  const organizationWebsite = getOrganizationWebsiteValue(csvRow);
+  // Company mapping: prefer employment_history[0].organization_name if available
+  let companyName = '';
+  if (csvRow['employment_history'] && Array.isArray(csvRow['employment_history']) && csvRow['employment_history'][0]?.organization_name) {
+    companyName = csvRow['employment_history'][0].organization_name;
+  } else if (csvRow['employment_history/0/organization_name']) {
+    // Handle flat CSVs where nested fields are flattened
+    companyName = csvRow['employment_history/0/organization_name'];
+  } else {
+    companyName = getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']);
+  }
 
   const mappedLead = {
     first_name: getFieldValue(['First Name', 'firstName', 'first_name', 'FirstName', 'fname', 'given_name']),
     last_name: getFieldValue(['Last Name', 'lastName', 'last_name', 'LastName', 'lname', 'family_name', 'surname']),
     email: getEmailValue(csvRow),
     phone: getPhoneValue(csvRow),
-    company: getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']),
+    company: companyName,
     title: getFieldValue(['Title', 'title', 'Job Title', 'job_title', 'JobTitle', 'position', 'role']),
     linkedin: getLinkedInValue(csvRow),
     industry: getFieldValue(['Industry', 'industry', 'sector']),
@@ -285,7 +293,7 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     photo_url: getFieldValue(['Photo URL', 'photo_url', 'photoUrl', 'image', 'avatar', 'picture']),
     twitter_url: getFieldValue(['Twitter', 'twitter', 'twitter_url', 'TwitterURL']),
     facebook_url: getFieldValue(['Facebook', 'facebook', 'facebook_url', 'FacebookURL']),
-    organization_website: organizationWebsite,
+    organization_website: getOrganizationWebsiteValue(csvRow),
     organization_founded: (() => {
       const founded = getFieldValue(['Founded', 'founded', 'year_founded', 'establishment_year']);
       return founded ? parseInt(founded) : null;
