@@ -24,6 +24,8 @@ interface ActiveFilterChipsProps {
   onDuplicatePhoneChange?: (value: string) => void;
   remarksFilter?: string;
   onRemarksChange?: (value: string) => void;
+  batchFilter?: string;
+  onBatchChange?: (value: string) => void;
   categories: Category[];
 }
 
@@ -40,10 +42,16 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
   onDuplicatePhoneChange,
   remarksFilter = 'all',
   onRemarksChange,
+  batchFilter = 'all',
+  onBatchChange,
   categories
 }) => {
   const getActiveFilterChips = (): FilterChip[] => {
     const chips = [];
+    
+    // Check if batch filter is active
+    const isBatchFilterActive = batchFilter !== 'all';
+    
     if (statusFilter !== 'all') {
       chips.push({
         type: 'status',
@@ -51,7 +59,9 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         onRemove: () => onStatusChange('all')
       });
     }
-    if (categoryFilter !== 'all') {
+    
+    // Only show category filter if batch filter is NOT active
+    if (!isBatchFilterActive && categoryFilter !== 'all') {
       const category = categories.find(c => c.id === categoryFilter);
       chips.push({
         type: 'category',
@@ -59,6 +69,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         onRemove: () => onCategoryChange('all')
       });
     }
+    
     if (dataAvailabilityFilter !== 'all') {
       const dataLabel = dataAvailabilityFilter.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
       chips.push({
@@ -67,6 +78,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         onRemove: () => onDataAvailabilityChange('all')
       });
     }
+    
     if (countryFilter !== 'all' && onCountryChange) {
       chips.push({
         type: 'country',
@@ -74,6 +86,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         onRemove: () => onCountryChange('all')
       });
     }
+    
     if (duplicatePhoneFilter !== 'all' && onDuplicatePhoneChange) {
       const phoneLabel = duplicatePhoneFilter === 'unique-only' ? 'Unique Phone Only' : 'Duplicates Only';
       chips.push({
@@ -82,6 +95,7 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         onRemove: () => onDuplicatePhoneChange('all')
       });
     }
+    
     if (remarksFilter !== 'all' && onRemarksChange) {
       const remarksLabel = remarksFilter === 'has-remarks' ? 'Has Remarks' : 'No Remarks';
       chips.push({
@@ -90,6 +104,16 @@ export const ActiveFilterChips: React.FC<ActiveFilterChipsProps> = ({
         onRemove: () => onRemarksChange('all')
       });
     }
+    
+    // Show batch filter chip if active
+    if (isBatchFilterActive && onBatchChange) {
+      chips.push({
+        type: 'batch',
+        label: `Batch: ${batchFilter}`,
+        onRemove: () => onBatchChange('all')
+      });
+    }
+    
     return chips;
   };
 
