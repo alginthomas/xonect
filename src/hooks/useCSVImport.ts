@@ -57,7 +57,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
     csvData: any[],
     fileName: string,
     importName: string,
-    selectedCategory: string
+    selectedCategoryName: string // Changed from selectedCategory to selectedCategoryName to be more explicit
   ) => {
     setIsImporting(true);
     
@@ -65,7 +65,7 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
       console.log('🚀 Starting CSV import:', {
         fileName,
         importName,
-        selectedCategory,
+        selectedCategoryName, // Updated log
         rowCount: csvData.length,
         sampleRow: csvData[0]
       });
@@ -92,8 +92,8 @@ export const useCSVImport = ({ onImportComplete, categories }: UseCSVImportProps
 
       console.log('📊 Fetched existing leads for duplicate check:', existingLeads.length);
 
-      // Create or find category if provided
-      const categoryId = await findOrCreateCategory(selectedCategory, categories, importName, user.id);
+      // Create or find category if provided - use category name instead of ID
+      const categoryId = await findOrCreateCategory(selectedCategoryName, categories, importName, user.id);
 
       // Map CSV data to leads format
       const potentialLeads = csvData.map(row => {

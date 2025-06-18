@@ -6,7 +6,7 @@ import { FilterControls } from '@/components/filters/FilterControls';
 import { SecondaryFilters } from '@/components/filters/SecondaryFilters';
 import { ActiveFilterChips } from '@/components/filters/ActiveFilterChips';
 import { FilterActions } from '@/components/filters/FilterActions';
-import type { Category } from '@/types/category';
+import type { Category, ImportBatch } from '@/types/category';
 import type { Lead } from '@/types/lead';
 import type { ColumnConfig } from '@/hooks/useColumnConfiguration';
 
@@ -25,8 +25,11 @@ interface DesktopFiltersProps {
   onDuplicatePhoneChange?: (value: string) => void;
   remarksFilter?: string;
   onRemarksChange?: (value: string) => void;
+  batchFilter?: string;
+  onBatchChange?: (value: string) => void;
   categories: Category[];
   leads: Lead[];
+  importBatches?: ImportBatch[];
   onExport: () => void;
   onClearFilters: () => void;
   activeFiltersCount: number;
@@ -50,8 +53,11 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onDuplicatePhoneChange,
   remarksFilter = 'all',
   onRemarksChange,
+  batchFilter = 'all',
+  onBatchChange,
   categories,
   leads,
+  importBatches = [],
   onExport,
   onClearFilters,
   activeFiltersCount,
@@ -59,11 +65,12 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
   onToggleColumnVisibility,
   onResetColumns
 }) => {
-  // Calculate total active filters including country, duplicate phone, and remarks filter
+  // Calculate total active filters including batch filter
   const totalActiveFilters = activeFiltersCount + 
     (countryFilter !== 'all' ? 1 : 0) + 
     (duplicatePhoneFilter !== 'all' ? 1 : 0) + 
-    (remarksFilter !== 'all' ? 1 : 0);
+    (remarksFilter !== 'all' ? 1 : 0) +
+    (batchFilter !== 'all' ? 1 : 0);
 
   return (
     <div className="space-y-6">
@@ -98,7 +105,10 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
                 onDuplicatePhoneChange={onDuplicatePhoneChange}
                 remarksFilter={remarksFilter}
                 onRemarksChange={onRemarksChange}
+                batchFilter={batchFilter}
+                onBatchChange={onBatchChange}
                 leads={leads}
+                importBatches={importBatches}
               />
 
               {/* Filter Summary and Actions */}

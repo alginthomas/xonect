@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { MobileSearchToolbar } from '@/components/ui/mobile-search-toolbar';
@@ -77,6 +78,8 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
     setDuplicatePhoneFilter,
     remarksFilter,
     setRemarksFilter,
+    batchFilter,
+    setBatchFilter,
     sortField,
     setSortField,
     sortDirection,
@@ -230,8 +233,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
               onDuplicatePhoneChange={handleDuplicatePhoneChange}
               remarksFilter={remarksFilter}
               onRemarksChange={handleRemarksChange}
+              batchFilter={batchFilter}
+              onBatchChange={setBatchFilter}
               categories={categories}
               leads={leads}
+              importBatches={importBatches}
               onExport={handleExport}
               onClearFilters={clearAllFilters}
               activeFiltersCount={activeFiltersCount}
@@ -375,8 +381,11 @@ export const LeadsDashboard: React.FC<LeadsDashboardProps> = ({
             onDuplicatePhoneChange={handleDuplicatePhoneChange}
             remarksFilter={remarksFilter}
             onRemarksChange={handleRemarksChange}
+            batchFilter={batchFilter}
+            onBatchChange={setBatchFilter}
             categories={categories}
             leads={leads}
+            importBatches={importBatches}
             onExport={handleExport}
             onClearFilters={clearAllFilters}
             activeFiltersCount={activeFiltersCount}
