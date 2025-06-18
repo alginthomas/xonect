@@ -136,8 +136,6 @@ export const DesktopFilters: React.FC<DesktopFiltersProps> = ({
               onDuplicatePhoneChange={onDuplicatePhoneChange}
               remarksFilter={remarksFilter}
               onRemarksChange={onRemarksChange}
-              batchFilter={batchFilter}
-              onBatchChange={onBatchChange}
               categories={categories}
             />
           </div>

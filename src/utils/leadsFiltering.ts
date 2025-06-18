@@ -113,13 +113,10 @@ export const filterLeads = ({
     console.log('After status filter:', filtered.length);
   }
 
-  // Filter by category (ONLY if not filtering by batch - batch takes precedence)
+  // Filter by category (only if not filtering by batch)
   if (!activeBatchId && selectedCategory !== 'all') {
-    console.log('Applying category filter:', selectedCategory);
     filtered = filtered.filter(lead => lead.categoryId === selectedCategory);
     console.log('After category filter:', filtered.length);
-  } else if (activeBatchId) {
-    console.log('Skipping category filter because batch filter is active');
   }
 
   // Filter by seniority
