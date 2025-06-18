@@ -6,6 +6,7 @@ import { mapCSVToLead } from '@/utils/csvMapping';
 import { validateForDuplicates } from '@/utils/advancedDuplicateValidation';
 import { findOrCreateCategory } from '@/utils/importBatchManager';
 import type { Lead, RemarkEntry, ActivityEntry } from '@/types/lead';
+import type { Category } from '@/types/category';
 import type { DuplicateValidationResult } from '@/utils/advancedDuplicateValidation';
 
 export const useEnhancedCSVImport = () => {
@@ -79,6 +80,17 @@ export const useEnhancedCSVImport = () => {
     remarks: lead.remarks || '',
     createdAt: new Date(lead.created_at),
     lastContactDate: lead.last_contact_date ? new Date(lead.last_contact_date) : undefined
+  });
+
+  // Helper function to convert database category to Category type
+  const convertDatabaseCategoryToCategory = (dbCategory: any): Category => ({
+    id: dbCategory.id,
+    name: dbCategory.name,
+    description: dbCategory.description,
+    color: dbCategory.color,
+    criteria: dbCategory.criteria,
+    createdAt: new Date(dbCategory.created_at),
+    updatedAt: new Date(dbCategory.updated_at)
   });
 
   const validateCSVFile = async (
@@ -206,10 +218,13 @@ export const useEnhancedCSVImport = () => {
           throw categoriesError;
         }
 
+        // Convert database categories to Category type format
+        const convertedCategories: Category[] = (existingCategories || []).map(convertDatabaseCategoryToCategory);
+
         // Try to find existing category or create new one
         categoryId = await findOrCreateCategory(
           selectedCategoryName,
-          existingCategories || [],
+          convertedCategories,
           importName || 'CSV Import',
           userId || ''
         );
