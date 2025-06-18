@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Check, ChevronsUpDown, Calendar, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -8,7 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import type { ImportBatch } from '@/types/category';
-
 interface BatchComboboxProps {
   batches: ImportBatch[];
   value: string;
@@ -17,7 +15,6 @@ interface BatchComboboxProps {
   className?: string;
   leadCounts?: Record<string, number>;
 }
-
 export const BatchCombobox: React.FC<BatchComboboxProps> = ({
   batches,
   value,
@@ -27,32 +24,10 @@ export const BatchCombobox: React.FC<BatchComboboxProps> = ({
   leadCounts = {}
 }) => {
   const [open, setOpen] = useState(false);
-
   const selectedBatch = batches.find(batch => batch.id === value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
+  return <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn("w-[200px] justify-between font-medium", className)}
-        >
-          {selectedBatch ? (
-            <div className="flex items-center gap-2 truncate">
-              <span className="truncate">{selectedBatch.name}</span>
-              {leadCounts[selectedBatch.id] && (
-                <Badge variant="secondary" className="text-xs">
-                  {leadCounts[selectedBatch.id]}
-                </Badge>
-              )}
-            </div>
-          ) : (
-            placeholder
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
+        
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
         <Command>
@@ -60,42 +35,24 @@ export const BatchCombobox: React.FC<BatchComboboxProps> = ({
           <CommandList>
             <CommandEmpty>No batches found.</CommandEmpty>
             <CommandGroup>
-              <CommandItem
-                onSelect={() => {
-                  onChange('all');
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === 'all' ? "opacity-100" : "opacity-0"
-                  )}
-                />
+              <CommandItem onSelect={() => {
+              onChange('all');
+              setOpen(false);
+            }}>
+                <Check className={cn("mr-2 h-4 w-4", value === 'all' ? "opacity-100" : "opacity-0")} />
                 <span className="font-medium">All Batches</span>
               </CommandItem>
-              {batches.map((batch) => (
-                <CommandItem
-                  key={batch.id}
-                  onSelect={() => {
-                    onChange(batch.id);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === batch.id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
+              {batches.map(batch => <CommandItem key={batch.id} onSelect={() => {
+              onChange(batch.id);
+              setOpen(false);
+            }}>
+                  <Check className={cn("mr-2 h-4 w-4", value === batch.id ? "opacity-100" : "opacity-0")} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <span className="font-medium truncate">{batch.name}</span>
-                      {leadCounts[batch.id] && (
-                        <Badge variant="outline" className="text-xs ml-2">
+                      {leadCounts[batch.id] && <Badge variant="outline" className="text-xs ml-2">
                           {leadCounts[batch.id]} leads
-                        </Badge>
-                      )}
+                        </Badge>}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                       <div className="flex items-center gap-1">
@@ -108,12 +65,10 @@ export const BatchCombobox: React.FC<BatchComboboxProps> = ({
                       </div>
                     </div>
                   </div>
-                </CommandItem>
-              ))}
+                </CommandItem>)}
             </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
-    </Popover>
-  );
+    </Popover>;
 };
