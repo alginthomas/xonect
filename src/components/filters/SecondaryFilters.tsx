@@ -1,7 +1,7 @@
-
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BatchCombobox } from '@/components/BatchCombobox';
+import { getUniqueCountriesFromLeads } from '@/utils/phoneUtils';
 import type { Lead } from '@/types/lead';
 import type { ImportBatch } from '@/types/category';
 
@@ -30,22 +30,9 @@ export const SecondaryFilters: React.FC<SecondaryFiltersProps> = ({
   leads,
   importBatches = []
 }) => {
-  // Extract unique countries from leads for country filter
+  // Extract unique countries from leads for country filter (using phone numbers)
   const countries = React.useMemo(() => {
-    const countrySet = new Set<string>();
-    leads.forEach(lead => {
-      if (lead.location) {
-        // Simple extraction - you might want to improve this logic
-        const parts = lead.location.split(',').map(part => part.trim());
-        if (parts.length > 0) {
-          const lastPart = parts[parts.length - 1];
-          if (lastPart && lastPart.length > 1) {
-            countrySet.add(lastPart);
-          }
-        }
-      }
-    });
-    return Array.from(countrySet).sort();
+    return getUniqueCountriesFromLeads(leads);
   }, [leads]);
 
   // Calculate lead counts per batch
@@ -70,8 +57,8 @@ export const SecondaryFilters: React.FC<SecondaryFiltersProps> = ({
           <SelectContent className="bg-white border border-border/40 shadow-lg">
             <SelectItem value="all" className="font-medium">All Countries</SelectItem>
             {countries.map(country => (
-              <SelectItem key={country} value={country} className="font-medium">
-                {country}
+              <SelectItem key={country.code} value={country.name} className="font-medium">
+                {country.flag} {country.name}
               </SelectItem>
             ))}
           </SelectContent>
