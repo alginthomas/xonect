@@ -9,6 +9,7 @@ interface FilterLeadsParams {
   leads: Lead[];
   importBatches: ImportBatch[];
   selectedBatchId?: string | null;
+  batchFilter?: string;
   searchQuery?: string;
   searchTerm?: string;
   selectedStatus: string;
@@ -28,6 +29,7 @@ export const filterLeads = ({
   leads,
   importBatches,
   selectedBatchId,
+  batchFilter,
   searchQuery,
   searchTerm,
   selectedStatus,
@@ -42,9 +44,14 @@ export const filterLeads = ({
   remarksFilter,
   navigationFilter
 }: FilterLeadsParams): Lead[] => {
+  // Use batchFilter as the primary batch filtering mechanism, fall back to selectedBatchId
+  const activeBatchId = batchFilter && batchFilter !== 'all' ? batchFilter : selectedBatchId;
+  
   console.log('Filtering leads with params:', {
     totalLeads: leads.length,
     selectedBatchId,
+    batchFilter,
+    activeBatchId,
     searchQuery: searchQuery || searchTerm || '',
     selectedStatus,
     selectedCategory,
@@ -57,10 +64,10 @@ export const filterLeads = ({
   let filtered = [...leads];
 
   // Filter by import batch FIRST if selected (highest priority)
-  if (selectedBatchId && selectedBatchId.trim() !== '') {
-    console.log('Filtering by batch ID:', selectedBatchId);
+  if (activeBatchId && activeBatchId.trim() !== '') {
+    console.log('Filtering by batch ID:', activeBatchId);
     filtered = filtered.filter(lead => {
-      const matches = lead.importBatchId === selectedBatchId;
+      const matches = lead.importBatchId === activeBatchId;
       if (matches) {
         console.log('Lead matches batch:', lead.id, lead.firstName, lead.lastName, 'batch:', lead.importBatchId);
       }
@@ -70,7 +77,7 @@ export const filterLeads = ({
     
     // If we're filtering by batch, find the batch details for category info
     if (filtered.length > 0) {
-      const batch = importBatches.find(b => b.id === selectedBatchId);
+      const batch = importBatches.find(b => b.id === activeBatchId);
       if (batch) {
         console.log('Batch details:', batch.name, 'category:', batch.categoryId);
       }
@@ -100,14 +107,14 @@ export const filterLeads = ({
   }
 
   // Filter by status (only if not using navigation filter and not filtering by batch)
-  if (!navigationFilter?.status && !selectedBatchId && selectedStatus !== 'all') {
+  if (!navigationFilter?.status && !activeBatchId && selectedStatus !== 'all') {
     console.log('Applying manual status filter:', selectedStatus);
     filtered = filtered.filter(lead => lead.status === selectedStatus);
     console.log('After status filter:', filtered.length);
   }
 
   // Filter by category (only if not filtering by batch)
-  if (!selectedBatchId && selectedCategory !== 'all') {
+  if (!activeBatchId && selectedCategory !== 'all') {
     filtered = filtered.filter(lead => lead.categoryId === selectedCategory);
     console.log('After category filter:', filtered.length);
   }

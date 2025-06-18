@@ -7,6 +7,7 @@ export const useLeadsFiltering = ({
   leads,
   importBatches,
   selectedBatchId,
+  batchFilter,
   searchQuery,
   searchTerm,
   selectedStatus,
@@ -35,6 +36,7 @@ export const useLeadsFiltering = ({
   const filterHash = useMemo(() => {
     return JSON.stringify({
       selectedBatchId,
+      batchFilter,
       searchQuery: searchQuery || searchTerm,
       selectedStatus,
       selectedCategory,
@@ -50,6 +52,7 @@ export const useLeadsFiltering = ({
     });
   }, [
     selectedBatchId,
+    batchFilter,
     searchQuery,
     searchTerm,
     selectedStatus,
@@ -80,6 +83,7 @@ export const useLeadsFiltering = ({
       leads,
       importBatches,
       selectedBatchId,
+      batchFilter,
       searchQuery,
       searchTerm,
       selectedStatus,
@@ -98,6 +102,7 @@ export const useLeadsFiltering = ({
     leads,
     importBatches,
     selectedBatchId,
+    batchFilter,
     searchQuery,
     searchTerm,
     selectedStatus,

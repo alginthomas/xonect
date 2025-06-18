@@ -8,6 +8,7 @@ export interface LeadsFilteringProps {
   leads: Lead[];
   importBatches: ImportBatch[];
   selectedBatchId?: string | null;
+  batchFilter?: string;
   searchQuery?: string;
   searchTerm?: string;
   selectedStatus: LeadStatus | 'all';

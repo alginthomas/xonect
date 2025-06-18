@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLeadsCache } from '@/hooks/useLeadsCache';
 import { useLeadsFiltering } from '@/hooks/useLeadsFiltering';
@@ -120,8 +119,9 @@ export const useLeadsDashboardLogic = ({
     leads,
     importBatches,
     selectedBatchId,
+    batchFilter, // Add batchFilter to the filtering props
     searchTerm,
-    selectedStatus: statusFilter as LeadStatus | 'all', // Use statusFilter instead of navigationFilter
+    selectedStatus: statusFilter as LeadStatus | 'all',
     selectedCategory: categoryFilter,
     selectedSeniority: 'all',
     selectedCompanySize: 'all',
