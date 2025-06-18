@@ -122,10 +122,17 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   });
 
   // Utility: Get the UUID for a category name (returns undefined if not found)
-  const getSelectedCategoryId = () => {
-    if (!selectedCategory) return undefined;
-    const found = categories.find(cat => cat.name === selectedCategory);
-    return found ? found.id : undefined;
+  const getSelectedCategoryData = () => {
+    if (!selectedCategory) return { id: undefined, name: undefined };
+    
+    // Check if it's an existing category
+    const existingCategory = categories.find(cat => cat.name === selectedCategory);
+    if (existingCategory) {
+      return { id: existingCategory.id, name: selectedCategory };
+    }
+    
+    // It's a new category name - return the name for creation
+    return { id: undefined, name: selectedCategory };
   };
 
   const handleValidate = async () => {
@@ -146,8 +153,16 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   };
 
   const handleImport = async () => {
-    const categoryId = getSelectedCategoryId(); // Use UUID, not name
-    const success = await importCSVData(csvData, fileName, importName, categoryId, true, user?.id);
+    const categoryData = getSelectedCategoryData();
+    
+    console.log('🏷️ Import with category data:', {
+      selectedCategory,
+      categoryData,
+      existingCategories: categories.map(c => ({ id: c.id, name: c.name }))
+    });
+    
+    // Pass the category name for the import process to handle creation
+    const success = await importCSVData(csvData, fileName, importName, categoryData.name, true, user?.id);
     if (success) {
       clearFile();
       onImportComplete();

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { mapCSVToLead } from '@/utils/csvMapping';
 import { validateForDuplicates } from '@/utils/advancedDuplicateValidation';
+import { findOrCreateCategory } from '@/utils/importBatchManager';
 import type { Lead, RemarkEntry, ActivityEntry } from '@/types/lead';
 import type { DuplicateValidationResult } from '@/utils/advancedDuplicateValidation';
 
@@ -140,18 +141,19 @@ export const useEnhancedCSVImport = () => {
     csvData: any[],
     fileName: string,
     importName: string,
-    selectedCategoryId?: string,
+    selectedCategoryName?: string,
     proceedAfterValidation: boolean = false,
     userId?: string
   ) => {
-    return await importLeads(csvData, selectedCategoryId, false, userId);
+    return await importLeads(csvData, selectedCategoryName, false, userId, importName);
   };
 
   const importLeads = async (
     csvData: any[],
-    selectedCategoryId?: string,
+    selectedCategoryName?: string,
     strictMode: boolean = false,
-    userId?: string
+    userId?: string,
+    importName?: string
   ) => {
     if (!csvData.length) {
       throw new Error('No data to import');
@@ -159,9 +161,10 @@ export const useEnhancedCSVImport = () => {
 
     console.log('🚀 Enhanced CSV import starting:', {
       rowCount: csvData.length,
-      categoryId: selectedCategoryId,
+      categoryName: selectedCategoryName,
       strictMode,
       userId,
+      importName,
       sampleRow: csvData[0]
     });
 
@@ -186,7 +189,37 @@ export const useEnhancedCSVImport = () => {
       console.log('📋 Fetched existing leads for validation:', convertedLeads.length);
       setImportProgress(10);
 
-      // Step 2: Validate for duplicates
+      // Step 2: Handle category creation if needed
+      let categoryId: string | undefined = undefined;
+      
+      if (selectedCategoryName && selectedCategoryName.trim()) {
+        console.log('🏷️ Processing category:', selectedCategoryName);
+        
+        // Get existing categories to check if category already exists
+        const { data: existingCategories, error: categoriesError } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('user_id', userId || '');
+
+        if (categoriesError) {
+          console.error('❌ Error fetching categories:', categoriesError);
+          throw categoriesError;
+        }
+
+        // Try to find existing category or create new one
+        categoryId = await findOrCreateCategory(
+          selectedCategoryName,
+          existingCategories || [],
+          importName || 'CSV Import',
+          userId || ''
+        );
+        
+        console.log('✅ Category processed:', { name: selectedCategoryName, id: categoryId });
+      }
+
+      setImportProgress(15);
+
+      // Step 3: Validate for duplicates
       const validationResult = validateForDuplicates(
         csvData,
         convertedLeads,
@@ -201,8 +234,8 @@ export const useEnhancedCSVImport = () => {
         throw new Error('Import blocked due to duplicate validation failures in strict mode');
       }
 
-      // Step 3: Create import batch
-      const batchName = `Import ${new Date().toLocaleString()}`;
+      // Step 4: Create import batch
+      const batchName = importName || `Import ${new Date().toLocaleString()}`;
       const { data: importBatch, error: batchError } = await supabase
         .from('import_batches')
         .insert({
@@ -210,11 +243,12 @@ export const useEnhancedCSVImport = () => {
           total_leads: csvData.length,
           successful_imports: 0,
           failed_imports: 0,
-          category_id: selectedCategoryId,
+          category_id: categoryId,
           user_id: userId || '',
           metadata: {
             validation_result: JSON.parse(JSON.stringify(validationResult)),
-            strict_mode: strictMode
+            strict_mode: strictMode,
+            category_name: selectedCategoryName
           }
         })
         .select()
@@ -228,17 +262,18 @@ export const useEnhancedCSVImport = () => {
       console.log('📦 Import batch created:', importBatch.id);
       setImportProgress(30);
 
-      // Step 4: Process and insert leads with proper field mapping
+      // Step 5: Process and insert leads with proper field mapping
       const leadsToInsert: any[] = [];
       let successCount = 0;
       let failCount = 0;
 
       for (let i = 0; i < csvData.length; i++) {
         try {
-          const mappedLead = mapCSVToLead(csvData[i], selectedCategoryId, importBatch.id, userId);
+          const mappedLead = mapCSVToLead(csvData[i], categoryId, importBatch.id, userId);
           
           console.log(`🔄 Processing lead ${i + 1}:`, {
             originalRow: csvData[i],
+            mappedCategory: categoryId,
             mappedWebsite: mappedLead.organization_website,
             mappedLinkedIn: mappedLead.linkedin,
             company: mappedLead.company
@@ -288,9 +323,9 @@ export const useEnhancedCSVImport = () => {
         setImportProgress(progress);
       }
 
-      console.log('📊 Leads processing completed:', { successCount, failCount });
+      console.log('📊 Leads processing completed:', { successCount, failCount, categoryId });
 
-      // Step 5: Bulk insert leads
+      // Step 6: Bulk insert leads
       if (leadsToInsert.length > 0) {
         console.log('💾 Inserting leads into database...', {
           totalLeads: leadsToInsert.length,
@@ -311,7 +346,7 @@ export const useEnhancedCSVImport = () => {
 
       setImportProgress(90);
 
-      // Step 6: Update import batch with final counts
+      // Step 7: Update import batch with final counts
       const { error: updateError } = await supabase
         .from('import_batches')
         .update({
@@ -326,7 +361,7 @@ export const useEnhancedCSVImport = () => {
 
       setImportProgress(100);
 
-      // Step 7: Invalidate queries to refresh data
+      // Step 8: Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ['leads'] });
       await queryClient.invalidateQueries({ queryKey: ['import-batches'] });
       await queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -336,6 +371,8 @@ export const useEnhancedCSVImport = () => {
         importedCount: successCount,
         failedCount: failCount,
         batchId: importBatch.id,
+        categoryId,
+        categoryName: selectedCategoryName,
         validationResult
       };
 
@@ -343,7 +380,7 @@ export const useEnhancedCSVImport = () => {
 
       toast({
         title: 'Import completed successfully',
-        description: `${successCount} leads imported successfully${failCount > 0 ? `, ${failCount} failed` : ''}`,
+        description: `${successCount} leads imported successfully${selectedCategoryName ? ` with category "${selectedCategoryName}"` : ''}${failCount > 0 ? `, ${failCount} failed` : ''}`,
       });
 
       return result;
