@@ -5,18 +5,24 @@ export interface FileHashResult {
   contentHash: string;
   structureHash: string;
   combinedHash: string;
+  userScopedHash: string; // New user-scoped hash
   metadata: {
     rowCount: number;
     columnCount: number;
     columnNames: string[];
     sampleRows: string[];
+    userId?: string; // Include user ID in metadata
   };
 }
 
 /**
- * Generate enhanced file hash with multiple validation layers
+ * Generate enhanced file hash with user-scoped validation
  */
-export const generateEnhancedFileHash = (csvData: any[], fileName: string): FileHashResult => {
+export const generateEnhancedFileHash = (
+  csvData: any[], 
+  fileName: string, 
+  userId?: string
+): FileHashResult => {
   // Sort and normalize CSV data for consistent hashing
   const normalizedData = csvData.map(row => {
     const normalizedRow: Record<string, string> = {};
@@ -39,6 +45,10 @@ export const generateEnhancedFileHash = (csvData: any[], fileName: string): File
   const combinedString = `${fileName}|${contentHash}|${structureHash}`;
   const combinedHash = CryptoJS.SHA256(combinedString).toString();
 
+  // User-scoped hash - includes user ID for per-user deduplication
+  const userScopedString = `${userId || 'anonymous'}|${fileName}|${contentHash}|${structureHash}`;
+  const userScopedHash = CryptoJS.SHA256(userScopedString).toString();
+
   // Extract sample rows for comparison
   const sampleRows = csvData.slice(0, 3).map(row => 
     Object.values(row).slice(0, 5).join('|')
@@ -48,31 +58,61 @@ export const generateEnhancedFileHash = (csvData: any[], fileName: string): File
     contentHash,
     structureHash,
     combinedHash,
+    userScopedHash,
     metadata: {
       rowCount: csvData.length,
       columnCount: columnNames.length,
       columnNames,
-      sampleRows
+      sampleRows,
+      userId
     }
   };
 };
 
 /**
- * Check if two files are similar based on their hashes
+ * Check if two files are similar based on their hashes (user-scoped)
  */
-export const areFilesSimilar = (hash1: FileHashResult, hash2: FileHashResult): {
+export const areFilesSimilar = (
+  hash1: FileHashResult, 
+  hash2: FileHashResult,
+  checkUserScope: boolean = true
+): {
   isIdentical: boolean;
   isSimilar: boolean;
   similarityScore: number;
   reasons: string[];
+  userScopeMatch: boolean;
 } => {
   const reasons: string[] = [];
   let similarityScore = 0;
 
-  // Check for identical content
-  const isIdentical = hash1.combinedHash === hash2.combinedHash;
+  // Check user scope first if enabled
+  const userScopeMatch = !checkUserScope || 
+    (hash1.metadata.userId === hash2.metadata.userId);
+
+  if (checkUserScope && !userScopeMatch) {
+    return { 
+      isIdentical: false, 
+      isSimilar: false, 
+      similarityScore: 0, 
+      reasons: ['Different users - no deduplication needed'],
+      userScopeMatch: false
+    };
+  }
+
+  // Check for identical content (user-scoped)
+  const isIdentical = checkUserScope ? 
+    hash1.userScopedHash === hash2.userScopedHash :
+    hash1.combinedHash === hash2.combinedHash;
+
   if (isIdentical) {
-    return { isIdentical: true, isSimilar: true, similarityScore: 1, reasons: ['Identical file content'] };
+    return { 
+      isIdentical: true, 
+      isSimilar: true, 
+      similarityScore: 1, 
+      reasons: ['Identical file content'], 
+      userScopeMatch
+    };
   }
 
   // Check structure similarity
@@ -113,5 +153,45 @@ export const areFilesSimilar = (hash1: FileHashResult, hash2: FileHashResult): {
 
   const isSimilar = similarityScore > 0.7;
 
-  return { isIdentical, isSimilar, similarityScore, reasons };
+  return { isIdentical, isSimilar, similarityScore, reasons, userScopeMatch };
+};
+
+/**
+ * Check for duplicate files by a specific user
+ */
+export const checkUserScopedDuplicates = (
+  newFileHash: FileHashResult,
+  existingHashes: FileHashResult[],
+  userId: string
+): {
+  isDuplicate: boolean;
+  duplicateHash?: FileHashResult;
+  similarity?: number;
+} => {
+  // Filter existing hashes to only include files from the same user
+  const userHashes = existingHashes.filter(hash => 
+    hash.metadata.userId === userId
+  );
+
+  for (const existingHash of userHashes) {
+    const comparison = areFilesSimilar(newFileHash, existingHash, true);
+    
+    if (comparison.isIdentical) {
+      return {
+        isDuplicate: true,
+        duplicateHash: existingHash,
+        similarity: 1.0
+      };
+    }
+    
+    if (comparison.isSimilar && comparison.similarityScore > 0.9) {
+      return {
+        isDuplicate: true,
+        duplicateHash: existingHash,
+        similarity: comparison.similarityScore
+      };
+    }
+  }
+
+  return { isDuplicate: false };
 };
