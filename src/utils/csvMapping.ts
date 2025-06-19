@@ -3,9 +3,12 @@ import type { Lead } from '@/types/lead';
 export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: string, userId?: string) => {
   // Enhanced CSV field mapping with more flexible column name matching
   const getFieldValue = (possibleNames: string[]): string => {
+    // Case-insensitive match for all possible names
     for (const name of possibleNames) {
-      if (csvRow[name] !== undefined && csvRow[name] !== null && csvRow[name] !== '') {
-        return String(csvRow[name]).trim();
+      for (const key in csvRow) {
+        if (key.toLowerCase() === name.toLowerCase() && csvRow[key] !== undefined && csvRow[key] !== null && csvRow[key] !== '') {
+          return String(csvRow[key]).trim();
+        }
       }
     }
     return '';
@@ -264,7 +267,9 @@ export const mapCSVToLead = (csvRow: any, categoryId?: string, importBatchId?: s
     // Handle flat CSVs where nested fields are flattened
     companyName = csvRow['employment_history/0/organization_name'];
   } else {
-    companyName = getFieldValue(['Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'org']);
+    companyName = getFieldValue([
+      'Company', 'company', 'Company Name', 'company_name', 'CompanyName', 'organization', 'Organization', 'Organization Name', 'organization_name', 'OrganizationName', 'org'
+    ]);
   }
 
   const mappedLead = {
