@@ -15,7 +15,8 @@ export const useEnhancedCSVImport = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
   const [validationResult, setValidationResult] = useState<DuplicateValidationResult | null>(null);
-  const [fileHashHistory, setFileHashHistory] = useState<FileHashResult[]>([]);
+  // Change: Make file hash history user-scoped with a Map
+  const [userFileHashHistory, setUserFileHashHistory] = useState<Map<string, FileHashResult[]>>(new Map());
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -95,7 +96,7 @@ export const useEnhancedCSVImport = () => {
     updatedAt: new Date(dbCategory.updated_at)
   });
 
-  // Check for file duplicates with user scoping
+  // Enhanced user-scoped file deduplication check
   const checkFileDeduplication = async (
     csvData: any[],
     fileName: string,
@@ -107,26 +108,33 @@ export const useEnhancedCSVImport = () => {
     similarity?: number;
   }> => {
     try {
-      console.log('🔍 Checking file deduplication for user:', userId, 'fileType:', fileType);
+      console.log('🔍 Checking user-scoped file deduplication:', { userId, fileName, fileType });
       
-      // Generate hash for the new file
+      // Generate hash for the new file with user scoping
       const newFileHash = generateEnhancedFileHash(csvData, fileName, userId, fileType);
       
-      // Check against existing file hashes for this user only
+      // Get user's existing file history
+      const userHashes = userFileHashHistory.get(userId) || [];
+      
+      console.log('📋 User file history count:', userHashes.length);
+      
+      // Check for duplicates only within this user's uploads
       const userScopedDuplication = checkUserScopedDuplicates(
         newFileHash, 
-        fileHashHistory, 
+        userHashes, 
         userId
       );
       
-      // Add to history for future checks
-      setFileHashHistory(prev => [...prev, newFileHash]);
+      // Add to user's history for future checks
+      const updatedUserHashes = [...userHashes, newFileHash];
+      setUserFileHashHistory(prev => new Map(prev.set(userId, updatedUserHashes)));
       
-      console.log('📊 File deduplication result:', {
+      console.log('📊 User-scoped file deduplication result:', {
         isDuplicate: userScopedDuplication.isDuplicate,
         similarity: userScopedDuplication.similarity,
         userId,
-        fileType
+        fileType,
+        userHashCount: updatedUserHashes.length
       });
       
       return {
@@ -135,7 +143,7 @@ export const useEnhancedCSVImport = () => {
         similarity: userScopedDuplication.similarity
       };
     } catch (error) {
-      console.error('❌ File deduplication check failed:', error);
+      console.error('❌ User-scoped file deduplication check failed:', error);
       return { isDuplicate: false };
     }
   };
@@ -160,7 +168,7 @@ export const useEnhancedCSVImport = () => {
     try {
       console.log('🚀 Starting user-scoped CSV validation:', { userId, fileName, fileType });
 
-      // Check file deduplication first (user-scoped)
+      // Check file deduplication first (strictly user-scoped)
       const fileDuplication = await checkFileDeduplication(csvData, fileName, userId, fileType);
       
       if (fileDuplication.isDuplicate) {
@@ -170,27 +178,26 @@ export const useEnhancedCSVImport = () => {
           variant: 'default',
         });
         
-        // Still allow validation but warn user
         console.log('⚠️ Duplicate file detected for user, proceeding with validation');
       }
 
-      // Get existing leads for duplicate validation (user-scoped)
+      // Get existing leads for duplicate validation (user-scoped only)
       const { data: existingLeads, error: leadsError } = await supabase
         .from('leads')
         .select('*')
         .eq('user_id', userId);
 
       if (leadsError) {
-        console.error('❌ Error fetching existing leads:', leadsError);
+        console.error('❌ Error fetching user leads:', leadsError);
         throw leadsError;
       }
 
       // Convert database leads to Lead type format
       const convertedLeads: Lead[] = (existingLeads || []).map(convertDatabaseRowToLead);
 
-      console.log('📋 Fetched existing leads for validation (user-scoped):', convertedLeads.length);
+      console.log('📋 Fetched existing leads for user validation:', { userId, leadCount: convertedLeads.length });
 
-      // Validate for duplicates (already user-scoped)
+      // Validate for duplicates (user-scoped)
       const validationResult = validateForDuplicates(
         csvData,
         convertedLeads,
@@ -198,12 +205,12 @@ export const useEnhancedCSVImport = () => {
         userId
       );
 
-      console.log('🔍 Validation completed:', validationResult);
+      console.log('🔍 User-scoped validation completed:', validationResult);
       setValidationResult(validationResult);
 
       return validationResult;
     } catch (error: any) {
-      console.error('❌ Validation failed:', error);
+      console.error('❌ User-scoped validation failed:', error);
       
       toast({
         title: 'Validation failed',
@@ -260,53 +267,53 @@ export const useEnhancedCSVImport = () => {
     setImportProgress(0);
 
     try {
-      // Step 1: Check file deduplication (user-scoped)
+      // Step 1: Check file deduplication (strictly user-scoped)
       if (fileName) {
         const fileDuplication = await checkFileDeduplication(csvData, fileName, userId, fileType);
         
         if (fileDuplication.isDuplicate && strictMode) {
-          throw new Error(`Duplicate file detected. You have already uploaded a similar file with ${((fileDuplication.similarity || 0) * 100).toFixed(0)}% similarity.`);
+          throw new Error(`You have already uploaded a similar file with ${((fileDuplication.similarity || 0) * 100).toFixed(0)}% similarity. Enable non-strict mode to proceed anyway.`);
         }
       }
 
-      // Get existing leads for duplicate validation (user-scoped)
+      // Get existing leads for duplicate validation (user-scoped only)
       const { data: existingLeads, error: leadsError } = await supabase
         .from('leads')
         .select('*')
         .eq('user_id', userId);
 
       if (leadsError) {
-        console.error('❌ Error fetching existing leads:', leadsError);
+        console.error('❌ Error fetching user leads:', leadsError);
         throw leadsError;
       }
 
       // Convert to Lead type format for validation
       const convertedLeads: Lead[] = (existingLeads || []).map(convertDatabaseRowToLead);
 
-      console.log('📋 Fetched existing leads for validation (user-scoped):', convertedLeads.length);
+      console.log('📋 Fetched existing leads for user import:', { userId, leadCount: convertedLeads.length });
       setImportProgress(10);
 
-      // Step 2: Handle category creation if needed
+      // Step 2: Handle category creation if needed (user-scoped)
       let categoryId: string | undefined = undefined;
       
       if (selectedCategoryName && selectedCategoryName.trim()) {
-        console.log('🏷️ Processing category:', selectedCategoryName);
+        console.log('🏷️ Processing category for user:', { userId, categoryName: selectedCategoryName });
         
-        // Get existing categories to check if category already exists (user-scoped)
+        // Get existing categories for this user only
         const { data: existingCategories, error: categoriesError } = await supabase
           .from('categories')
           .select('*')
           .eq('user_id', userId);
 
         if (categoriesError) {
-          console.error('❌ Error fetching categories:', categoriesError);
+          console.error('❌ Error fetching user categories:', categoriesError);
           throw categoriesError;
         }
 
         // Convert database categories to Category type format
         const convertedCategories: Category[] = (existingCategories || []).map(convertDatabaseCategoryToCategory);
 
-        // Try to find existing category or create new one
+        // Try to find existing category or create new one for this user
         categoryId = await findOrCreateCategory(
           selectedCategoryName,
           convertedCategories,
@@ -314,7 +321,7 @@ export const useEnhancedCSVImport = () => {
           userId
         );
         
-        console.log('✅ Category processed:', { name: selectedCategoryName, id: categoryId });
+        console.log('✅ Category processed for user:', { userId, categoryName: selectedCategoryName, categoryId });
       }
 
       setImportProgress(15);
@@ -327,7 +334,7 @@ export const useEnhancedCSVImport = () => {
         userId
       );
 
-      console.log('🔍 Duplicate validation completed (user-scoped):', validationResult);
+      console.log('🔍 User-scoped duplicate validation completed:', validationResult);
       setImportProgress(20);
 
       if (!validationResult.canProceed) {
@@ -477,7 +484,7 @@ export const useEnhancedCSVImport = () => {
         validationResult
       };
 
-      console.log('🎉 Enhanced CSV import completed (user-scoped):', result);
+      console.log('🎉 Enhanced user-scoped CSV import completed:', result);
 
       toast({
         title: 'Import completed successfully',
