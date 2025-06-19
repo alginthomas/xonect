@@ -99,17 +99,18 @@ export const useEnhancedCSVImport = () => {
   const checkFileDeduplication = async (
     csvData: any[],
     fileName: string,
-    userId: string
+    userId: string,
+    fileType?: string
   ): Promise<{
     isDuplicate: boolean;
     duplicateInfo?: FileHashResult;
     similarity?: number;
   }> => {
     try {
-      console.log('🔍 Checking file deduplication for user:', userId);
+      console.log('🔍 Checking file deduplication for user:', userId, 'fileType:', fileType);
       
       // Generate hash for the new file
-      const newFileHash = generateEnhancedFileHash(csvData, fileName, userId);
+      const newFileHash = generateEnhancedFileHash(csvData, fileName, userId, fileType);
       
       // Check against existing file hashes for this user only
       const userScopedDuplication = checkUserScopedDuplicates(
@@ -124,7 +125,8 @@ export const useEnhancedCSVImport = () => {
       console.log('📊 File deduplication result:', {
         isDuplicate: userScopedDuplication.isDuplicate,
         similarity: userScopedDuplication.similarity,
-        userId
+        userId,
+        fileType
       });
       
       return {
@@ -142,7 +144,8 @@ export const useEnhancedCSVImport = () => {
     csvData: any[],
     fileName: string,
     strictMode: boolean = false,
-    userId?: string
+    userId?: string,
+    fileType?: string
   ) => {
     if (!csvData.length) {
       throw new Error('No data to validate');
@@ -155,10 +158,10 @@ export const useEnhancedCSVImport = () => {
     setIsValidating(true);
 
     try {
-      console.log('🚀 Starting user-scoped CSV validation:', { userId, fileName });
+      console.log('🚀 Starting user-scoped CSV validation:', { userId, fileName, fileType });
 
       // Check file deduplication first (user-scoped)
-      const fileDuplication = await checkFileDeduplication(csvData, fileName, userId);
+      const fileDuplication = await checkFileDeduplication(csvData, fileName, userId, fileType);
       
       if (fileDuplication.isDuplicate) {
         toast({
@@ -220,9 +223,10 @@ export const useEnhancedCSVImport = () => {
     importName: string,
     selectedCategoryName?: string,
     proceedAfterValidation: boolean = false,
-    userId?: string
+    userId?: string,
+    fileType?: string
   ) => {
-    return await importLeads(csvData, selectedCategoryName, false, userId, importName, fileName);
+    return await importLeads(csvData, selectedCategoryName, false, userId, importName, fileName, fileType);
   };
 
   const importLeads = async (
@@ -231,7 +235,8 @@ export const useEnhancedCSVImport = () => {
     strictMode: boolean = false,
     userId?: string,
     importName?: string,
-    fileName?: string
+    fileName?: string,
+    fileType?: string
   ) => {
     if (!csvData.length) {
       throw new Error('No data to import');
@@ -257,7 +262,7 @@ export const useEnhancedCSVImport = () => {
     try {
       // Step 1: Check file deduplication (user-scoped)
       if (fileName) {
-        const fileDuplication = await checkFileDeduplication(csvData, fileName, userId);
+        const fileDuplication = await checkFileDeduplication(csvData, fileName, userId, fileType);
         
         if (fileDuplication.isDuplicate && strictMode) {
           throw new Error(`Duplicate file detected. You have already uploaded a similar file with ${((fileDuplication.similarity || 0) * 100).toFixed(0)}% similarity.`);

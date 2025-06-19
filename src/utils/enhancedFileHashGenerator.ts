@@ -5,13 +5,14 @@ export interface FileHashResult {
   contentHash: string;
   structureHash: string;
   combinedHash: string;
-  userScopedHash: string; // New user-scoped hash
+  userScopedHash: string;
   metadata: {
     rowCount: number;
     columnCount: number;
     columnNames: string[];
     sampleRows: string[];
-    userId?: string; // Include user ID in metadata
+    userId?: string;
+    fileType?: string;
   };
 }
 
@@ -21,12 +22,32 @@ export interface FileHashResult {
 export const generateEnhancedFileHash = (
   csvData: any[], 
   fileName: string, 
-  userId?: string
+  userId?: string,
+  fileType?: string
 ): FileHashResult => {
+  // Handle empty data
+  if (!csvData || csvData.length === 0) {
+    const emptyHash = CryptoJS.SHA256('empty').toString();
+    return {
+      contentHash: emptyHash,
+      structureHash: emptyHash,
+      combinedHash: emptyHash,
+      userScopedHash: emptyHash,
+      metadata: {
+        rowCount: 0,
+        columnCount: 0,
+        columnNames: [],
+        sampleRows: [],
+        userId,
+        fileType
+      }
+    };
+  }
+
   // Sort and normalize CSV data for consistent hashing
   const normalizedData = csvData.map(row => {
     const normalizedRow: Record<string, string> = {};
-    Object.keys(row).sort().forEach(key => {
+    Object.keys(row || {}).sort().forEach(key => {
       normalizedRow[key.toLowerCase().trim()] = String(row[key] || '').toLowerCase().trim();
     });
     return normalizedRow;
@@ -38,20 +59,20 @@ export const generateEnhancedFileHash = (
 
   // Structure hash - based on column names and data types
   const columnNames = Object.keys(csvData[0] || {}).sort();
-  const structureString = columnNames.join('|') + '|' + csvData.length;
+  const structureString = columnNames.join('|') + '|' + csvData.length + '|' + (fileType || '');
   const structureHash = CryptoJS.SHA256(structureString).toString();
 
   // Combined hash for overall file identification
-  const combinedString = `${fileName}|${contentHash}|${structureHash}`;
+  const combinedString = `${fileName}|${contentHash}|${structureHash}|${fileType || ''}`;
   const combinedHash = CryptoJS.SHA256(combinedString).toString();
 
   // User-scoped hash - includes user ID for per-user deduplication
-  const userScopedString = `${userId || 'anonymous'}|${fileName}|${contentHash}|${structureHash}`;
+  const userScopedString = `${userId || 'anonymous'}|${fileName}|${contentHash}|${structureHash}|${fileType || ''}`;
   const userScopedHash = CryptoJS.SHA256(userScopedString).toString();
 
   // Extract sample rows for comparison
   const sampleRows = csvData.slice(0, 3).map(row => 
-    Object.values(row).slice(0, 5).join('|')
+    Object.values(row || {}).slice(0, 5).join('|')
   );
 
   return {
@@ -64,7 +85,8 @@ export const generateEnhancedFileHash = (
       columnCount: columnNames.length,
       columnNames,
       sampleRows,
-      userId
+      userId,
+      fileType
     }
   };
 };

@@ -1,6 +1,5 @@
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +14,7 @@ import { CategoryCombobox } from '@/components/CategoryCombobox';
 import { useEnhancedCSVImport } from '@/hooks/useEnhancedCSVImport';
 import { useImportBatchOperations } from '@/hooks/useImportBatchOperations';
 import { DuplicateValidationReport } from '@/components/DuplicateValidationReport';
+import { parseFile, supportedFileTypes } from '@/utils/fileTypeHandlers';
 import type { Category, ImportBatch } from '@/types/category';
 import type { Lead } from '@/types/lead';
 import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction } from '@/components/ui/alert-dialog';
@@ -38,6 +38,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
 }) => {
   const [csvData, setCsvData] = useState<any[]>([]);
   const [fileName, setFileName] = useState('');
+  const [fileType, setFileType] = useState('');
   const [fileError, setFileError] = useState<string | null>(null);
   const [importName, setImportName] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -46,6 +47,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const [deletingBatchName, setDeletingBatchName] = useState<string | null>(null);
   const [showValidationReport, setShowValidationReport] = useState(false);
   const [strictMode, setStrictMode] = useState(false);
+  const [isProcessingFile, setIsProcessingFile] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -66,6 +68,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   const clearFile = useCallback(() => {
     setCsvData([]);
     setFileName('');
+    setFileType('');
     setFileError(null);
     setImportName('');
     setSelectedCategory('');
@@ -75,38 +78,38 @@ export const CSVImport: React.FC<CSVImportProps> = ({
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
+    if (!file) return;
+
+    console.log('📁 File dropped:', { name: file.name, type: file.type, size: file.size });
+    
     setFileName(file.name);
+    setFileType(file.type);
     setFileError(null);
     setShowValidationReport(false);
+    setIsProcessingFile(true);
     clearValidation();
 
     // Auto-generate import name from file name
     const nameWithoutExtension = file.name.replace(/\.[^/.]+$/, "");
     setImportName(nameWithoutExtension);
     
-    const reader = new FileReader();
-    reader.onload = async e => {
-      const fileContent = e.target?.result as string;
-      Papa.parse(fileContent, {
-        header: true,
-        skipEmptyLines: true,
-        complete: results => {
-          if (results.errors.length > 0) {
-            setFileError(`CSV parsing error: ${results.errors.map(e => e.message).join(', ')}`);
-            return;
-          }
-          if (results.data.length === 0) {
-            setFileError('No data found in CSV file.');
-            return;
-          }
-          setCsvData(results.data);
-        },
-        error: error => {
-          setFileError(`CSV parsing error: ${error.message}`);
-        }
+    // Use the enhanced file parser
+    parseFile(file)
+      .then(result => {
+        console.log('✅ File parsed successfully:', {
+          fileType: result.fileType,
+          headers: result.headers,
+          rowCount: result.data.length
+        });
+        
+        setCsvData(result.data);
+        setIsProcessingFile(false);
+      })
+      .catch(error => {
+        console.error('❌ File parsing failed:', error);
+        setFileError(error.message);
+        setIsProcessingFile(false);
       });
-    };
-    reader.readAsText(file);
   }, [clearValidation]);
 
   const {
@@ -115,9 +118,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     isDragActive
   } = useDropzone({
     onDrop,
-    accept: {
-      'text/csv': ['.csv']
-    },
+    accept: supportedFileTypes,
     maxFiles: 1
   });
 
@@ -137,7 +138,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
 
   const handleValidate = async () => {
     if (csvData.length === 0) {
-      setFileError('No data to validate. Please upload a CSV file.');
+      setFileError('No data to validate. Please upload a file.');
       return;
     }
     if (!importName.trim()) {
@@ -145,7 +146,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
       return;
     }
     try {
-      await validateCSVFile(csvData, fileName, strictMode, user?.id);
+      await validateCSVFile(csvData, fileName, strictMode, user?.id, fileType);
       setShowValidationReport(true);
     } catch (error) {
       console.error('Validation failed:', error);
@@ -162,7 +163,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     });
     
     // Pass the category name for the import process to handle creation
-    const success = await importCSVData(csvData, fileName, importName, categoryData.name, true, user?.id);
+    const success = await importCSVData(csvData, fileName, importName, categoryData.name, true, user?.id, fileType);
     if (success) {
       clearFile();
       onImportComplete();
@@ -170,9 +171,20 @@ export const CSVImport: React.FC<CSVImportProps> = ({
   };
 
   const getStatusIcon = () => {
+    if (isProcessingFile) return <Upload className="h-5 w-5 text-blue-500 animate-pulse" />;
     if (fileError) return <XCircle className="h-5 w-5 text-destructive" />;
     if (fileName && csvData.length > 0) return <CheckCircle2 className="h-5 w-5 text-green-500" />;
     return <Upload className="h-8 w-8 text-muted-foreground" />;
+  };
+
+  const getFileTypeDisplay = () => {
+    if (!fileType && !fileName) return '';
+    
+    if (fileName.endsWith('.csv')) return 'CSV';
+    if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) return 'Excel';
+    if (fileName.endsWith('.tsv')) return 'TSV';
+    if (fileName.endsWith('.json')) return 'JSON';
+    return fileType;
   };
 
   const getStatusBadgeVariant = (batch: ImportBatch): "default" | "secondary" | "destructive" => {
@@ -205,7 +217,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
     setDeletingBatchName(null);
   };
 
-  const isReadyToValidate = csvData.length > 0 && !fileError && importName.trim() !== '';
+  const isReadyToValidate = csvData.length > 0 && !fileError && importName.trim() !== '' && !isProcessingFile;
   const isReadyToImport = showValidationReport && validationResult?.canProceed && !isImporting;
 
   return (
@@ -235,7 +247,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   </div>
                   <h1 className="text-2xl font-semibold">Import Leads</h1>
                   <p className="text-muted-foreground max-w-md mx-auto text-sm sm:text-base">
-                    Upload your CSV file to import leads. Enhanced duplicate detection ensures data quality.
+                    Upload your CSV, Excel, TSV, or JSON file to import leads. Enhanced duplicate detection ensures data quality.
                   </p>
                 </div>
 
@@ -244,10 +256,10 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                   <CardHeader className="pb-4">
                     <CardTitle className="flex items-center gap-2 text-lg">
                       <FileText className="h-5 w-5" />
-                      Upload CSV File
+                      Upload Data File
                     </CardTitle>
                     <CardDescription className="text-sm">
-                      Drag and drop your CSV file here, or click to browse
+                      Drag and drop your file here, or click to browse. Supports CSV, Excel (.xlsx/.xls), TSV, and JSON files.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
@@ -257,34 +269,45 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                         ${isDragActive ? 'border-primary bg-primary/5 scale-[1.02]' : 'border-border hover:border-primary/50 hover:bg-muted/30'}
                         ${fileError ? 'border-destructive/50 bg-destructive/5' : ''}
                         ${fileName && !fileError ? 'border-green-500/50 bg-green-50/50' : ''}
+                        ${isProcessingFile ? 'border-blue-500/50 bg-blue-50/50' : ''}
                       `}>
                       <input {...getInputProps()} />
                       
                       {getStatusIcon()}
                       
                       <div className="text-center space-y-2">
-                        {isDragActive ? (
+                        {isProcessingFile ? (
+                          <div className="space-y-1">
+                            <p className="text-blue-600 font-medium">Processing file...</p>
+                            <p className="text-sm text-blue-500">Parsing {getFileTypeDisplay()} file</p>
+                          </div>
+                        ) : isDragActive ? (
                           <p className="text-primary font-medium">Drop the file here...</p>
                         ) : fileName ? (
                           <div className="space-y-1">
                             <p className="font-medium text-foreground text-sm sm:text-base">{fileName}</p>
-                            {csvData.length > 0 && (
-                              <p className="text-sm text-muted-foreground">
-                                {csvData.length} rows detected
-                              </p>
-                            )}
+                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                              {getFileTypeDisplay() && (
+                                <Badge variant="outline" className="text-xs">
+                                  {getFileTypeDisplay()}
+                                </Badge>
+                              )}
+                              {csvData.length > 0 && (
+                                <span>{csvData.length} rows detected</span>
+                              )}
+                            </div>
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <p className="text-foreground font-medium text-sm sm:text-base">Choose a CSV file or drag it here</p>
+                            <p className="text-foreground font-medium text-sm sm:text-base">Choose a file or drag it here</p>
                             <p className="text-xs sm:text-sm text-muted-foreground">
-                              Enhanced duplicate detection included
+                              CSV, Excel, TSV, or JSON • Enhanced duplicate detection included
                             </p>
                           </div>
                         )}
                       </div>
                       
-                      {!fileName && (
+                      {!fileName && !isProcessingFile && (
                         <Button variant="outline" size="sm" className="mt-2">
                           Browse Files
                         </Button>
@@ -300,7 +323,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                             Data Preview
                           </CardTitle>
                           <CardDescription className="text-blue-700">
-                            First 5 rows of your CSV data
+                            First 5 rows of your data
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
@@ -414,7 +437,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                         <Button 
                           variant="outline" 
                           onClick={clearFile} 
-                          disabled={isValidating || isImporting} 
+                          disabled={isValidating || isImporting || isProcessingFile} 
                           className="w-full sm:w-auto min-w-[140px] order-2 sm:order-1" 
                           size="lg"
                         >
@@ -429,7 +452,7 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                         size="lg"
                       >
                         <Shield className="h-4 w-4 mr-2" />
-                        {isValidating ? 'Validating...' : 'Validate & Preview'}
+                        {isProcessingFile ? 'Processing...' : isValidating ? 'Validating...' : 'Validate & Preview'}
                       </Button>
                     </div>
                   </CardContent>
@@ -469,21 +492,21 @@ export const CSVImport: React.FC<CSVImportProps> = ({
                 <CardContent>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Supported Files</h4>
+                      <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>• CSV files (.csv)</li>
+                        <li>• Excel files (.xlsx, .xls)</li>
+                        <li>• TSV files (.tsv)</li>
+                        <li>• JSON files (.json)</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-2">
                       <h4 className="font-medium text-sm">Required Columns</h4>
                       <ul className="text-sm text-muted-foreground space-y-1">
                         <li>• First Name</li>
                         <li>• Last Name</li>
                         <li>• Email</li>
                         <li>• Company</li>
-                      </ul>
-                    </div>
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Enhanced Features</h4>
-                      <ul className="text-sm text-muted-foreground space-y-1">
-                        <li>• File duplicate detection</li>
-                        <li>• Advanced lead matching</li>
-                        <li>• Detailed validation reports</li>
-                        <li>• Fuzzy name matching</li>
                       </ul>
                     </div>
                   </div>
