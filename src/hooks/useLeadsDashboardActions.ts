@@ -75,14 +75,44 @@ export const useLeadsDashboardActions = ({
   };
 
   const handleStatusChange = async (leadId: string, status: LeadStatus) => {
+    const currentLead = leads.find(lead => lead.id === leadId);
+    if (!currentLead) {
+      console.error('Lead not found for status update:', leadId);
+      toast({
+        title: 'Update failed',
+        description: 'Lead not found. Please refresh and try again.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Prevent unnecessary updates
+    if (currentLead.status === status) {
+      console.log('Status unchanged, skipping update');
+      return;
+    }
+
+    console.log(`Updating lead ${leadId} status from ${currentLead.status} to ${status}`);
+
     try {
-      // Update only the status, preserving all other data
-      await onUpdateLead(leadId, { status });
+      // Create minimal update object with only the status field
+      const statusUpdate: Partial<Lead> = { 
+        status,
+        // Ensure we preserve the current updated timestamp
+        lastContactDate: status === 'Contacted' ? new Date() : currentLead.lastContactDate
+      };
+
+      // Perform the update with optimistic UI update
+      await onUpdateLead(leadId, statusUpdate);
+      
+      console.log(`Successfully updated lead ${leadId} status to ${status}`);
+      
       toast({
         title: 'Status updated',
         description: `Lead status updated to ${status}`
       });
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating lead status:', error);
       toast({
         title: 'Update failed',
         description: 'Failed to update status. Please try again.',
@@ -113,10 +143,12 @@ export const useLeadsDashboardActions = ({
         timestamp: entry.timestamp instanceof Date ? entry.timestamp : new Date(entry.timestamp)
       }));
 
-      // Create minimal update object - ONLY what changed
+      // Create minimal update object - ONLY what changed, preserving status
       const updateData: Partial<Lead> = { 
         remarks,
-        remarksHistory: processedHistory
+        remarksHistory: processedHistory,
+        // Explicitly preserve the current status to prevent reset
+        status: currentLead.status
       };
 
       // Perform the update

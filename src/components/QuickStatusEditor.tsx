@@ -8,12 +8,14 @@ interface QuickStatusEditorProps {
   status: LeadStatus;
   onChange: (status: LeadStatus) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export const QuickStatusEditor: React.FC<QuickStatusEditorProps> = ({
   status,
   onChange,
-  className = ""
+  className = "",
+  disabled = false
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -39,10 +41,19 @@ export const QuickStatusEditor: React.FC<QuickStatusEditorProps> = ({
     'Not Interested', 'Interested', 'Send Email'
   ];
 
+  const handleStatusChange = (newStatus: string) => {
+    console.log(`QuickStatusEditor: Changing status from ${status} to ${newStatus}`);
+    onChange(newStatus as LeadStatus);
+  };
+
   return (
-    <Select value={status} onValueChange={onChange}>
+    <Select 
+      value={status} 
+      onValueChange={handleStatusChange}
+      disabled={disabled}
+    >
       <SelectTrigger className={`h-auto p-0 border-none shadow-none ${className}`}>
-        <Badge className={`${getStatusColor(status)} cursor-pointer`}>
+        <Badge className={`${getStatusColor(status)} cursor-pointer ${disabled ? 'opacity-50' : ''}`}>
           {status}
         </Badge>
       </SelectTrigger>

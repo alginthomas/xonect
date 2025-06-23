@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +41,7 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
   const [remarks, setRemarks] = useState(lead.remarks || '');
   const [isEditingRemarks, setIsEditingRemarks] = useState(false);
   const [leadData, setLeadData] = useState(lead);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const getCategoryInfo = (categoryId: string | undefined) => {
     if (!categoryId) return { name: 'Uncategorized', color: '#6B7280' };
@@ -62,25 +62,51 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
   };
 
   const handleStatusChange = async (status: LeadStatus) => {
+    const oldStatus = leadData.status;
+    if (oldStatus === status) return;
+
+    // Prevent concurrent status updates
+    if (isUpdatingStatus) {
+      console.log('Status update already in progress, skipping');
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    console.log(`Mobile: Updating lead ${leadData.id} status from ${oldStatus} to ${status}`);
+
     try {
+      // Optimistic update
+      setLeadData(prevData => ({ ...prevData, status }));
+
       const { error } = await supabase
         .from('leads')
-        .update({ status })
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', leadData.id);
 
       if (error) throw error;
 
-      setLeadData({ ...leadData, status });
+      console.log(`Mobile: Successfully updated lead ${leadData.id} status to ${status}`);
+      
       toast({
         title: 'Status updated',
         description: `Lead status updated to ${status}`,
       });
     } catch (error: any) {
+      console.error('Mobile: Error updating status:', error);
+      
+      // Revert optimistic update on error
+      setLeadData(prevData => ({ ...prevData, status: oldStatus }));
+      
       toast({
         title: 'Error updating status',
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -229,7 +255,11 @@ export const MobileLeadDetails: React.FC<MobileLeadDetailsProps> = ({
               <QuickStatusEditor
                 status={leadData.status}
                 onChange={handleStatusChange}
+                disabled={isUpdatingStatus}
               />
+              {isUpdatingStatus && (
+                <p className="text-xs text-muted-foreground">Updating status...</p>
+              )}
               <div className="text-xs space-y-1">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Emails Sent</span>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +43,7 @@ export default function LeadDetails() {
   const [remarks, setRemarks] = useState('');
   const [isEditingRemarks, setIsEditingRemarks] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   useEffect(() => {
     if (leadId) {
@@ -154,7 +154,19 @@ export default function LeadDetails() {
     const oldStatus = lead.status;
     if (oldStatus === newStatus) return;
 
+    // Prevent concurrent status updates
+    if (isUpdatingStatus) {
+      console.log('Status update already in progress, skipping');
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    console.log(`Updating lead ${lead.id} status from ${oldStatus} to ${newStatus}`);
+
     try {
+      // Optimistic update
+      setLead(prevLead => prevLead ? { ...prevLead, status: newStatus } : null);
+
       // Create activity log entry
       const activityEntry: ActivityEntry = {
         id: crypto.randomUUID(),
@@ -189,17 +201,32 @@ export default function LeadDetails() {
 
       if (error) throw error;
 
-      setLead({ ...lead, status: newStatus, activityLog: updatedActivityLog });
+      // Update local state with activity log
+      setLead(prevLead => prevLead ? { 
+        ...prevLead, 
+        status: newStatus, 
+        activityLog: updatedActivityLog 
+      } : null);
+
+      console.log(`Successfully updated lead ${lead.id} status to ${newStatus}`);
+      
       toast({
         title: 'Status updated',
         description: `Lead status updated to ${newStatus}`,
       });
     } catch (error: any) {
+      console.error('Error updating status:', error);
+      
+      // Revert optimistic update on error
+      setLead(prevLead => prevLead ? { ...prevLead, status: oldStatus } : null);
+      
       toast({
         title: 'Error updating status',
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -645,8 +672,12 @@ export default function LeadDetails() {
                   <QuickStatusEditor
                     status={lead.status}
                     onChange={handleStatusChange}
+                    disabled={isUpdatingStatus}
                   />
                 </div>
+                {isUpdatingStatus && (
+                  <p className="text-xs text-muted-foreground mt-1">Updating status...</p>
+                )}
               </div>
               <Separator />
               <div className="space-y-2 text-sm">
